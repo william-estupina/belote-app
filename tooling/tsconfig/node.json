@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/07/schema#",
+  "extends": "./base.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ES2022"],
+    "types": ["node"]
+  }
+}

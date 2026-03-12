@@ -1,0 +1,27 @@
+{
+  "name": "@belote/game-logic",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@belote/shared-types": "workspace:*",
+    "xstate": "^5"
+  },
+  "devDependencies": {
+    "typescript": "^5.7",
+    "vitest": "^2"
+  }
+}

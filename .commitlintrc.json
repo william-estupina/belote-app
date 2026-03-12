@@ -1,0 +1,11 @@
+{
+  "extends": ["@commitlint/config-conventional"],
+  "rules": {
+    "scope-enum": [
+      2,
+      "always",
+      ["game-logic", "bot-engine", "mobile", "server", "shared", "ci", "deps"]
+    ],
+    "subject-case": [2, "always", "lower-case"]
+  }
+}

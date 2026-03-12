@@ -1,0 +1,19 @@
+{
+  "name": "@belote/eslint-config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./base": "./base.mjs"
+  },
+  "dependencies": {
+    "@typescript-eslint/eslint-plugin": "^8",
+    "@typescript-eslint/parser": "^8",
+    "eslint-config-prettier": "^10",
+    "eslint-plugin-simple-import-sort": "^12",
+    "eslint-plugin-unused-imports": "^4"
+  },
+  "devDependencies": {
+    "eslint": "^9"
+  }
+}

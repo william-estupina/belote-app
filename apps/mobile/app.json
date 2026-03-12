@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "Belote",
+    "slug": "belote",
+    "version": "1.0.0",
+    "scheme": "belote",
+    "platforms": ["ios", "android", "web"],
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": ["expo-router"]
+  }
+}

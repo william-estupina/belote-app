@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/07/schema#",
+  "extends": "./base.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM"],
+    "paths": {
+      "@belote/game-logic": ["../../packages/game-logic/src"],
+      "@belote/bot-engine": ["../../packages/bot-engine/src"],
+      "@belote/shared-types": ["../../packages/shared-types/src"]
+    }
+  }
+}
