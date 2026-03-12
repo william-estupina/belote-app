@@ -240,7 +240,7 @@ belote/
 
 ### Enchères (2 tours)
 
-**Tour 1** : Chaque joueur, en commençant par celui à gauche du donneur, peut :
+**Tour 1** : Chaque joueur, dans le sens des aiguilles d'une montre en commençant par celui à droite du donneur, peut :
 - **Prendre** : accepter la retourne comme atout (la couleur de la retourne devient l'atout)
 - **Passer**
 
@@ -256,7 +256,7 @@ Le joueur qui prend est appelé le **preneur**. Son équipe doit réaliser **au 
 
 ### Règles de jeu (plis)
 
-Les joueurs jouent **dans le sens inverse des aiguilles d'une montre** (ou horaire, au choix — à définir). Le joueur qui a gagné le pli précédent entame le suivant.
+Les joueurs jouent **dans le sens des aiguilles d'une montre**. Le joueur qui a gagné le pli précédent entame le suivant.
 
 **Obligations :**
 
@@ -892,4 +892,4 @@ Mesures supplémentaires pour la Phase 2 (multijoueur) :
 2. **Les bots sont des fonctions pures** : `(gameView, difficulty) → action`. Pas d'état interne, pas d'effets de bord. Facile à tester et à réutiliser côté serveur.
 3. **La machine XState est la source de vérité** : toute la logique de transition passe par elle. L'UI ne fait que refléter l'état actuel et envoyer des événements.
 4. **Penser multijoueur dès le début** : même si Phase 2, la séparation `game-logic` / `bot-engine` / `mobile` prépare déjà le terrain. Le serveur Colyseus importera `game-logic` tel quel.
-5. **Le sens de jeu** est dans le sens inverse des aiguilles d'une montre (convention française).
+5. **Le sens de jeu** est dans le sens des aiguilles d'une montre.
