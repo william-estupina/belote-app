@@ -1,16 +1,19 @@
-// Fonction principale du bot
+// Fonction principale du bot — dispatche vers les stratégies selon la phase et la difficulté
 import type { ActionBot, Difficulte, VueBotJeu } from "@belote/shared-types";
 
+import { deciderEncheres } from "./strategie-encheres";
+import { deciderJeu } from "./strategie-jeu";
+
+/**
+ * Point d'entrée principal du bot.
+ * Reçoit la vue du jeu (ce qu'un vrai joueur verrait) et le niveau de difficulté.
+ * Retourne l'action à effectuer.
+ */
 export function deciderBot(vue: VueBotJeu, difficulte: Difficulte): ActionBot {
-  // Placeholder — sera implémenté à l'étape 4
   if (vue.phaseJeu === "encheres1" || vue.phaseJeu === "encheres2") {
-    return { type: "PASSER" };
+    return deciderEncheres(vue, difficulte);
   }
 
-  // Joue la première carte jouable
-  if (vue.maMain.length > 0) {
-    return { type: "JOUER_CARTE", carte: vue.maMain[0] };
-  }
-
-  return { type: "PASSER" };
+  // Phase de jeu
+  return deciderJeu(vue, difficulte);
 }

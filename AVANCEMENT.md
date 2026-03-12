@@ -39,13 +39,14 @@
 - [x] Les actions : `distribuer`, `jouerCarte`, `evaluerPli`, `calculerScoreManche`, `enregistrerPrise`, `enregistrerAnnonce`, `enregistrerPasse`, etc.
 - [x] Tests unitaires de la machine (25 tests — parties complètes simulées, enchères, redistribution, fin de partie)
 
-### Étape 4 : Package `bot-engine` 🔲
+### Étape 4 : Package `bot-engine` ✅
 
-- [ ] Implémenter le bot facile (jeu aléatoire légal)
-- [ ] Implémenter le bot moyen (heuristiques de base)
-- [ ] Implémenter le bot difficile (comptage de cartes, stratégie avancée)
-- [ ] Implémenter la stratégie d'enchères par niveau
-- [ ] Tests unitaires
+- [x] Implémenter le bot facile (jeu aléatoire légal)
+- [x] Implémenter le bot moyen (heuristiques de base : entame As, jouer fort/faible selon position)
+- [x] Implémenter le bot difficile (comptage de cartes, cartes maîtresses, signalisation, stratégie avancée)
+- [x] Implémenter la stratégie d'enchères par niveau (tour 1 + tour 2)
+- [x] Implémenter le module de comptage de cartes (`comptage-cartes.ts` : suivi cartes jouées/restantes, cartes maîtresses)
+- [x] Tests unitaires (57 tests — enchères, jeu, comptage de cartes, dispatcher bot)
 
 ### Étape 5 : UI — Écrans et navigation 🔲
 
