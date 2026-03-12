@@ -1,1 +1,10 @@
 pnpm lint-staged
+
+# Scan des secrets dans les changements staged
+if command -v gitleaks &> /dev/null; then
+  gitleaks protect --staged --verbose
+elif [ -f "$HOME/.local/bin/gitleaks.exe" ]; then
+  "$HOME/.local/bin/gitleaks.exe" protect --staged --verbose
+else
+  echo "⚠ gitleaks non trouvé, scan de secrets ignoré"
+fi

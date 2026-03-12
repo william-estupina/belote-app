@@ -13,13 +13,13 @@
 - [x] Setup ESLint flat config + plugins (TS, import-sort, unused-imports)
 - [x] Setup Prettier + intégration ESLint
 - [x] Setup Husky + lint-staged + commitlint (Conventional Commits)
-- [ ] Setup Gitleaks en pre-commit hook
+- [x] Setup Gitleaks en pre-commit hook (v8.30.0, fallback gracieux si absent)
 - [x] Setup Knip pour la détection de code mort
 - [x] Setup Syncpack pour la cohérence des versions
 - [x] Configurer Vitest pour les packages TS purs (`game-logic`, `bot-engine`)
-- [ ] Configurer Jest + jest-expo pour l'app Expo
+- [x] Configurer Jest + jest-expo pour l'app Expo (babel-preset-expo, transformIgnorePatterns pnpm)
 - [x] Créer l'app Expo avec Expo Router
-- [ ] Vérifier que `pnpm dev` lance l'app sur web et mobile
+- [x] Vérifier que `pnpm dev` lance l'app sur web et mobile (Metro Bundler démarre)
 - [x] Vérifier que `pnpm turbo test`, `pnpm turbo typecheck` fonctionnent
 
 ### Étape 2 : Package `game-logic` ✅
