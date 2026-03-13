@@ -1,6 +1,8 @@
 import { StyleSheet, Text, View } from "react-native";
 
-export function HomeScreen() {
+export { HomeScreen };
+
+export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Belote</Text>
