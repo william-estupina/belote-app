@@ -11,11 +11,11 @@ Il suit un plan d'implémentation détaillé dans `PROMPT.md` et la progression 
 
 - **Monorepo** : Turborepo + pnpm workspaces
 - **Langage** : TypeScript strict (`strict: true`, pas de `any`)
-- **App** : Expo SDK 52+ avec Expo Router v4 (iOS, Android, Web)
+- **App** : Expo SDK 54 avec Expo Router v6 (iOS, Android, Web)
 - **Rendu du jeu** : @shopify/react-native-skia
 - **Machine à états** : XState v5
 - **État applicatif** : Zustand v4+
-- **Tests** : Vitest (packages TS purs), Jest + jest-expo (app Expo)
+- **Tests** : Vitest (packages TS purs), Jest + jest-expo (app Expo), Playwright (e2e web)
 - **Validation runtime** : Zod v3
 
 ## Structure du monorepo
@@ -32,12 +32,22 @@ tooling/tsconfig/      → Configs TypeScript partagées
 ## Commandes courantes
 
 ```bash
-pnpm turbo test          # Tous les tests
+pnpm turbo test          # Tous les tests unitaires
 pnpm turbo typecheck     # Vérification TypeScript
 pnpm turbo lint          # ESLint
 pnpm --filter @belote/game-logic test              # Tests game-logic
 pnpm --filter @belote/game-logic test:coverage      # Couverture game-logic
 pnpm --filter @belote/game-logic typecheck          # Typecheck game-logic
+pnpm --filter @belote/mobile test:e2e              # Tests e2e web (Playwright)
+```
+
+## Validation après modification
+
+Après chaque modification significative, lancer :
+
+```bash
+pnpm turbo typecheck test                          # TU + typecheck
+pnpm --filter @belote/mobile test:e2e              # Tests e2e (build web + Playwright)
 ```
 
 ## Conventions de code
@@ -46,7 +56,7 @@ pnpm --filter @belote/game-logic typecheck          # Typecheck game-logic
 - **Fichiers** : `kebab-case.ts` pour les modules, `PascalCase.tsx` pour les composants React
 - **Variables/fonctions** : `camelCase` (en français)
 - **Types/Interfaces** : `PascalCase` (en français)
-- **Exports** : named exports uniquement (pas de `export default`)
+- **Exports** : named exports uniquement (pas de `export default`), sauf les fichiers route Expo Router (`_layout.tsx`, `index.tsx`, etc.) qui requièrent un `export default`
 - **Packages purs** : `game-logic` et `bot-engine` n'importent JAMAIS de React/React Native
 - **Commits** : Conventional Commits (`feat:`, `fix:`, `test:`, `chore:`)
   - Scopes autorisés : `game-logic`, `bot-engine`, `mobile`, `server`, `shared`, `ci`, `deps`

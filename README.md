@@ -6,18 +6,18 @@ Application de **Belote française** (jeu de cartes à 4 joueurs, 2 équipes de 
 
 | Couche                   | Technologie                          | Version  |
 | ------------------------ | ------------------------------------ | -------- |
-| Framework app            | **Expo SDK 52** + **Expo Router v4** | SDK 52   |
+| Framework app            | **Expo SDK 54** + **Expo Router v6** | SDK 54   |
 | Langage                  | **TypeScript** (strict mode)         | 5.7+     |
-| Rendu du jeu             | **@shopify/react-native-skia**       | 1.x      |
-| Animations               | **react-native-reanimated**          | v3       |
+| Rendu du jeu             | **@shopify/react-native-skia**       | 2.x      |
+| Animations               | **react-native-reanimated**          | v4       |
 | Gestes                   | **react-native-gesture-handler**     | v2       |
 | Machine à états          | **XState**                           | v5       |
 | État applicatif          | **Zustand**                          | v4+      |
 | Monorepo                 | **Turborepo** + **pnpm** workspaces  | -        |
 | Tests unitaires (TS pur) | **Vitest**                           | 2.x      |
-| Tests unitaires (Expo)   | **Jest** + **jest-expo**             | 29+ / 52 |
+| Tests unitaires (Expo)   | **Jest** + **jest-expo**             | 29+ / 54 |
 | Tests composants         | **React Native Testing Library**     | 12+      |
-| Tests E2E                | **Maestro**                          | 1.x      |
+| Tests E2E (web)          | **Playwright**                       | 1.x      |
 | Validation runtime       | **Zod**                              | v3       |
 
 ### Qualité et sécurité
@@ -103,6 +103,30 @@ pnpm --filter @belote/bot-engine test:watch
 
 # Couverture de code (game-logic)
 pnpm --filter @belote/game-logic test:coverage
+```
+
+#### Tests E2E (web)
+
+Les tests E2E utilisent Playwright sur un build statique web (`expo export`).
+
+```bash
+# Lancer les tests e2e en headless (build + test automatique)
+pnpm --filter @belote/mobile test:e2e
+
+# Lancer avec l'interface visuelle (navigateur visible)
+cd apps/mobile
+npx expo export --platform web        # Build statique dans dist/
+npx playwright test --headed           # Tests avec navigateur visible
+
+# Lancer sur un seul projet (desktop ou mobile)
+npx playwright test --project=desktop-chromium --headed
+npx playwright test --project=mobile-chrome --headed
+
+# Mode debug (pas-à-pas avec Playwright Inspector)
+npx playwright test --debug
+
+# Mode UI (interface graphique Playwright)
+npx playwright test --ui
 ```
 
 ### Qualité de code
