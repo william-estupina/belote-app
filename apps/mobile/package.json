@@ -10,6 +10,7 @@
     "build:ios": "eas build --platform ios",
     "test": "jest",
     "test:e2e": "npx expo export --platform web && npx playwright test",
+    "test:e2e:headed": "npx expo export --platform web && npx playwright test --headed",
     "typecheck": "tsc --noEmit",
     "lint": "eslint app/ components/ hooks/ stores/"
   },
