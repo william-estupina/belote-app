@@ -5,8 +5,14 @@ const config = getDefaultConfig(__dirname);
 // Zustand ESM (.mjs) utilise import.meta.env qui n'est pas supporté
 // dans les scripts non-module (Metro web). On force la résolution vers
 // le build CJS (condition "react-native" / "default") pour toutes les plateformes.
+// Sur mobile, canvaskit-wasm n'est pas nécessaire (Skia utilise les bindings C++ natifs).
+// On retourne un module vide pour éviter l'erreur "attempted to import fs".
 const originalResolveRequest = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (platform !== "web" && moduleName === "canvaskit-wasm/bin/full/canvaskit.js") {
+    return { type: "empty" };
+  }
+
   // Forcer Zustand à utiliser le build CJS sur web (évite import.meta.env)
   if (platform === "web" && moduleName === "zustand") {
     return context.resolveRequest(

@@ -61,10 +61,10 @@
 - [x] Tests unitaires (9 tests : accueil, paramètres, règles)
 - [x] Tests e2e Playwright (6 tests : accueil + navigation paramètres + navigation règles, desktop + mobile)
 
-### Étape 6 : UI — GameBoard (Skia) 🔲
+### Étape 6 : UI — GameBoard (Skia) 🔨
 
-- [ ] Rendu du tapis de jeu (fond vert)
-- [ ] Rendu d'une carte (image Skia + ombre)
+- [x] Rendu du tapis de jeu (fond vert)
+- [x] Rendu d'une carte (image Skia + ombre)
 - [ ] Position des 4 joueurs (sud = humain, nord = partenaire bot, est/ouest = adversaires)
 - [ ] Main du joueur en éventail
 - [ ] Dos des cartes pour les adversaires
