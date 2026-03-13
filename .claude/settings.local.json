@@ -3,7 +3,12 @@
     "allow": [
       "WebSearch",
       "WebFetch(domain:api.github.com)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:shopify.github.io)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:expo.dev)",
+      "WebFetch(domain:job-logs.eascdn.net)"
     ]
   }
 }
