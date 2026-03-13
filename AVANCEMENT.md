@@ -61,15 +61,16 @@
 - [x] Tests unitaires (9 tests : accueil, paramètres, règles)
 - [x] Tests e2e Playwright (6 tests : accueil + navigation paramètres + navigation règles, desktop + mobile)
 
-### Étape 6 : UI — GameBoard (Skia) 🔨
+### Étape 6 : UI — GameBoard (Skia) ✅
 
 - [x] Rendu du tapis de jeu (fond vert)
 - [x] Rendu d'une carte (image Skia + ombre)
-- [ ] Position des 4 joueurs (sud = humain, nord = partenaire bot, est/ouest = adversaires)
-- [ ] Main du joueur en éventail
-- [ ] Dos des cartes pour les adversaires
-- [ ] Zone centrale pour le pli
-- [ ] Indicateur d'atout + scores
+- [x] Position des 4 joueurs (sud = humain, nord = partenaire bot, est/ouest = adversaires)
+- [x] Main du joueur en éventail (`MainJoueur.tsx` : cartes en arc avec rotation progressive)
+- [x] Dos des cartes pour les adversaires (`MainAdversaire.tsx` : horizontal pour nord, vertical pour est/ouest)
+- [x] Zone centrale pour le pli (`ZonePli.tsx` : 4 positions avec rotation naturelle)
+- [x] Indicateur d'atout + scores (`IndicateurAtout.tsx` + `TableauScores.tsx`)
+- [x] Constantes de layout proportionnelles (`constants/layout.ts`)
 
 ### Étape 7 : Animations et interactions 🔲
 

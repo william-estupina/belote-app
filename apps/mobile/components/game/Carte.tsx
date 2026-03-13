@@ -7,7 +7,7 @@ import {
   Text as SkiaText,
   useFont,
 } from "@shopify/react-native-skia";
-import { View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 // Dimensions par défaut d'une carte (proportionnelles, redimensionnables via props)
 const LARGEUR_CARTE_DEFAUT = 70;
@@ -49,12 +49,82 @@ interface PropsCarteSkia {
   faceVisible?: boolean;
 }
 
+/**
+ * Carte face visible — rendue avec Skia (texte + symboles)
+ */
 export function CarteSkia({
   carte,
   largeur = LARGEUR_CARTE_DEFAUT,
   hauteur = HAUTEUR_CARTE_DEFAUT,
   faceVisible = true,
 }: PropsCarteSkia) {
+  // Dos de carte : View RN simple (pas de Canvas WebGL = pas de limite de contextes)
+  if (!faceVisible) {
+    return <CarteDos largeur={largeur} hauteur={hauteur} />;
+  }
+
+  return <CarteFace carte={carte} largeur={largeur} hauteur={hauteur} />;
+}
+
+// --- Dos de carte (View RN classique) ---
+
+function CarteDos({ largeur, hauteur }: { largeur: number; hauteur: number }) {
+  return (
+    <View
+      style={[
+        dosStyles.carte,
+        {
+          width: largeur,
+          height: hauteur,
+          borderRadius: RAYON_COIN,
+        },
+      ]}
+    >
+      <View
+        style={[
+          dosStyles.motifInterieur,
+          {
+            borderRadius: RAYON_COIN - 2,
+          },
+        ]}
+      />
+    </View>
+  );
+}
+
+const dosStyles = StyleSheet.create({
+  carte: {
+    backgroundColor: "#2a5a8c",
+    borderWidth: 1,
+    borderColor: "#1e4060",
+    shadowColor: "#000",
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: "10%",
+  },
+  motifInterieur: {
+    width: "80%",
+    height: "88%",
+    borderWidth: 2,
+    borderColor: "#3a7abb",
+  },
+});
+
+// --- Face de carte (Skia Canvas) ---
+
+function CarteFace({
+  carte,
+  largeur,
+  hauteur,
+}: {
+  carte: Carte;
+  largeur: number;
+  hauteur: number;
+}) {
   const { rang, couleur } = carte;
   const police = useFont(null, largeur * 0.28);
   const policeSymbole = useFont(null, largeur * 0.4);
@@ -63,36 +133,35 @@ export function CarteSkia({
   const symbole = SYMBOLES[couleur];
   const labelRang = LABELS_RANGS[rang] ?? rang;
 
+  const margeOmbre = 8;
+
   return (
-    <View style={{ width: largeur, height: hauteur }}>
-      <Canvas style={{ width: largeur, height: hauteur }}>
+    <View style={{ width: largeur, height: hauteur, overflow: "visible" }}>
+      <Canvas style={{ width: largeur + margeOmbre, height: hauteur + margeOmbre }}>
         <Group>
-          {/* Fond de la carte */}
           <RoundedRect
             x={0}
             y={0}
             width={largeur}
             height={hauteur}
             r={RAYON_COIN}
-            color={faceVisible ? "#f5f0e1" : "#2a5a8c"}
+            color="#f5f0e1"
           />
           <Shadow dx={2} dy={2} blur={4} color="rgba(0,0,0,0.3)" />
 
-          {/* Bordure */}
           <RoundedRect
             x={1}
             y={1}
             width={largeur - 2}
             height={hauteur - 2}
             r={RAYON_COIN}
-            color={faceVisible ? "#c0b090" : "#1e4060"}
+            color="#c0b090"
             style="stroke"
             strokeWidth={1}
           />
 
-          {faceVisible && police && policeSymbole ? (
+          {police && policeSymbole ? (
             <>
-              {/* Rang en haut à gauche */}
               <SkiaText
                 x={largeur * 0.08}
                 y={largeur * 0.32}
@@ -100,8 +169,6 @@ export function CarteSkia({
                 font={police}
                 color={couleurSymbole}
               />
-
-              {/* Symbole central */}
               <SkiaText
                 x={largeur * 0.3}
                 y={hauteur * 0.6}
@@ -109,8 +176,6 @@ export function CarteSkia({
                 font={policeSymbole}
                 color={couleurSymbole}
               />
-
-              {/* Rang en bas à droite (inversé visuellement par position) */}
               <SkiaText
                 x={largeur * 0.62}
                 y={hauteur - largeur * 0.08}
@@ -119,23 +184,27 @@ export function CarteSkia({
                 color={couleurSymbole}
               />
             </>
-          ) : !faceVisible ? (
-            <>
-              {/* Motif du dos : bordure intérieure */}
-              <RoundedRect
-                x={largeur * 0.1}
-                y={hauteur * 0.06}
-                width={largeur * 0.8}
-                height={hauteur * 0.88}
-                r={RAYON_COIN - 2}
-                color="#3a7abb"
-                style="stroke"
-                strokeWidth={2}
-              />
-            </>
           ) : null}
         </Group>
       </Canvas>
     </View>
+  );
+}
+
+/**
+ * Composant simple (pas Skia) pour afficher le symbole d'une couleur.
+ * Utilisé par IndicateurAtout et d'autres UI non-jeu.
+ */
+export function SymboleCouleur({
+  couleur,
+  taille = 24,
+}: {
+  couleur: Couleur;
+  taille?: number;
+}) {
+  return (
+    <Text style={{ fontSize: taille, color: COULEURS_SYMBOLES[couleur] }}>
+      {SYMBOLES[couleur]}
+    </Text>
   );
 }
