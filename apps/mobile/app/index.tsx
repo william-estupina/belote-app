@@ -1,31 +1,68 @@
+import { useRouter } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
-export { HomeScreen };
+import { BoutonMenu } from "../components/BoutonMenu";
+import { COULEURS, ESPACEMENTS, TYPOGRAPHIE } from "../constants/theme";
 
-export default function HomeScreen() {
+export { EcranAccueil as HomeScreen };
+
+export default function EcranAccueil() {
+  const router = useRouter();
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Belote</Text>
-      <Text style={styles.subtitle}>Jeu de cartes</Text>
+    <View style={styles.conteneur}>
+      <View style={styles.enTete}>
+        <Text style={styles.titre}>Belote</Text>
+        <Text style={styles.sousTitre}>Jeu de cartes</Text>
+      </View>
+
+      <View style={styles.menu}>
+        <BoutonMenu
+          titre="Jouer"
+          onPress={() => router.push("/partie")}
+          testID="bouton-jouer"
+        />
+        <BoutonMenu
+          titre="Paramètres"
+          onPress={() => router.push("/parametres")}
+          variante="secondaire"
+          testID="bouton-parametres"
+        />
+        <BoutonMenu
+          titre="Règles"
+          onPress={() => router.push("/regles")}
+          variante="secondaire"
+          testID="bouton-regles"
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  conteneur: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#1a5c2a",
+    backgroundColor: COULEURS.fondPrincipal,
+    padding: ESPACEMENTS.lg,
   },
-  title: {
-    fontSize: 48,
-    fontWeight: "bold",
-    color: "#fff",
+  enTete: {
+    alignItems: "center",
+    marginBottom: ESPACEMENTS.xxl,
   },
-  subtitle: {
-    fontSize: 18,
-    color: "#ccc",
-    marginTop: 8,
+  titre: {
+    fontSize: TYPOGRAPHIE.titreTaille,
+    fontWeight: TYPOGRAPHIE.poidsGras,
+    color: COULEURS.textePrincipal,
+  },
+  sousTitre: {
+    fontSize: TYPOGRAPHIE.sousTitreTaille,
+    color: COULEURS.texteSecondaire,
+    marginTop: ESPACEMENTS.sm,
+  },
+  menu: {
+    alignItems: "center",
+    gap: ESPACEMENTS.sm,
   },
 });

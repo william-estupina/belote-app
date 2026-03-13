@@ -48,12 +48,18 @@
 - [x] Implémenter le module de comptage de cartes (`comptage-cartes.ts` : suivi cartes jouées/restantes, cartes maîtresses)
 - [x] Tests unitaires (57 tests — enchères, jeu, comptage de cartes, dispatcher bot)
 
-### Étape 5 : UI — Écrans et navigation 🔲
+### Étape 5 : UI — Écrans et navigation ✅
 
-- [ ] Écran d'accueil (menu principal : Jouer, Paramètres, Règles)
-- [ ] Écran de paramètres (difficulté, son, style, score objectif)
-- [ ] Navigation avec Expo Router
-- [ ] Thème et constantes visuelles
+- [x] Écran d'accueil (menu principal : Jouer, Paramètres, Règles)
+- [x] Écran de paramètres (difficulté, son, score objectif)
+- [x] Écran des règles du jeu (8 sections détaillées)
+- [x] Navigation avec Expo Router (Stack : accueil, partie, paramètres, règles)
+- [x] Thème et constantes visuelles (`constants/theme.ts` : couleurs, typographie, espacements, bordures)
+- [x] Store Zustand (`stores/app-store.ts` : préférences utilisateur avec difficulté, son, score objectif)
+- [x] Composant réutilisable `BoutonMenu` (primaire/secondaire)
+- [x] Config Metro pour compatibilité web (transformation `import.meta.env`)
+- [x] Tests unitaires (9 tests : accueil, paramètres, règles)
+- [x] Tests e2e Playwright (6 tests : accueil + navigation paramètres + navigation règles, desktop + mobile)
 
 ### Étape 6 : UI — GameBoard (Skia) 🔲
 

@@ -1,9 +1,20 @@
 import { Stack } from "expo-router";
 
+import { COULEURS } from "../constants/theme";
+
 export default function Layout() {
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ title: "Belote" }} />
+    <Stack
+      screenOptions={{
+        headerStyle: { backgroundColor: COULEURS.fondFonce },
+        headerTintColor: COULEURS.textePrincipal,
+        contentStyle: { backgroundColor: COULEURS.fondPrincipal },
+      }}
+    >
+      <Stack.Screen name="index" options={{ title: "Belote", headerShown: false }} />
+      <Stack.Screen name="partie" options={{ title: "Partie" }} />
+      <Stack.Screen name="parametres" options={{ title: "Paramètres" }} />
+      <Stack.Screen name="regles" options={{ title: "Règles du jeu" }} />
     </Stack>
   );
 }

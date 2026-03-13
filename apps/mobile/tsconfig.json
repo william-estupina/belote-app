@@ -1,8 +1,7 @@
 {
   "extends": "../../tooling/tsconfig/expo.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "."
+    "outDir": "./dist"
   },
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["e2e", "playwright.config.ts"]
