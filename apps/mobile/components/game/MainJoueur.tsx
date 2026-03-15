@@ -31,13 +31,13 @@ export function MainJoueur({ cartes, largeurEcran, hauteurEcran }: PropsMainJoue
   const xDepart = (largeurEcran - largeurMain) / 2;
 
   // Hauteur du conteneur : carte + arc + marge pour rotation
-  const hauteurConteneur = hauteurCarte + arcMax + largeurCarte * 0.3;
+  const hauteurConteneur = hauteurCarte + arcMax + largeurCarte * 0.2;
 
   return (
     <View
       style={{
         position: "absolute",
-        bottom: 0,
+        bottom: -hauteurCarte * 0.15,
         left: 0,
         right: 0,
         height: hauteurConteneur,

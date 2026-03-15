@@ -1,10 +1,9 @@
 import type { Carte, Couleur } from "@belote/shared-types";
 import { useCallback, useState } from "react";
 import type { LayoutChangeEvent } from "react-native";
-import { StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 
 import { IndicateurAtout } from "./IndicateurAtout";
-import { LabelJoueur } from "./LabelJoueur";
 import { MainAdversaire } from "./MainAdversaire";
 import { MainJoueur } from "./MainJoueur";
 import { TableauScores } from "./TableauScores";
@@ -28,8 +27,10 @@ const PLI_DEMO: { joueur: "sud" | "nord" | "est" | "ouest"; carte: Carte }[] = [
 ];
 
 const ATOUT_DEMO: Couleur = "coeur";
-const NB_CARTES_ADVERSAIRES = { nord: 8, est: 8, ouest: 6 };
+const NB_CARTES_ADVERSAIRES = { nord: 8, est: 8, ouest: 8 };
 // --- Fin données de démonstration ---
+
+const estWeb = Platform.OS === "web";
 
 export default function PlateauJeu() {
   const [dimensions, setDimensions] = useState({ largeur: 0, hauteur: 0 });
@@ -71,17 +72,16 @@ export default function PlateauJeu() {
           {/* Zone du pli au centre */}
           <ZonePli cartes={PLI_DEMO} largeurEcran={largeur} hauteurEcran={hauteur} />
 
-          {/* Indicateur d'atout + scores (coin haut-gauche, sous les cartes nord) */}
-          <View style={[styles.indicateurs, { top: hauteur * 0.18 }]}>
+          {/* Indicateur d'atout + scores (coin haut-gauche) */}
+          <View
+            style={[
+              styles.indicateurs,
+              estWeb ? styles.indicateursWeb : styles.indicateursMobile,
+            ]}
+          >
             <IndicateurAtout couleurAtout={ATOUT_DEMO} />
             <TableauScores scoreEquipe1={82} scoreEquipe2={54} />
           </View>
-
-          {/* Labels des joueurs */}
-          <LabelJoueur position="sud" largeurEcran={largeur} hauteurEcran={hauteur} />
-          <LabelJoueur position="nord" largeurEcran={largeur} hauteurEcran={hauteur} />
-          <LabelJoueur position="ouest" largeurEcran={largeur} hauteurEcran={hauteur} />
-          <LabelJoueur position="est" largeurEcran={largeur} hauteurEcran={hauteur} />
 
           {/* Main du joueur (sud) en éventail */}
           <MainJoueur cartes={MAIN_DEMO} largeurEcran={largeur} hauteurEcran={hauteur} />
@@ -108,8 +108,15 @@ const styles = StyleSheet.create({
   },
   indicateurs: {
     position: "absolute",
-    left: 8,
-    gap: 8,
+    gap: 3,
     zIndex: 10,
+  },
+  indicateursWeb: {
+    left: 8,
+    top: 8,
+  },
+  indicateursMobile: {
+    left: 40,
+    top: 4,
   },
 });

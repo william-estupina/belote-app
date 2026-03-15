@@ -4,6 +4,7 @@
     "slug": "belote",
     "version": "1.0.0",
     "scheme": "belote",
+    "orientation": "landscape",
     "platforms": ["ios", "android", "web"],
     "web": {
       "bundler": "metro",

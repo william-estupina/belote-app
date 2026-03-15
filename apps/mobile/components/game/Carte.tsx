@@ -1,12 +1,4 @@
 import type { Carte, Couleur } from "@belote/shared-types";
-import {
-  Canvas,
-  Group,
-  RoundedRect,
-  Shadow,
-  Text as SkiaText,
-  useFont,
-} from "@shopify/react-native-skia";
 import { StyleSheet, Text, View } from "react-native";
 
 // Dimensions par défaut d'une carte (proportionnelles, redimensionnables via props)
@@ -50,7 +42,7 @@ interface PropsCarteSkia {
 }
 
 /**
- * Carte face visible — rendue avec Skia (texte + symboles)
+ * Carte rendue en React Native pur (View + Text)
  */
 export function CarteSkia({
   carte,
@@ -58,7 +50,6 @@ export function CarteSkia({
   hauteur = HAUTEUR_CARTE_DEFAUT,
   faceVisible = true,
 }: PropsCarteSkia) {
-  // Dos de carte : View RN simple (pas de Canvas WebGL = pas de limite de contextes)
   if (!faceVisible) {
     return <CarteDos largeur={largeur} hauteur={hauteur} />;
   }
@@ -66,7 +57,7 @@ export function CarteSkia({
   return <CarteFace carte={carte} largeur={largeur} hauteur={hauteur} />;
 }
 
-// --- Dos de carte (View RN classique) ---
+// --- Dos de carte ---
 
 function CarteDos({ largeur, hauteur }: { largeur: number; hauteur: number }) {
   return (
@@ -114,7 +105,7 @@ const dosStyles = StyleSheet.create({
   },
 });
 
-// --- Face de carte (Skia Canvas) ---
+// --- Face de carte (React Native pur) ---
 
 function CarteFace({
   carte,
@@ -126,73 +117,93 @@ function CarteFace({
   hauteur: number;
 }) {
   const { rang, couleur } = carte;
-  const police = useFont(null, largeur * 0.28);
-  const policeSymbole = useFont(null, largeur * 0.4);
-
   const couleurSymbole = COULEURS_SYMBOLES[couleur];
   const symbole = SYMBOLES[couleur];
   const labelRang = LABELS_RANGS[rang] ?? rang;
-
-  const margeOmbre = 8;
+  const tailleRang = largeur * 0.28;
+  const tailleSymbole = largeur * 0.4;
 
   return (
-    <View style={{ width: largeur, height: hauteur, overflow: "visible" }}>
-      <Canvas style={{ width: largeur + margeOmbre, height: hauteur + margeOmbre }}>
-        <Group>
-          <RoundedRect
-            x={0}
-            y={0}
-            width={largeur}
-            height={hauteur}
-            r={RAYON_COIN}
-            color="#f5f0e1"
-          />
-          <Shadow dx={2} dy={2} blur={4} color="rgba(0,0,0,0.3)" />
+    <View
+      style={[
+        faceStyles.carte,
+        {
+          width: largeur,
+          height: hauteur,
+          borderRadius: RAYON_COIN,
+        },
+      ]}
+    >
+      {/* Rang en haut à gauche */}
+      <Text
+        style={[
+          faceStyles.rangHaut,
+          { fontSize: tailleRang, lineHeight: tailleRang * 1.1, color: couleurSymbole },
+        ]}
+      >
+        {labelRang}
+      </Text>
 
-          <RoundedRect
-            x={1}
-            y={1}
-            width={largeur - 2}
-            height={hauteur - 2}
-            r={RAYON_COIN}
-            color="#c0b090"
-            style="stroke"
-            strokeWidth={1}
-          />
+      {/* Symbole central */}
+      <Text
+        style={[
+          faceStyles.symboleCentre,
+          {
+            fontSize: tailleSymbole,
+            lineHeight: tailleSymbole * 1.1,
+            color: couleurSymbole,
+          },
+        ]}
+      >
+        {symbole}
+      </Text>
 
-          {police && policeSymbole ? (
-            <>
-              <SkiaText
-                x={largeur * 0.08}
-                y={largeur * 0.32}
-                text={labelRang}
-                font={police}
-                color={couleurSymbole}
-              />
-              <SkiaText
-                x={largeur * 0.3}
-                y={hauteur * 0.6}
-                text={symbole}
-                font={policeSymbole}
-                color={couleurSymbole}
-              />
-              <SkiaText
-                x={largeur * 0.62}
-                y={hauteur - largeur * 0.08}
-                text={labelRang}
-                font={police}
-                color={couleurSymbole}
-              />
-            </>
-          ) : null}
-        </Group>
-      </Canvas>
+      {/* Rang en bas à droite (retourné) */}
+      <Text
+        style={[
+          faceStyles.rangBas,
+          { fontSize: tailleRang, lineHeight: tailleRang * 1.1, color: couleurSymbole },
+        ]}
+      >
+        {labelRang}
+      </Text>
     </View>
   );
 }
 
+const faceStyles = StyleSheet.create({
+  carte: {
+    backgroundColor: "#f5f0e1",
+    borderWidth: 1,
+    borderColor: "#c0b090",
+    shadowColor: "#000",
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  rangHaut: {
+    position: "absolute",
+    top: "5%",
+    left: "8%",
+    fontWeight: "bold",
+  },
+  symboleCentre: {
+    position: "absolute",
+    top: "35%",
+    alignSelf: "center",
+  },
+  rangBas: {
+    position: "absolute",
+    bottom: "5%",
+    right: "8%",
+    fontWeight: "bold",
+    transform: [{ rotate: "180deg" }],
+  },
+});
+
 /**
- * Composant simple (pas Skia) pour afficher le symbole d'une couleur.
+ * Composant simple pour afficher le symbole d'une couleur.
  * Utilisé par IndicateurAtout et d'autres UI non-jeu.
  */
 export function SymboleCouleur({

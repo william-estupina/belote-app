@@ -1,5 +1,5 @@
 import type { Couleur } from "@belote/shared-types";
-import { StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 
 import { COULEURS } from "../../constants/theme";
 
@@ -42,24 +42,28 @@ export function IndicateurAtout({ couleurAtout }: PropsIndicateurAtout) {
   );
 }
 
+const estWeb = Platform.OS === "web";
+
 const styles = StyleSheet.create({
   conteneur: {
     alignItems: "center",
+    flexDirection: "row",
     backgroundColor: "rgba(0, 0, 0, 0.4)",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderRadius: 6,
+    paddingHorizontal: estWeb ? 10 : 6,
+    paddingVertical: estWeb ? 5 : 3,
+    gap: estWeb ? 6 : 4,
   },
   label: {
     color: COULEURS.texteSecondaire,
-    fontSize: 10,
+    fontSize: estWeb ? 11 : 8,
     textTransform: "uppercase",
   },
   nom: {
     color: COULEURS.textePrincipal,
-    fontSize: 11,
+    fontSize: estWeb ? 12 : 9,
   },
   symbole: {
-    fontSize: 24,
+    fontSize: estWeb ? 20 : 14,
   },
 });

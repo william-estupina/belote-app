@@ -1,3 +1,4 @@
+import { StatusBar } from "expo-status-bar";
 import { StyleSheet, View } from "react-native";
 
 import { PlateauJeuLoader } from "../components/game/PlateauJeuLoader";
@@ -6,11 +7,11 @@ import { COULEURS } from "../constants/theme";
 export default function EcranPartie() {
   return (
     <View style={styles.conteneur}>
+      <StatusBar hidden />
       <PlateauJeuLoader />
     </View>
   );
 }
-export { EcranPartie };
 
 const styles = StyleSheet.create({
   conteneur: {

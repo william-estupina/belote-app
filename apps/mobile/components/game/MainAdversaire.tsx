@@ -24,85 +24,179 @@ export function MainAdversaire({
 
   const largeurCarte = Math.round(largeurEcran * ADVERSAIRE.ratioLargeurCarte);
   const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
-  const estVertical = position === "est" || position === "ouest";
 
-  // Espacement entre les cartes (avec chevauchement)
-  const espacement = estVertical
-    ? hauteurCarte * (1 - ADVERSAIRE.chevauchement)
-    : largeurCarte * (1 - ADVERSAIRE.chevauchement);
-
-  // Taille totale de la main
-  const tailleMain =
-    espacement * (nbCartes - 1) + (estVertical ? hauteurCarte : largeurCarte);
-
-  // Positionnement du conteneur
-  const styleConteneur = calculerPosition(
-    position,
-    largeurCarte,
-    hauteurCarte,
-    tailleMain,
-    largeurEcran,
-    hauteurEcran,
-    estVertical,
-  );
+  if (position === "nord") {
+    return (
+      <EventailHorizontal
+        nbCartes={nbCartes}
+        largeurCarte={largeurCarte}
+        hauteurCarte={hauteurCarte}
+        largeurEcran={largeurEcran}
+        hauteurEcran={hauteurEcran}
+      />
+    );
+  }
 
   return (
-    <View style={styleConteneur}>
-      {Array.from({ length: nbCartes }, (_, index) => (
-        <View
-          key={index}
-          style={{
-            position: "absolute",
-            ...(estVertical
-              ? { top: espacement * index, left: 0 }
-              : { left: espacement * index, top: 0 }),
-            zIndex: index,
-          }}
-        >
-          <CarteSkia
-            carte={CARTE_DOS}
-            largeur={largeurCarte}
-            hauteur={hauteurCarte}
-            faceVisible={false}
-          />
-        </View>
-      ))}
+    <EventailVertical
+      nbCartes={nbCartes}
+      largeurCarte={largeurCarte}
+      hauteurCarte={hauteurCarte}
+      largeurEcran={largeurEcran}
+      hauteurEcran={hauteurEcran}
+      cote={position as "est" | "ouest"}
+    />
+  );
+}
+
+// --- Éventail horizontal pour le nord (partenaire) ---
+
+function EventailHorizontal({
+  nbCartes,
+  largeurCarte,
+  hauteurCarte,
+  largeurEcran,
+  hauteurEcran,
+}: {
+  nbCartes: number;
+  largeurCarte: number;
+  hauteurCarte: number;
+  largeurEcran: number;
+  hauteurEcran: number;
+}) {
+  const angleTotal = ADVERSAIRE.angleTotal;
+  const arcMax = hauteurEcran * ADVERSAIRE.decalageArc;
+  const espacement = largeurCarte * (1 - ADVERSAIRE.chevauchement);
+  const largeurMain = espacement * (nbCartes - 1) + largeurCarte;
+  const xDepart = (largeurEcran - largeurMain) / 2;
+
+  const hauteurConteneur = hauteurCarte + arcMax + largeurCarte * 0.3;
+
+  return (
+    <View
+      style={{
+        position: "absolute",
+        top: hauteurEcran * ADVERSAIRE.margeNordY,
+        left: 0,
+        right: 0,
+        height: hauteurConteneur,
+        overflow: "visible",
+      }}
+    >
+      {Array.from({ length: nbCartes }, (_, index) => {
+        const t = nbCartes > 1 ? (index / (nbCartes - 1)) * 2 - 1 : 0;
+        // Éventail inversé (partenaire en face)
+        const angle = (-t * angleTotal) / 2;
+        const decalageY = arcMax * (1 - t * t);
+        const x = xDepart + espacement * index;
+
+        return (
+          <View
+            key={index}
+            style={{
+              position: "absolute",
+              left: x,
+              top: decalageY,
+              transformOrigin: `${largeurCarte / 2}px 0px`,
+              transform: [{ rotate: `${angle}deg` }],
+              zIndex: index,
+            }}
+          >
+            <CarteSkia
+              carte={CARTE_DOS}
+              largeur={largeurCarte}
+              hauteur={hauteurCarte}
+              faceVisible={false}
+            />
+          </View>
+        );
+      })}
     </View>
   );
 }
 
-function calculerPosition(
-  position: PositionJoueur,
-  largeurCarte: number,
-  hauteurCarte: number,
-  tailleMain: number,
-  largeurEcran: number,
-  hauteurEcran: number,
-  estVertical: boolean,
-) {
-  if (estVertical) {
-    // Empilées verticalement, centrées dans la zone de jeu
-    const topCentre = (hauteurEcran - tailleMain) / 2;
-    return {
-      position: "absolute" as const,
-      top: topCentre,
-      ...(position === "ouest"
-        ? { left: largeurEcran * ADVERSAIRE.margeCoteX }
-        : { right: largeurEcran * ADVERSAIRE.margeCoteX }),
-      width: largeurCarte,
-      height: tailleMain,
-      overflow: "visible" as const,
-    };
-  }
+// --- Éventail vertical pour est/ouest (adversaires) ---
+// Les cartes sont tournées à 90° pour être en paysage
 
-  // Nord : ligne horizontale en haut de la zone de jeu
-  const leftCentre = (largeurEcran - tailleMain) / 2;
-  return {
-    position: "absolute" as const,
-    top: hauteurEcran * ADVERSAIRE.margeNordY,
-    left: leftCentre,
-    width: tailleMain,
-    height: hauteurCarte,
-    overflow: "visible" as const,
-  };
+function EventailVertical({
+  nbCartes,
+  largeurCarte,
+  hauteurCarte,
+  largeurEcran,
+  hauteurEcran,
+  cote,
+}: {
+  nbCartes: number;
+  largeurCarte: number;
+  hauteurCarte: number;
+  largeurEcran: number;
+  hauteurEcran: number;
+  cote: "est" | "ouest";
+}) {
+  const angleTotal = ADVERSAIRE.angleTotal;
+  const arcMax = largeurEcran * ADVERSAIRE.decalageArc;
+
+  // Après rotation 90°, la carte occupe hauteurCarte en largeur et largeurCarte en hauteur visuellement
+  // On espace verticalement selon largeurCarte (la hauteur visuelle après rotation)
+  const espacementVisuel = largeurCarte * (1 - ADVERSAIRE.chevauchement);
+  const hauteurMain = espacementVisuel * (nbCartes - 1) + largeurCarte;
+  const yDepart = (hauteurEcran - hauteurMain) / 2;
+
+  const estOuest = cote === "ouest";
+  // Rotation 90° pour les deux côtés (même orientation de carte)
+  const rotationBase = 90;
+
+  const largeurConteneur = hauteurCarte + arcMax;
+
+  return (
+    <View
+      style={{
+        position: "absolute",
+        top: 0,
+        bottom: 0,
+        ...(estOuest
+          ? { left: largeurEcran * ADVERSAIRE.margeCoteX }
+          : { right: largeurEcran * ADVERSAIRE.margeCoteX }),
+        width: largeurConteneur,
+        overflow: "visible",
+      }}
+    >
+      {Array.from({ length: nbCartes }, (_, index) => {
+        const t = nbCartes > 1 ? (index / (nbCartes - 1)) * 2 - 1 : 0;
+
+        // Angle d'éventail : direction inversée selon le côté
+        const signeEventail = estOuest ? 1 : -1;
+        const angleEventail = (t * angleTotal * signeEventail) / 2;
+        const angleFinal = rotationBase + angleEventail;
+
+        // Arc parabolique : cartes du centre se rapprochent du bord
+        const decalageX = arcMax * (1 - t * t);
+
+        const y = yDepart + espacementVisuel * index;
+
+        return (
+          <View
+            key={index}
+            style={{
+              position: "absolute",
+              top: y,
+              ...(estOuest ? { left: decalageX } : { right: decalageX }),
+              width: largeurCarte,
+              height: hauteurCarte,
+              transformOrigin: `${largeurCarte / 2}px ${hauteurCarte / 2}px`,
+              transform: [{ rotate: `${angleFinal}deg` }],
+              zIndex: index,
+            }}
+          >
+            <CarteSkia
+              carte={CARTE_DOS}
+              largeur={largeurCarte}
+              hauteur={hauteurCarte}
+              faceVisible={false}
+            />
+          </View>
+        );
+      })}
+    </View>
+  );
 }
