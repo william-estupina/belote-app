@@ -1,5 +1,5 @@
 import type { Carte } from "@belote/shared-types";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 
 import {
   EVENTAIL,
@@ -12,9 +12,25 @@ interface PropsMainJoueur {
   cartes: Carte[];
   largeurEcran: number;
   hauteurEcran: number;
+  cartesJouables?: Carte[];
+  interactionActive?: boolean;
+  onCarteJouee?: (carte: Carte) => void;
 }
 
-export function MainJoueur({ cartes, largeurEcran, hauteurEcran }: PropsMainJoueur) {
+/** Vérifie si une carte est dans la liste des cartes jouables */
+function estJouable(carte: Carte, cartesJouables?: Carte[]): boolean {
+  if (!cartesJouables) return true;
+  return cartesJouables.some((c) => c.rang === carte.rang && c.couleur === carte.couleur);
+}
+
+export function MainJoueur({
+  cartes,
+  largeurEcran,
+  hauteurEcran,
+  cartesJouables,
+  interactionActive = false,
+  onCarteJouee,
+}: PropsMainJoueur) {
   const nbCartes = cartes.length;
   if (nbCartes === 0) return null;
 
@@ -56,27 +72,48 @@ export function MainJoueur({ cartes, largeurEcran, hauteurEcran }: PropsMainJoue
 
         const x = xDepart + espacement * index;
 
-        return (
+        const jouable = estJouable(carte, cartesJouables);
+        const grisee = interactionActive && !jouable;
+
+        const contenuCarte = (
           <View
             key={`${carte.couleur}-${carte.rang}`}
             style={{
               position: "absolute",
               left: x,
               bottom: decalageY,
-              // Rotation autour du bas-centre de la carte (effet éventail naturel)
               transformOrigin: `${largeurCarte / 2}px ${hauteurCarte}px`,
               transform: [{ rotate: `${angle}deg` }],
               zIndex: index,
             }}
           >
-            <CarteSkia
-              carte={carte}
-              largeur={largeurCarte}
-              hauteur={hauteurCarte}
-              faceVisible
-            />
+            {interactionActive && jouable && onCarteJouee ? (
+              <Pressable
+                onPress={() => onCarteJouee(carte)}
+                style={({ pressed }) => ({
+                  transform: pressed ? [{ translateY: -8 }] : [],
+                })}
+              >
+                <CarteSkia
+                  carte={carte}
+                  largeur={largeurCarte}
+                  hauteur={hauteurCarte}
+                  faceVisible
+                />
+              </Pressable>
+            ) : (
+              <CarteSkia
+                carte={carte}
+                largeur={largeurCarte}
+                hauteur={hauteurCarte}
+                faceVisible
+                grisee={grisee}
+              />
+            )}
           </View>
         );
+
+        return contenuCarte;
       })}
     </View>
   );

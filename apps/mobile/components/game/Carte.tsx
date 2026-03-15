@@ -39,6 +39,7 @@ interface PropsCarteSkia {
   largeur?: number;
   hauteur?: number;
   faceVisible?: boolean;
+  grisee?: boolean;
 }
 
 /**
@@ -49,12 +50,13 @@ export function CarteSkia({
   largeur = LARGEUR_CARTE_DEFAUT,
   hauteur = HAUTEUR_CARTE_DEFAUT,
   faceVisible = true,
+  grisee = false,
 }: PropsCarteSkia) {
   if (!faceVisible) {
     return <CarteDos largeur={largeur} hauteur={hauteur} />;
   }
 
-  return <CarteFace carte={carte} largeur={largeur} hauteur={hauteur} />;
+  return <CarteFace carte={carte} largeur={largeur} hauteur={hauteur} grisee={grisee} />;
 }
 
 // --- Dos de carte ---
@@ -111,10 +113,12 @@ function CarteFace({
   carte,
   largeur,
   hauteur,
+  grisee = false,
 }: {
   carte: Carte;
   largeur: number;
   hauteur: number;
+  grisee?: boolean;
 }) {
   const { rang, couleur } = carte;
   const couleurSymbole = COULEURS_SYMBOLES[couleur];
@@ -167,6 +171,9 @@ function CarteFace({
       >
         {labelRang}
       </Text>
+
+      {/* Overlay grisé pour cartes non jouables */}
+      {grisee && <View style={[faceStyles.overlayGris, { borderRadius: RAYON_COIN }]} />}
     </View>
   );
 }
@@ -199,6 +206,14 @@ const faceStyles = StyleSheet.create({
     right: "8%",
     fontWeight: "bold",
     transform: [{ rotate: "180deg" }],
+  },
+  overlayGris: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.45)",
   },
 });
 

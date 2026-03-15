@@ -34,3 +34,36 @@ export const ADVERSAIRE = {
 export const INDICATEURS = {
   atoutY: 0.3, // position Y de l'indicateur d'atout (en % hauteur zone de jeu)
 } as const;
+
+// --- Animations ---
+export const ANIMATIONS = {
+  // Distribution : cartes volent du centre vers les mains
+  distribution: {
+    dureeCarte: 200, // durée par carte (ms)
+    delaiEntre: 80, // délai entre chaque carte (ms)
+    originX: 0.5, // position X de départ (centre)
+    originY: 0.45, // position Y de départ (centre)
+  },
+  // Jeu de carte : main → centre
+  jeuCarte: {
+    duree: 300, // durée de l'animation (ms)
+  },
+  // Ramassage du pli : centre → gagnant
+  ramassagePli: {
+    duree: 400, // durée de l'animation (ms)
+    delaiAvant: 800, // pause avant ramassage pour voir le pli (ms)
+  },
+  // Délai des bots
+  delaiBot: {
+    min: 500, // délai minimum (ms)
+    max: 1000, // délai maximum (ms)
+  },
+} as const;
+
+// --- Positions de départ/arrivée pour les animations ---
+export const POSITIONS_MAINS = {
+  sud: { x: 0.5, y: 0.92 },
+  nord: { x: 0.5, y: 0.02 },
+  ouest: { x: 0.02, y: 0.5 },
+  est: { x: 0.98, y: 0.5 },
+} as const;

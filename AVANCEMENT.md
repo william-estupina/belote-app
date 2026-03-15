@@ -72,15 +72,15 @@
 - [x] Indicateur d'atout + scores (`IndicateurAtout.tsx` + `TableauScores.tsx`)
 - [x] Constantes de layout proportionnelles (`constants/layout.ts`)
 
-### Étape 7 : Animations et interactions 🔲
+### Étape 7 : Animations et interactions ✅
 
-- [ ] Animation de distribution
-- [ ] Tap pour jouer une carte
-- [ ] Griser les cartes non jouables
-- [ ] Animation de jeu de carte (main → centre)
-- [ ] Animation de ramassage du pli
-- [ ] Délai réaliste pour les bots (500-1000ms)
-- [ ] Sons (optionnel)
+- [x] Animation de distribution (`useAnimations.lancerDistribution` : cartes volent du centre vers chaque main avec délais échelonnés)
+- [x] Tap pour jouer une carte (`MainJoueur` avec `Pressable` + feedback visuel au press)
+- [x] Griser les cartes non jouables (`CarteSkia` prop `grisee` + overlay semi-transparent)
+- [x] Animation de jeu de carte (main → centre) (`useAnimations.lancerAnimationJeuCarte` avec Reanimated)
+- [x] Animation de ramassage du pli (`useAnimations.lancerAnimationRamassagePli` avec délai d'observation)
+- [x] Délai réaliste pour les bots (500-1000ms) (`useDelaiBot` hook avec délai aléatoire)
+- [ ] Sons (optionnel — non implémenté, prévu ultérieurement)
 
 ### Étape 8 : Game Controller (orchestration) 🔲
 
