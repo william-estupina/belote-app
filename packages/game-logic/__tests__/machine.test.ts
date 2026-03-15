@@ -104,7 +104,7 @@ describe("machine belote", () => {
       acteur.start();
       acteur.send({ type: "DEMARRER" });
       const ctx = acteur.getSnapshot().context;
-      expect(ctx.indexJoueurActif).toBe((ctx.indexDonneur + 1) % 4);
+      expect(ctx.indexJoueurActif).toBe((ctx.indexDonneur + 3) % 4);
       acteur.stop();
     });
   });
@@ -116,7 +116,7 @@ describe("machine belote", () => {
       acteur.send({ type: "DEMARRER" });
       const indexAvant = acteur.getSnapshot().context.indexJoueurActif;
       acteur.send({ type: "PASSER" });
-      expect(acteur.getSnapshot().context.indexJoueurActif).toBe((indexAvant + 1) % 4);
+      expect(acteur.getSnapshot().context.indexJoueurActif).toBe((indexAvant + 3) % 4);
       expect(acteur.getSnapshot().value).toBe("encheres1");
       acteur.stop();
     });
@@ -329,7 +329,7 @@ describe("machine belote", () => {
       jouerMancheComplete(acteur);
       acteur.send({ type: "CONTINUER" });
 
-      expect(acteur.getSnapshot().context.indexDonneur).toBe((donneurInitial + 1) % 4);
+      expect(acteur.getSnapshot().context.indexDonneur).toBe((donneurInitial + 3) % 4);
       acteur.stop();
     });
 

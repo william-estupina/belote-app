@@ -5,13 +5,45 @@
 export const RATIO_LARGEUR_CARTE = 0.09; // largeur carte = 9% largeur écran (plus petit)
 export const RATIO_ASPECT_CARTE = 1.45; // hauteur / largeur
 
-// --- Zone du pli (positions des cartes jouées au centre) ---
+// --- Zone du pli (positions des cartes jouées au centre, resserrées) ---
 export const POSITIONS_PLI = {
-  sud: { x: 0.5, y: 0.58 },
-  nord: { x: 0.5, y: 0.35 },
-  ouest: { x: 0.35, y: 0.47 },
-  est: { x: 0.65, y: 0.47 },
+  sud: { x: 0.5, y: 0.54 },
+  nord: { x: 0.5, y: 0.39 },
+  ouest: { x: 0.39, y: 0.47 },
+  est: { x: 0.61, y: 0.47 },
 } as const;
+
+// --- Rotation de base par position (aspect « posé par le joueur ») ---
+const ROTATIONS_BASE: Record<string, number> = {
+  sud: 0,
+  nord: 0,
+  ouest: -8,
+  est: 8,
+};
+
+// --- Variation pseudo-aléatoire des cartes posées (aspect naturel) ---
+function hashCarte(couleur: string, rang: string): number {
+  let h = 0;
+  const cle = `${couleur}-${rang}`;
+  for (let i = 0; i < cle.length; i++) {
+    h = (h * 31 + cle.charCodeAt(i)) | 0;
+  }
+  return h;
+}
+
+/** Retourne la rotation totale (base + aléatoire) et les décalages proportionnels */
+export function variationCartePli(couleur: string, rang: string, position: string) {
+  const h = hashCarte(couleur, rang);
+  const rotationBase = ROTATIONS_BASE[position] ?? 0;
+  // Rotation supplémentaire entre -5° et +5°
+  const rotationAleatoire = ((h % 110) / 110) * 10 - 5;
+  const rotation = rotationBase + rotationAleatoire;
+  // Décalage X entre -0.008 et +0.008 (fraction de largeur écran)
+  const decalageX = (((h >> 8) % 90) / 90) * 0.016 - 0.008;
+  // Décalage Y entre -0.006 et +0.006 (fraction de hauteur écran)
+  const decalageY = (((h >> 16) % 70) / 70) * 0.012 - 0.006;
+  return { rotation, decalageX, decalageY };
+}
 
 // --- Main du joueur (éventail) ---
 export const EVENTAIL = {
@@ -53,11 +85,18 @@ export const ANIMATIONS = {
     duree: 400, // durée de l'animation (ms)
     delaiAvant: 800, // pause avant ramassage pour voir le pli (ms)
   },
-  // Délai des bots
+  // Délai des bots (phase jeu)
   delaiBot: {
     min: 500, // délai minimum (ms)
     max: 1000, // délai maximum (ms)
   },
+  // Délai des bots (phase enchères — plus lent pour que le joueur suive)
+  delaiEncheres: {
+    min: 2000, // délai minimum (ms)
+    max: 3000, // délai maximum (ms)
+  },
+  // Pause après la distribution pour montrer la carte retournée avant les enchères
+  pauseAvantEncheres: 3000, // ms
 } as const;
 
 // --- Positions de départ/arrivée pour les animations ---

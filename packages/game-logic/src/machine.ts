@@ -68,11 +68,13 @@ function getPositionPartenaire(position: PositionJoueur): PositionJoueur {
 }
 
 function joueurSuivant(index: number): number {
-  return (index + 1) % 4;
+  // Sens anti-horaire : sud(0) → est(3) → nord(2) → ouest(1)
+  return (index + 3) % 4;
 }
 
 function premierJoueurApres(indexDonneur: number): number {
-  return (indexDonneur + 1) % 4;
+  // Le joueur à droite du donneur (sens anti-horaire)
+  return (indexDonneur + 3) % 4;
 }
 
 function creerContexteInitial(): ContextePartie {
@@ -297,11 +299,6 @@ export const machineBelote = setup({
         belotePreneur,
         beloteDefenseur,
       });
-
-      const scorePreneur =
-        equipePreneur === "equipe1" ? resultat.scorePreneur : resultat.scoreDefenseur;
-      const scoreDefenseur =
-        equipePreneur === "equipe1" ? resultat.scoreDefenseur : resultat.scorePreneur;
 
       return {
         scoreEquipe1:

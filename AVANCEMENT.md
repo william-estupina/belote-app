@@ -82,14 +82,15 @@
 - [x] Délai réaliste pour les bots (500-1000ms) (`useDelaiBot` hook avec délai aléatoire)
 - [ ] Sons (optionnel — non implémenté, prévu ultérieurement)
 
-### Étape 8 : Game Controller (orchestration) 🔲
+### Étape 8 : Game Controller (orchestration) ✅
 
-- [ ] Hook `useControleurJeu` qui orchestre XState + UI + bots
-- [ ] Gestion du tour du joueur humain (attend le tap)
-- [ ] Déclenchement automatique des bots
-- [ ] Synchronisation état du jeu ↔ animations
-- [ ] Transitions enchères ↔ jeu
-- [ ] Fin de manche et fin de partie
+- [x] Hook `useControleurJeu` qui orchestre XState + UI + bots (`hooks/useControleurJeu.ts`)
+- [x] Gestion du tour du joueur humain (attend le tap pour jouer, UI enchères pour prendre/annoncer/passer)
+- [x] Déclenchement automatique des bots (délai réaliste 500-1000ms via `useDelaiBot`)
+- [x] Synchronisation état du jeu ↔ animations (distribution animée, jeu de carte animé, ramassage de pli animé)
+- [x] Transitions enchères ↔ jeu (panneau d'enchères `PanneauEncheres.tsx`, distribution restante animée)
+- [x] Fin de manche (`DialogueFinManche.tsx` : points manche + scores cumulés) et fin de partie (`DialogueFinPartie.tsx` : victoire/défaite + rejouer)
+- [x] Remplacement complet des données de démonstration dans `PlateauJeu.tsx` par l'état XState réel
 
 ### Étape 9 : Tests d'intégration et E2E 🔲
 

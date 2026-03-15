@@ -1,150 +1,48 @@
-import type { Carte, Couleur, PositionJoueur } from "@belote/shared-types";
 import { useCallback, useState } from "react";
 import type { LayoutChangeEvent } from "react-native";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { useAnimations } from "../../hooks/useAnimations";
+import { useControleurJeu } from "../../hooks/useControleurJeu";
+import { useAppStore } from "../../stores/app-store";
 import { CoucheAnimation } from "./CoucheAnimation";
-import { IndicateurAtout } from "./IndicateurAtout";
+import { DernierPli } from "./DernierPli";
+import { DialogueFinManche } from "./DialogueFinManche";
+import { DialogueFinPartie } from "./DialogueFinPartie";
+import { HistoriqueEncheresUI } from "./HistoriqueEncheresUI";
+import { LabelJoueur } from "./LabelJoueur";
 import { MainAdversaire } from "./MainAdversaire";
 import { MainJoueur } from "./MainJoueur";
+import { PanneauEncheres } from "./PanneauEncheres";
 import { TableauScores } from "./TableauScores";
+import { ZoneCarteRetournee } from "./ZoneCarteRetournee";
 import { ZonePli } from "./ZonePli";
-
-// --- Données de démonstration (seront remplacées par l'état XState à l'étape 8) ---
-const MAINS_DEMO: Record<PositionJoueur, Carte[]> = {
-  sud: [
-    { rang: "as", couleur: "coeur" },
-    { rang: "roi", couleur: "coeur" },
-    { rang: "valet", couleur: "pique" },
-    { rang: "10", couleur: "carreau" },
-    { rang: "dame", couleur: "trefle" },
-    { rang: "9", couleur: "coeur" },
-    { rang: "8", couleur: "pique" },
-    { rang: "7", couleur: "carreau" },
-  ],
-  nord: [
-    { rang: "as", couleur: "pique" },
-    { rang: "roi", couleur: "carreau" },
-    { rang: "dame", couleur: "coeur" },
-    { rang: "10", couleur: "trefle" },
-    { rang: "9", couleur: "pique" },
-    { rang: "8", couleur: "carreau" },
-    { rang: "7", couleur: "trefle" },
-    { rang: "valet", couleur: "carreau" },
-  ],
-  ouest: [
-    { rang: "as", couleur: "carreau" },
-    { rang: "roi", couleur: "trefle" },
-    { rang: "dame", couleur: "pique" },
-    { rang: "10", couleur: "coeur" },
-    { rang: "9", couleur: "carreau" },
-    { rang: "8", couleur: "trefle" },
-    { rang: "7", couleur: "pique" },
-    { rang: "valet", couleur: "trefle" },
-  ],
-  est: [
-    { rang: "as", couleur: "trefle" },
-    { rang: "roi", couleur: "pique" },
-    { rang: "dame", couleur: "carreau" },
-    { rang: "10", couleur: "pique" },
-    { rang: "9", couleur: "trefle" },
-    { rang: "8", couleur: "coeur" },
-    { rang: "7", couleur: "coeur" },
-    { rang: "valet", couleur: "coeur" },
-  ],
-};
-
-// Cartes jouables de démo (seules les cartes de coeur sont jouables)
-const CARTES_JOUABLES_DEMO: Carte[] = [
-  { rang: "as", couleur: "coeur" },
-  { rang: "roi", couleur: "coeur" },
-  { rang: "9", couleur: "coeur" },
-];
-
-const ATOUT_DEMO: Couleur = "coeur";
-
-type PhaseDemo = "vide" | "distribution" | "jeu";
-// --- Fin données de démonstration ---
 
 const estWeb = Platform.OS === "web";
 
 export default function PlateauJeu() {
   const [dimensions, setDimensions] = useState({ largeur: 0, hauteur: 0 });
-  const [phaseDemo, setPhaseDemo] = useState<PhaseDemo>("vide");
-  const [mainJoueur, setMainJoueur] = useState<Carte[]>([]);
-  const [nbCartesAdversaires, setNbCartesAdversaires] = useState({
-    nord: 0,
-    est: 0,
-    ouest: 0,
-  });
-  const [pliEnCours, setPliEnCours] = useState<
-    { joueur: PositionJoueur; carte: Carte }[]
-  >([]);
+  const { preferences } = useAppStore();
 
   const {
+    etatJeu,
     cartesEnVol,
     surAnimationTerminee,
-    lancerDistribution,
-    lancerAnimationJeuCarte,
-    lancerAnimationRamassagePli,
-  } = useAnimations();
+    demarrerPartie,
+    jouerCarte,
+    prendre,
+    annoncer,
+    passer,
+    continuerApresScore,
+    recommencer,
+  } = useControleurJeu({
+    difficulte: preferences.difficulte,
+    scoreObjectif: preferences.scoreObjectif,
+  });
 
   const surLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
     setDimensions({ largeur: width, hauteur: height });
   }, []);
-
-  // Lancer la démo de distribution
-  const surDistribuer = useCallback(() => {
-    // Réinitialiser
-    setMainJoueur([]);
-    setNbCartesAdversaires({ nord: 0, est: 0, ouest: 0 });
-    setPliEnCours([]);
-    setPhaseDemo("distribution");
-
-    lancerDistribution(MAINS_DEMO, {
-      onCarteArrivee: (joueur, carte) => {
-        // Empiler chaque carte dans la main au fur et à mesure
-        if (joueur === "sud") {
-          setMainJoueur((prev) => [...prev, carte]);
-        } else {
-          setNbCartesAdversaires((prev) => ({
-            ...prev,
-            [joueur]: prev[joueur as "nord" | "est" | "ouest"] + 1,
-          }));
-        }
-      },
-      onTerminee: () => {
-        setPhaseDemo("jeu");
-      },
-    });
-  }, [lancerDistribution]);
-
-  // Lancer la démo de ramassage du pli
-  const surRamasserPli = useCallback(() => {
-    if (pliEnCours.length === 0) return;
-    lancerAnimationRamassagePli(pliEnCours, "nord", () => {
-      setPliEnCours([]);
-    });
-  }, [pliEnCours, lancerAnimationRamassagePli]);
-
-  // Callback quand le joueur tape sur une carte jouable
-  const surCarteJouee = useCallback(
-    (carte: Carte) => {
-      // Retirer la carte de la main
-      setMainJoueur((prev) =>
-        prev.filter((c) => c.rang !== carte.rang || c.couleur !== carte.couleur),
-      );
-
-      // Lancer l'animation de la carte vers le centre
-      lancerAnimationJeuCarte(carte, "sud", () => {
-        // Quand l'animation est terminée, ajouter la carte au pli
-        setPliEnCours((prev) => [...prev, { joueur: "sud" as PositionJoueur, carte }]);
-      });
-    },
-    [lancerAnimationJeuCarte],
-  );
 
   const { largeur, hauteur } = dimensions;
 
@@ -155,49 +53,108 @@ export default function PlateauJeu() {
           {/* Bordure décorative */}
           <View style={styles.bordure} />
 
+          {/* Écran d'accueil — bouton Jouer */}
+          {etatJeu.phaseUI === "inactif" && (
+            <View style={styles.centreOverlay}>
+              <Pressable style={styles.boutonJouer} onPress={demarrerPartie}>
+                <Text style={styles.texteBoutonJouer}>Jouer</Text>
+              </Pressable>
+            </View>
+          )}
+
           {/* Mains des adversaires (dos des cartes) */}
           <MainAdversaire
-            nbCartes={nbCartesAdversaires.nord}
+            nbCartes={etatJeu.nbCartesAdversaires.nord}
             position="nord"
             largeurEcran={largeur}
             hauteurEcran={hauteur}
           />
           <MainAdversaire
-            nbCartes={nbCartesAdversaires.ouest}
+            nbCartes={etatJeu.nbCartesAdversaires.ouest}
             position="ouest"
             largeurEcran={largeur}
             hauteurEcran={hauteur}
           />
           <MainAdversaire
-            nbCartes={nbCartesAdversaires.est}
+            nbCartes={etatJeu.nbCartesAdversaires.est}
             position="est"
             largeurEcran={largeur}
             hauteurEcran={hauteur}
           />
 
-          {/* Zone du pli au centre */}
-          <ZonePli cartes={pliEnCours} largeurEcran={largeur} hauteurEcran={hauteur} />
+          {/* Labels des joueurs — avec indicateur de tour actif pendant enchères/jeu */}
+          {(["sud", "nord", "ouest", "est"] as const).map((pos) => (
+            <LabelJoueur
+              key={pos}
+              position={pos}
+              largeurEcran={largeur}
+              hauteurEcran={hauteur}
+              estActif={
+                (etatJeu.phaseUI === "encheres" || etatJeu.phaseUI === "jeu") &&
+                etatJeu.joueurActif === pos
+              }
+            />
+          ))}
 
-          {/* Indicateur d'atout + scores (coin haut-gauche) */}
+          {/* Zone du pli au centre */}
+          <ZonePli
+            cartes={etatJeu.pliEnCours}
+            largeurEcran={largeur}
+            hauteurEcran={hauteur}
+            couleurAtout={etatJeu.couleurAtout}
+          />
+
+          {/* Scores */}
           <View
             style={[
               styles.indicateurs,
               estWeb ? styles.indicateursWeb : styles.indicateursMobile,
             ]}
           >
-            <IndicateurAtout couleurAtout={ATOUT_DEMO} />
-            <TableauScores scoreEquipe1={82} scoreEquipe2={54} />
+            <TableauScores
+              scoreEquipe1={etatJeu.scoreEquipe1}
+              scoreEquipe2={etatJeu.scoreEquipe2}
+            />
           </View>
+
+          {/* Dernier pli (haut à droite) */}
+          {etatJeu.phaseUI === "jeu" && etatJeu.historiquePlis.length > 0 && (
+            <DernierPli
+              dernierPli={etatJeu.historiquePlis[etatJeu.historiquePlis.length - 1]}
+            />
+          )}
 
           {/* Main du joueur (sud) en éventail — interactive */}
           <MainJoueur
-            cartes={mainJoueur}
+            cartes={etatJeu.mainJoueur}
             largeurEcran={largeur}
             hauteurEcran={hauteur}
-            cartesJouables={phaseDemo === "jeu" ? CARTES_JOUABLES_DEMO : undefined}
-            interactionActive={phaseDemo === "jeu"}
-            onCarteJouee={surCarteJouee}
+            cartesJouables={
+              etatJeu.phaseUI === "jeu" && etatJeu.estTourHumain
+                ? etatJeu.cartesJouables
+                : undefined
+            }
+            interactionActive={etatJeu.phaseUI === "jeu" && etatJeu.estTourHumain}
+            onCarteJouee={jouerCarte}
           />
+
+          {/* Carte retournée visible pendant les enchères */}
+          {etatJeu.phaseUI === "encheres" && etatJeu.carteRetournee && (
+            <ZoneCarteRetournee
+              carte={etatJeu.carteRetournee}
+              largeurEcran={largeur}
+              hauteurEcran={hauteur}
+            />
+          )}
+
+          {/* Historique des enchères (bulles par joueur) */}
+          {etatJeu.phaseUI === "encheres" && (
+            <HistoriqueEncheresUI
+              historiqueEncheres={etatJeu.historiqueEncheres}
+              largeurEcran={largeur}
+              hauteurEcran={hauteur}
+            />
+          )}
 
           {/* Couche d'animation (cartes en vol) */}
           <CoucheAnimation
@@ -207,37 +164,39 @@ export default function PlateauJeu() {
             onAnimationTerminee={surAnimationTerminee}
           />
 
-          {/* Boutons de démo (temporaires — seront retirés à l'étape 8) */}
-          <View
-            style={[
-              styles.boutonsDemo,
-              estWeb ? styles.boutonsDemoWeb : styles.boutonsDemoMobile,
-            ]}
-          >
-            {phaseDemo === "vide" && (
-              <Pressable style={styles.boutonDemo} onPress={surDistribuer}>
-                <Text style={styles.texteBoutonDemo}>Distribuer</Text>
-              </Pressable>
+          {/* Panneau d'enchères (quand c'est au joueur humain de décider) */}
+          {etatJeu.phaseUI === "encheres" &&
+            etatJeu.estTourHumain &&
+            etatJeu.phaseEncheres !== null && (
+              <PanneauEncheres
+                phaseEncheres={etatJeu.phaseEncheres}
+                carteRetournee={etatJeu.carteRetournee}
+                onPrendre={prendre}
+                onAnnoncer={annoncer}
+                onPasser={passer}
+              />
             )}
-            {phaseDemo === "jeu" && pliEnCours.length > 0 && (
-              <Pressable style={styles.boutonDemo} onPress={surRamasserPli}>
-                <Text style={styles.texteBoutonDemo}>Ramasser pli</Text>
-              </Pressable>
-            )}
-            {phaseDemo === "jeu" && (
-              <Pressable
-                style={styles.boutonDemo}
-                onPress={() => {
-                  setPhaseDemo("vide");
-                  setMainJoueur([]);
-                  setNbCartesAdversaires({ nord: 0, est: 0, ouest: 0 });
-                  setPliEnCours([]);
-                }}
-              >
-                <Text style={styles.texteBoutonDemo}>Reset</Text>
-              </Pressable>
-            )}
-          </View>
+
+          {/* Dialogue fin de manche */}
+          {etatJeu.phaseUI === "scoresManche" && (
+            <DialogueFinManche
+              pointsEquipe1={etatJeu.pointsEquipe1}
+              pointsEquipe2={etatJeu.pointsEquipe2}
+              scoreEquipe1={etatJeu.scoreEquipe1}
+              scoreEquipe2={etatJeu.scoreEquipe2}
+              onContinuer={continuerApresScore}
+            />
+          )}
+
+          {/* Dialogue fin de partie */}
+          {etatJeu.phaseUI === "finPartie" && (
+            <DialogueFinPartie
+              scoreEquipe1={etatJeu.scoreEquipe1}
+              scoreEquipe2={etatJeu.scoreEquipe2}
+              scoreObjectif={etatJeu.scoreObjectif}
+              onRecommencer={recommencer}
+            />
+          )}
         </>
       )}
     </View>
@@ -272,29 +231,25 @@ const styles = StyleSheet.create({
     left: 40,
     top: 4,
   },
-  boutonsDemo: {
+  centreOverlay: {
     position: "absolute",
-    flexDirection: "row",
-    gap: 8,
-    zIndex: 20,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 40,
   },
-  boutonsDemoWeb: {
-    right: 8,
-    top: 8,
-  },
-  boutonsDemoMobile: {
-    right: 12,
-    top: 44,
-  },
-  boutonDemo: {
+  boutonJouer: {
     backgroundColor: "#d4a017",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: 48,
+    paddingVertical: 16,
+    borderRadius: 12,
   },
-  texteBoutonDemo: {
+  texteBoutonJouer: {
     color: "#1a1a1a",
     fontWeight: "bold",
-    fontSize: 13,
+    fontSize: 22,
   },
 });

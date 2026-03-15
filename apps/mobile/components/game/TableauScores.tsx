@@ -28,29 +28,29 @@ const estWeb = Platform.OS === "web";
 const styles = StyleSheet.create({
   conteneur: {
     backgroundColor: "rgba(0, 0, 0, 0.4)",
-    borderRadius: 6,
-    paddingHorizontal: estWeb ? 10 : 6,
-    paddingVertical: estWeb ? 5 : 3,
+    borderRadius: 8,
+    paddingHorizontal: estWeb ? 14 : 10,
+    paddingVertical: estWeb ? 8 : 5,
   },
   labelEquipe: {
     color: COULEURS.texteSecondaire,
-    fontSize: estWeb ? 12 : 9,
-    marginRight: estWeb ? 10 : 6,
+    fontSize: estWeb ? 14 : 12,
+    marginRight: estWeb ? 14 : 10,
   },
   ligne: {
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
-    minWidth: estWeb ? 70 : 50,
+    minWidth: estWeb ? 90 : 70,
   },
   score: {
     color: COULEURS.textePrincipal,
     fontWeight: "bold",
-    fontSize: estWeb ? 14 : 10,
+    fontSize: estWeb ? 18 : 14,
   },
   separateur: {
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     height: 1,
-    marginVertical: estWeb ? 3 : 2,
+    marginVertical: estWeb ? 4 : 3,
   },
 });

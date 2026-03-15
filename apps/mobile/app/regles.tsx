@@ -6,7 +6,7 @@ const SECTIONS_REGLES = [
   {
     titre: "Le jeu",
     contenu:
-      "La Belote se joue à 4 joueurs répartis en 2 équipes de 2. Les partenaires sont face à face. On utilise un jeu de 32 cartes (du 7 à l'As dans les 4 couleurs).",
+      "La Belote se joue à 4 joueurs répartis en 2 équipes de 2. Les partenaires sont face à face. On utilise un jeu de 32 cartes (du 7 à l'As dans les 4 couleurs). Le jeu se déroule dans le sens inverse des aiguilles d'une montre.",
   },
   {
     titre: "Distribution",
@@ -16,7 +16,7 @@ const SECTIONS_REGLES = [
   {
     titre: "Les enchères",
     contenu:
-      "Au premier tour, chaque joueur peut prendre (accepter la couleur retournée comme atout) ou passer. Si personne ne prend, un second tour permet de choisir une autre couleur comme atout. Si personne ne prend au second tour, les cartes sont redistribuées.",
+      "Le joueur à droite du donneur parle en premier. Au premier tour, chaque joueur peut prendre (accepter la couleur retournée comme atout) ou passer. Si personne ne prend, un second tour permet de choisir une autre couleur comme atout. Si personne ne prend au second tour, les cartes sont redistribuées.",
   },
   {
     titre: "Ordre des cartes",
@@ -26,7 +26,7 @@ const SECTIONS_REGLES = [
   {
     titre: "Le jeu de la carte",
     contenu:
-      "Le joueur à droite du donneur entame. On doit fournir la couleur demandée. Si on ne peut pas fournir et qu'un adversaire est maître, on doit couper (jouer atout). Si le partenaire est maître, on peut défausser. Si on coupe, on doit monter sur un atout déjà joué si possible.",
+      "Le joueur à droite du donneur entame le premier pli. Le jeu se déroule dans le sens inverse des aiguilles d'une montre. On doit fournir la couleur demandée. Si on ne peut pas fournir et qu'un adversaire est maître, on doit couper (jouer atout). Si le partenaire est maître, on peut défausser. Si on coupe, on doit monter sur un atout déjà joué si possible.",
   },
   {
     titre: "Le décompte",

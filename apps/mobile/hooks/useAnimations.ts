@@ -2,7 +2,12 @@ import type { Carte, PositionJoueur } from "@belote/shared-types";
 import { useCallback, useRef, useState } from "react";
 
 import type { CarteEnVol } from "../components/game/CoucheAnimation";
-import { ANIMATIONS, POSITIONS_MAINS, POSITIONS_PLI } from "../constants/layout";
+import {
+  ANIMATIONS,
+  POSITIONS_MAINS,
+  POSITIONS_PLI,
+  variationCartePli,
+} from "../constants/layout";
 
 const POSITIONS_JOUEUR: PositionJoueur[] = ["sud", "ouest", "nord", "est"];
 
@@ -105,13 +110,18 @@ export function useAnimations() {
     [nettoyerTimeouts],
   );
 
-  // --- Jeu de carte (main → centre) ---
+  // --- Jeu de carte (main → centre avec variation naturelle) ---
   const lancerAnimationJeuCarte = useCallback(
     (carte: Carte, joueur: PositionJoueur, onTerminee?: () => void) => {
       compteurId.current += 1;
       const id = `jeu-${compteurId.current}`;
       const posDepart = POSITIONS_MAINS[joueur];
       const posArrivee = POSITIONS_PLI[joueur];
+      const { decalageX, decalageY, rotation } = variationCartePli(
+        carte.couleur,
+        carte.rang,
+        joueur,
+      );
 
       const vol: CarteEnVol = {
         id,
@@ -123,9 +133,9 @@ export function useAnimations() {
           echelle: 1,
         },
         arrivee: {
-          x: posArrivee.x,
-          y: posArrivee.y,
-          rotation: 0,
+          x: posArrivee.x + decalageX,
+          y: posArrivee.y + decalageY,
+          rotation,
           echelle: 0.9,
         },
         faceVisible: true,
@@ -157,14 +167,19 @@ export function useAnimations() {
           compteurId.current += 1;
           const id = `ramassage-${compteurId.current}`;
           const posDepart = POSITIONS_PLI[joueur];
+          const { decalageX, decalageY, rotation } = variationCartePli(
+            carte.couleur,
+            carte.rang,
+            joueur,
+          );
 
           const vol: CarteEnVol = {
             id,
             carte,
             depart: {
-              x: posDepart.x,
-              y: posDepart.y,
-              rotation: 0,
+              x: posDepart.x + decalageX,
+              y: posDepart.y + decalageY,
+              rotation,
               echelle: 0.9,
             },
             arrivee: {
