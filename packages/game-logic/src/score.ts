@@ -100,7 +100,7 @@ export function calculerScoreManche(entree: EntreeScoreManche): ResultatScoreMan
   if (pointsPreneur < 82) {
     return {
       scorePreneur: 0 + belotePreneur,
-      scoreDefenseur: 252 + beloteDefenseur,
+      scoreDefenseur: 162 + beloteDefenseur,
       estChute: true,
       estCapot: false,
     };

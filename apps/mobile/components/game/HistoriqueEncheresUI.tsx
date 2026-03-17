@@ -17,12 +17,19 @@ interface PropsHistoriqueEncheresUI {
   hauteurEcran: number;
 }
 
-// Positions des bulles pour chaque joueur
-const POSITIONS_BULLES: Record<PositionJoueur, { x: number; y: number }> = {
-  sud: { x: 0.5, y: 0.72 },
-  nord: { x: 0.5, y: 0.18 },
-  ouest: { x: 0.15, y: 0.47 },
-  est: { x: 0.85, y: 0.47 },
+// Bulles positionnées à droite de chaque main de joueur
+const POSITIONS_BULLES: Record<
+  PositionJoueur,
+  { x: number; y: number; fleche: "gauche" | "bas" }
+> = {
+  // Sud : à droite de la main, légèrement au-dessus
+  sud: { x: 0.78, y: 0.82, fleche: "bas" },
+  // Nord : à droite de la main adverse du haut
+  nord: { x: 0.78, y: 0.06, fleche: "gauche" },
+  // Ouest : au-dessus de la main gauche, décalé à droite
+  ouest: { x: 0.12, y: 0.3, fleche: "gauche" },
+  // Est : au-dessus de la main droite, décalé à droite
+  est: { x: 0.92, y: 0.3, fleche: "gauche" },
 };
 
 function formaterAction(action: ActionEnchere): string {
@@ -37,8 +44,59 @@ function formaterAction(action: ActionEnchere): string {
 }
 
 function couleurAction(action: ActionEnchere): string {
-  if (action.type === "PASSER") return COULEURS.texteSecondaire;
+  if (action.type === "PASSER") return "#ffffff";
   return COULEURS.accent;
+}
+
+function fondAction(action: ActionEnchere): string {
+  if (action.type === "PASSER") return "rgba(0, 0, 0, 0.7)";
+  return "rgba(30, 20, 0, 0.85)";
+}
+
+/** Petit triangle pointant vers le joueur */
+function FlecheBulle({
+  direction,
+  couleurFond,
+}: {
+  direction: "gauche" | "bas";
+  couleurFond: string;
+}) {
+  const taille = 7;
+
+  if (direction === "bas") {
+    return (
+      <View
+        style={{
+          alignSelf: "center",
+          width: 0,
+          height: 0,
+          borderLeftWidth: taille,
+          borderRightWidth: taille,
+          borderTopWidth: taille,
+          borderLeftColor: "transparent",
+          borderRightColor: "transparent",
+          borderTopColor: couleurFond,
+        }}
+      />
+    );
+  }
+
+  // gauche
+  return (
+    <View
+      style={{
+        alignSelf: "center",
+        width: 0,
+        height: 0,
+        borderTopWidth: taille,
+        borderBottomWidth: taille,
+        borderRightWidth: taille,
+        borderTopColor: "transparent",
+        borderBottomColor: "transparent",
+        borderRightColor: couleurFond,
+      }}
+    />
+  );
 }
 
 export function HistoriqueEncheresUI({
@@ -56,24 +114,41 @@ export function HistoriqueEncheresUI({
     <View style={styles.conteneur} pointerEvents="none">
       {(["sud", "ouest", "nord", "est"] as PositionJoueur[]).map((position) => {
         const action = derniereActionParJoueur.get(position);
-        const pos = POSITIONS_BULLES[position];
-
         if (!action) return null;
+
+        const config = POSITIONS_BULLES[position];
+        const fond = fondAction(action);
+        const estVertical = config.fleche === "bas";
 
         return (
           <View
             key={position}
             style={[
-              styles.bulle,
+              styles.conteneurBulle,
+              estVertical ? styles.conteneurVertical : styles.conteneurHorizontal,
               {
-                left: pos.x * largeurEcran - 40,
-                top: pos.y * hauteurEcran - 12,
+                left: config.x * largeurEcran - 44,
+                top: config.y * hauteurEcran - 14,
               },
             ]}
           >
-            <Text style={[styles.texteAction, { color: couleurAction(action) }]}>
-              {formaterAction(action)}
-            </Text>
+            {config.fleche === "gauche" && (
+              <FlecheBulle direction="gauche" couleurFond={fond} />
+            )}
+            <View style={[styles.bulle, { backgroundColor: fond }]}>
+              <Text
+                style={[
+                  styles.texteAction,
+                  { color: couleurAction(action) },
+                  action.type === "PASSER" && styles.textePasse,
+                ]}
+              >
+                {formaterAction(action)}
+              </Text>
+            </View>
+            {config.fleche === "bas" && (
+              <FlecheBulle direction="bas" couleurFond={fond} />
+            )}
           </View>
         );
       })}
@@ -92,17 +167,31 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 12,
   },
-  bulle: {
+  conteneurBulle: {
     position: "absolute",
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    paddingHorizontal: estWeb ? 12 : 8,
-    paddingVertical: estWeb ? 5 : 3,
-    borderRadius: 12,
-    minWidth: 80,
+  },
+  conteneurVertical: {
+    flexDirection: "column",
     alignItems: "center",
   },
+  conteneurHorizontal: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  bulle: {
+    paddingHorizontal: estWeb ? 16 : 12,
+    paddingVertical: estWeb ? 7 : 5,
+    borderRadius: 14,
+    minWidth: 80,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.15)",
+  },
   texteAction: {
-    fontSize: estWeb ? 14 : 12,
+    fontSize: estWeb ? 15 : 13,
     fontWeight: "bold",
+  },
+  textePasse: {
+    fontStyle: "italic",
   },
 });

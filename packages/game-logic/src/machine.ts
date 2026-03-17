@@ -36,8 +36,11 @@ export interface ContextePartie {
   scoreEquipe2: number;
   beloteEquipe1: boolean;
   beloteEquipe2: boolean;
+  annonceBelote: { joueur: PositionJoueur; type: "belote" | "rebelote" } | null;
   nombreRedistributions: number;
   scoreObjectif: number;
+  scoreMancheEquipe1: number;
+  scoreMancheEquipe2: number;
 }
 
 // --- Types des événements ---
@@ -83,8 +86,8 @@ function creerContexteInitial(): ContextePartie {
     restantes: [],
     carteRetournee: null,
     couleurAtout: null,
-    indexDonneur: 0,
-    indexJoueurActif: 1,
+    indexDonneur: 1,
+    indexJoueurActif: 0,
     indexPreneur: null,
     pliEnCours: [],
     historiquePlis: [],
@@ -97,8 +100,11 @@ function creerContexteInitial(): ContextePartie {
     scoreEquipe2: 0,
     beloteEquipe1: false,
     beloteEquipe2: false,
+    annonceBelote: null,
     nombreRedistributions: 0,
     scoreObjectif: 1000,
+    scoreMancheEquipe1: 0,
+    scoreMancheEquipe2: 0,
   };
 }
 
@@ -167,6 +173,7 @@ export const machineBelote = setup({
         pointsEquipe2: 0,
         beloteEquipe1: false,
         beloteEquipe2: false,
+        annonceBelote: null,
         couleurAtout: null,
         indexPreneur: null,
         indexJoueurActif: premierJoueurApres(context.indexDonneur),
@@ -225,20 +232,56 @@ export const machineBelote = setup({
     jouerCarte: assign(({ context, event }) => {
       if (event.type !== "JOUER_CARTE") return {};
       const indexJoueur = context.indexJoueurActif;
-      const nouvelleMains = context.mains.map((main, i) => {
-        if (i !== indexJoueur) return main;
-        return main.filter(
+      const position = getPositionJoueur(indexJoueur);
+      const main = context.mains[indexJoueur];
+      const nouvelleMains = context.mains.map((m, i) => {
+        if (i !== indexJoueur) return m;
+        return m.filter(
           (c) => !(c.couleur === event.carte.couleur && c.rang === event.carte.rang),
         );
       }) as [Carte[], Carte[], Carte[], Carte[]];
 
+      // Détection belote/rebelote : dame ou roi d'atout joué
+      let annonceBelote = null as ContextePartie["annonceBelote"];
+      let beloteEquipe1 = context.beloteEquipe1;
+      let beloteEquipe2 = context.beloteEquipe2;
+      const equipe = getEquipeDuJoueur(indexJoueur);
+
+      if (
+        context.couleurAtout &&
+        event.carte.couleur === context.couleurAtout &&
+        (event.carte.rang === "dame" || event.carte.rang === "roi")
+      ) {
+        // Vérifier si le joueur possède les deux (dame + roi d'atout) dans sa main actuelle
+        const aDame = main.some(
+          (c) => c.couleur === context.couleurAtout && c.rang === "dame",
+        );
+        const aRoi = main.some(
+          (c) => c.couleur === context.couleurAtout && c.rang === "roi",
+        );
+
+        if (aDame && aRoi) {
+          // Première carte : "belote"
+          annonceBelote = { joueur: position, type: "belote" };
+          if (equipe === "equipe1") beloteEquipe1 = true;
+          else beloteEquipe2 = true;
+        } else {
+          // Le joueur n'a plus qu'une des deux → c'est la deuxième carte
+          const dejaAnnonce =
+            equipe === "equipe1" ? context.beloteEquipe1 : context.beloteEquipe2;
+          if (dejaAnnonce) {
+            annonceBelote = { joueur: position, type: "rebelote" };
+          }
+        }
+      }
+
       return {
         mains: nouvelleMains,
-        pliEnCours: [
-          ...context.pliEnCours,
-          { joueur: getPositionJoueur(indexJoueur), carte: event.carte },
-        ],
+        pliEnCours: [...context.pliEnCours, { joueur: position, carte: event.carte }],
         indexJoueurActif: joueurSuivant(indexJoueur),
+        annonceBelote,
+        beloteEquipe1,
+        beloteEquipe2,
       };
     }),
     evaluerPli: assign(({ context }) => {
@@ -300,13 +343,16 @@ export const machineBelote = setup({
         beloteDefenseur,
       });
 
+      const scoreMancheEquipe1 =
+        equipePreneur === "equipe1" ? resultat.scorePreneur : resultat.scoreDefenseur;
+      const scoreMancheEquipe2 =
+        equipePreneur === "equipe2" ? resultat.scorePreneur : resultat.scoreDefenseur;
+
       return {
-        scoreEquipe1:
-          context.scoreEquipe1 +
-          (equipePreneur === "equipe1" ? resultat.scorePreneur : resultat.scoreDefenseur),
-        scoreEquipe2:
-          context.scoreEquipe2 +
-          (equipePreneur === "equipe2" ? resultat.scorePreneur : resultat.scoreDefenseur),
+        scoreEquipe1: context.scoreEquipe1 + scoreMancheEquipe1,
+        scoreEquipe2: context.scoreEquipe2 + scoreMancheEquipe2,
+        scoreMancheEquipe1,
+        scoreMancheEquipe2,
       };
     }),
     passerDonneur: assign(({ context }) => ({

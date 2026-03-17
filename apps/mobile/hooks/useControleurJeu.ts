@@ -45,9 +45,12 @@ export interface EtatJeu {
   /** Scores cumulés */
   scoreEquipe1: number;
   scoreEquipe2: number;
-  /** Points de la manche en cours */
+  /** Points de la manche en cours (cartes uniquement, sans 10 de der) */
   pointsEquipe1: number;
   pointsEquipe2: number;
+  /** Score final de la manche (avec 10 de der, capot, chute) */
+  scoreMancheEquipe1: number;
+  scoreMancheEquipe2: number;
   /** Cartes jouables par le joueur humain */
   cartesJouables: Carte[];
   /** Est-ce le tour du joueur humain ? */
@@ -64,6 +67,11 @@ export interface EtatJeu {
   historiquePlis: ContextePartie["historiquePlis"];
   /** Historique des enchères */
   historiqueEncheres: ContextePartie["historiqueEncheres"];
+  /** Nombre de plis remportés par équipe */
+  plisEquipe1: number;
+  plisEquipe2: number;
+  /** Annonce belote/rebelote en cours */
+  annonceBelote: { joueur: PositionJoueur; type: "belote" | "rebelote" } | null;
 }
 
 interface OptionsControleur {
@@ -82,7 +90,8 @@ function getPositionPartenaire(position: PositionJoueur): PositionJoueur {
 
 // --- Tri des cartes du joueur (alternance rouge/noir, par force décroissante) ---
 
-const ORDRE_RANG: Record<string, number> = {
+/** Force hors atout (ordre normal : As > 10 > Roi > Dame > Valet > 9 > 8 > 7) */
+const FORCE_HORS_ATOUT: Record<string, number> = {
   as: 7,
   "10": 6,
   roi: 5,
@@ -93,10 +102,26 @@ const ORDRE_RANG: Record<string, number> = {
   "7": 0,
 };
 
+/** Force à l'atout (ordre spécial : Valet > 9 > As > 10 > Roi > Dame > 8 > 7) */
+const FORCE_ATOUT: Record<string, number> = {
+  valet: 7,
+  "9": 6,
+  as: 5,
+  "10": 4,
+  roi: 3,
+  dame: 2,
+  "8": 1,
+  "7": 0,
+};
+
 // Couleurs alternées : noir, rouge, noir, rouge
 const ORDRE_COULEURS_ALTERNEES: Couleur[] = ["pique", "coeur", "trefle", "carreau"];
 
-function trierMainJoueur(cartes: Carte[]): Carte[] {
+function trierMainJoueur(cartes: Carte[], couleurAtout?: Couleur | null): Carte[] {
+  if (couleurAtout) {
+    return trierMainAvecAtout(cartes, couleurAtout);
+  }
+
   // Grouper par couleur
   const parCouleur = new Map<Couleur, Carte[]>();
   for (const couleur of ORDRE_COULEURS_ALTERNEES) {
@@ -106,9 +131,9 @@ function trierMainJoueur(cartes: Carte[]): Carte[] {
     parCouleur.get(carte.couleur)!.push(carte);
   }
 
-  // Trier chaque groupe par rang décroissant
+  // Trier chaque groupe par puissance décroissante (hors atout)
   for (const groupe of parCouleur.values()) {
-    groupe.sort((a, b) => ORDRE_RANG[b.rang] - ORDRE_RANG[a.rang]);
+    groupe.sort((a, b) => FORCE_HORS_ATOUT[b.rang] - FORCE_HORS_ATOUT[a.rang]);
   }
 
   // Concaténer dans l'ordre alterné
@@ -117,6 +142,46 @@ function trierMainJoueur(cartes: Carte[]): Carte[] {
     resultat.push(...parCouleur.get(couleur)!);
   }
   return resultat;
+}
+
+/** Tri avec les atouts à gauche, puis les couleurs restantes en alternance noir/rouge */
+function trierMainAvecAtout(cartes: Carte[], couleurAtout: Couleur): Carte[] {
+  const atouts = cartes.filter((c) => c.couleur === couleurAtout);
+  const nonAtouts = cartes.filter((c) => c.couleur !== couleurAtout);
+
+  atouts.sort((a, b) => FORCE_ATOUT[b.rang] - FORCE_ATOUT[a.rang]);
+
+  // Alternance noir/rouge pour les couleurs non-atout
+  const noires: Couleur[] = (["pique", "trefle"] as Couleur[]).filter(
+    (c) => c !== couleurAtout,
+  );
+  const rouges: Couleur[] = (["coeur", "carreau"] as Couleur[]).filter(
+    (c) => c !== couleurAtout,
+  );
+
+  // Commencer par le groupe le plus fourni pour une meilleure alternance
+  const couleursOrdonnees: Couleur[] = [];
+  const commencerParNoir = noires.length >= rouges.length;
+  let iN = 0;
+  let iR = 0;
+  while (iN < noires.length || iR < rouges.length) {
+    if (commencerParNoir) {
+      if (iN < noires.length) couleursOrdonnees.push(noires[iN++]);
+      if (iR < rouges.length) couleursOrdonnees.push(rouges[iR++]);
+    } else {
+      if (iR < rouges.length) couleursOrdonnees.push(rouges[iR++]);
+      if (iN < noires.length) couleursOrdonnees.push(noires[iN++]);
+    }
+  }
+
+  const parCouleur = new Map<Couleur, Carte[]>();
+  for (const c of couleursOrdonnees) parCouleur.set(c, []);
+  for (const carte of nonAtouts) parCouleur.get(carte.couleur)!.push(carte);
+  for (const groupe of parCouleur.values()) {
+    groupe.sort((a, b) => FORCE_HORS_ATOUT[b.rang] - FORCE_HORS_ATOUT[a.rang]);
+  }
+
+  return [...atouts, ...couleursOrdonnees.flatMap((c) => parCouleur.get(c)!)];
 }
 
 // --- Hook principal ---
@@ -137,6 +202,8 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
     scoreEquipe2: 0,
     pointsEquipe1: 0,
     pointsEquipe2: 0,
+    scoreMancheEquipe1: 0,
+    scoreMancheEquipe2: 0,
     cartesJouables: [],
     estTourHumain: false,
     joueurActif: "sud",
@@ -145,7 +212,13 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
     scoreObjectif: 1000,
     historiquePlis: [],
     historiqueEncheres: [],
+    plisEquipe1: 0,
+    plisEquipe2: 0,
+    annonceBelote: null,
   });
+
+  // Timer pour effacer la bulle belote/rebelote
+  const timerBeloteRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Animations
   const animations = useAnimations();
@@ -156,6 +229,7 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
   const estDemonte = useRef(false);
   const animationDistribEnCours = useRef(false);
   const animationPliEnCours = useRef(false);
+  const nbPlisVus = useRef(0);
 
   // Ref pour appeler lancerDistributionRestanteAnimee depuis les callbacks déclarés avant
   const distribRestanteRef = useRef<(ctx: ContextePartie) => void>(() => {});
@@ -211,7 +285,7 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
 
       return {
         phaseUI,
-        mainJoueur: trierMainJoueur(contexte.mains[INDEX_HUMAIN]),
+        mainJoueur: trierMainJoueur(contexte.mains[INDEX_HUMAIN], contexte.couleurAtout),
         nbCartesAdversaires: {
           nord: contexte.mains[2].length,
           est: contexte.mains[3].length,
@@ -224,6 +298,8 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
         scoreEquipe2: contexte.scoreEquipe2,
         pointsEquipe1: contexte.pointsEquipe1,
         pointsEquipe2: contexte.pointsEquipe2,
+        scoreMancheEquipe1: contexte.scoreMancheEquipe1,
+        scoreMancheEquipe2: contexte.scoreMancheEquipe2,
         cartesJouables,
         estTourHumain: estHumain,
         joueurActif: position,
@@ -233,6 +309,9 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
         scoreObjectif: contexte.scoreObjectif,
         historiquePlis: contexte.historiquePlis,
         historiqueEncheres: contexte.historiqueEncheres,
+        plisEquipe1: contexte.plisEquipe1,
+        plisEquipe2: contexte.plisEquipe2,
+        annonceBelote: contexte.annonceBelote,
       };
     },
     [],
@@ -390,6 +469,7 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
   const lancerDistributionAnimee = useCallback(
     (contexte: ContextePartie) => {
       animationDistribEnCours.current = true;
+      nbPlisVus.current = 0;
 
       // Préparer les mains pour l'animation
       const mainsRecord: Record<PositionJoueur, Carte[]> = {
@@ -408,12 +488,13 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
       }));
 
       animations.lancerDistribution(mainsRecord, {
-        onCarteArrivee: (joueur, carte) => {
+        onPaquetArrive: (joueur, cartes) => {
           if (estDemonte.current) return;
           if (joueur === "sud") {
+            // Ajouter le paquet entier d'un coup (sans tri — ordre brut de distribution)
             setEtatJeu((prev) => ({
               ...prev,
-              mainJoueur: trierMainJoueur([...prev.mainJoueur, carte]),
+              mainJoueur: [...prev.mainJoueur, ...cartes],
             }));
           } else {
             setEtatJeu((prev) => ({
@@ -421,7 +502,8 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
               nbCartesAdversaires: {
                 ...prev.nbCartesAdversaires,
                 [joueur]:
-                  prev.nbCartesAdversaires[joueur as "nord" | "est" | "ouest"] + 1,
+                  prev.nbCartesAdversaires[joueur as "nord" | "est" | "ouest"] +
+                  cartes.length,
               },
             }));
           }
@@ -429,30 +511,36 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
         onTerminee: () => {
           if (estDemonte.current) return;
 
-          // Relâcher le verrou d'animation AVANT la mise à jour
-          animationDistribEnCours.current = false;
-
-          // Mettre à jour l'état complet après la distribution
           const acteur = acteurRef.current;
           if (!acteur) return;
           const snap = acteur.getSnapshot();
           const etat = snap.value as string;
           const ctx = snap.context;
-          setEtatJeu((prev) => ({
-            ...prev,
-            ...extraireEtatUI(ctx, etat),
-            mainJoueur: trierMainJoueur(ctx.mains[INDEX_HUMAIN]),
-            nbCartesAdversaires: {
-              nord: ctx.mains[2].length,
-              est: ctx.mains[3].length,
-              ouest: ctx.mains[1].length,
-            },
-          }));
 
-          // Pause pour montrer la carte retournée avant de lancer les enchères
-          const estPhaseEncheres = etat === "encheres1" || etat === "encheres2";
-          const delaiAvantBot = estPhaseEncheres ? ANIMATIONS.pauseAvantEncheres : 50;
-          setTimeout(() => jouerBotSiNecessaire(), delaiAvantBot);
+          // Phase de tri : après une pause, réorganiser la main visuellement
+          // (MainJoueur anime les positions via Reanimated)
+          setTimeout(() => {
+            if (estDemonte.current) return;
+
+            // Relâcher le verrou d'animation APRÈS le tri
+            animationDistribEnCours.current = false;
+
+            setEtatJeu((prev) => ({
+              ...prev,
+              ...extraireEtatUI(ctx, etat),
+              mainJoueur: trierMainJoueur(ctx.mains[INDEX_HUMAIN]),
+              nbCartesAdversaires: {
+                nord: ctx.mains[2].length,
+                est: ctx.mains[3].length,
+                ouest: ctx.mains[1].length,
+              },
+            }));
+
+            // Pause pour montrer la carte retournée avant de lancer les enchères
+            const estPhaseEncheres = etat === "encheres1" || etat === "encheres2";
+            const delaiAvantBot = estPhaseEncheres ? ANIMATIONS.pauseAvantEncheres : 50;
+            setTimeout(() => jouerBotSiNecessaire(), delaiAvantBot);
+          }, ANIMATIONS.distribution.pauseAvantTri);
         },
       });
     },
@@ -478,12 +566,6 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
           if (estDemonte.current) return;
           animationPliEnCours.current = false;
 
-          // Effacer le pli visuellement
-          setEtatJeu((prev) => ({
-            ...prev,
-            pliEnCours: [],
-          }));
-
           // Vérifier l'état actuel et agir
           const acteur = acteurRef.current;
           if (!acteur) return;
@@ -491,6 +573,7 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
           const etat = snap.value as string;
           const ctx = snap.context;
 
+          // Mettre à jour l'état complet (pliEnCours sera vide via le contexte machine)
           setEtatJeu((prev) => ({
             ...prev,
             ...extraireEtatUI(ctx, etat),
@@ -500,6 +583,14 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
           if (etat === "jeu") {
             setTimeout(() => jouerBotSiNecessaire(), 50);
           }
+        },
+        // Quand les cartes commencent à voler, effacer les cartes statiques du centre
+        () => {
+          if (estDemonte.current) return;
+          setEtatJeu((prev) => ({
+            ...prev,
+            pliEnCours: [],
+          }));
         },
       );
     },
@@ -535,8 +626,34 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
           carteRetournee: prev.carteRetournee,
           phaseEncheres: prev.phaseEncheres,
         }));
+      } else if (animationPliEnCours.current) {
+        // Pendant le ramassage du pli, préserver les cartes visuelles au centre
+        setEtatJeu((prev) => ({
+          ...prev,
+          ...nouvelEtat,
+          pliEnCours: prev.pliEnCours,
+        }));
       } else {
         setEtatJeu((prev) => ({ ...prev, ...nouvelEtat }));
+      }
+
+      // Afficher temporairement la bulle belote/rebelote
+      if (contexte.annonceBelote) {
+        if (timerBeloteRef.current) clearTimeout(timerBeloteRef.current);
+        timerBeloteRef.current = setTimeout(() => {
+          if (estDemonte.current) return;
+          setEtatJeu((prev) => ({ ...prev, annonceBelote: null }));
+          timerBeloteRef.current = null;
+        }, 2000);
+      }
+
+      // Détecter un nouveau pli complété (historiquePlis a grandi)
+      // Note : finPli a une transition `always` donc le subscriber ne le voit jamais,
+      // on détecte donc la complétion par la longueur de l'historique
+      if (contexte.historiquePlis.length > nbPlisVus.current) {
+        nbPlisVus.current = contexte.historiquePlis.length;
+        lancerRamassagePli(contexte);
+        return; // Ne pas lancer le bot, on attend la fin de l'animation
       }
 
       // Gérer les transitions automatiques selon l'état
@@ -556,11 +673,6 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
           }
           break;
 
-        case "finPli":
-          // Lancer l'animation de ramassage
-          lancerRamassagePli(contexte);
-          break;
-
         default:
           break;
       }
@@ -572,6 +684,7 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
       estDemonte.current = true;
       estOccupe.current = false;
       annulerDelai();
+      if (timerBeloteRef.current) clearTimeout(timerBeloteRef.current);
       animations.annulerAnimations();
       acteur.stop();
       acteurRef.current = null;
@@ -599,7 +712,7 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
 
   /** Le joueur humain joue une carte */
   const jouerCarte = useCallback(
-    (carte: Carte) => {
+    (carte: Carte, positionDepart?: { x: number; y: number }) => {
       const acteur = acteurRef.current;
       if (!acteur) return;
 
@@ -617,19 +730,24 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
         estTourHumain: false,
       }));
 
-      // Lancer l'animation
-      animations.lancerAnimationJeuCarte(carte, "sud", () => {
-        if (estDemonte.current) return;
+      // Lancer l'animation depuis la position réelle de la carte dans l'éventail
+      animations.lancerAnimationJeuCarte(
+        carte,
+        "sud",
+        () => {
+          if (estDemonte.current) return;
 
-        // Ajouter la carte au pli visuellement
-        setEtatJeu((prev) => ({
-          ...prev,
-          pliEnCours: [...prev.pliEnCours, { joueur: "sud" as PositionJoueur, carte }],
-        }));
+          // Ajouter la carte au pli visuellement
+          setEtatJeu((prev) => ({
+            ...prev,
+            pliEnCours: [...prev.pliEnCours, { joueur: "sud" as PositionJoueur, carte }],
+          }));
 
-        // Envoyer l'événement à la machine
-        acteur.send({ type: "JOUER_CARTE", carte });
-      });
+          // Envoyer l'événement à la machine
+          acteur.send({ type: "JOUER_CARTE", carte });
+        },
+        positionDepart,
+      );
     },
     [animations],
   );
@@ -697,13 +815,21 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
     // Marquer avant l'envoi pour bloquer la souscription
     animationDistribEnCours.current = true;
 
+    // Masquer immédiatement le dialogue de fin de manche
+    setEtatJeu((prev) => ({
+      ...prev,
+      phaseUI: "distribution",
+    }));
+
     acteur.send({ type: "CONTINUER" });
 
     // Vérifier si la partie est terminée ou si on relance
     const snapApres = acteur.getSnapshot();
     const etatApres = snapApres.value as string;
 
-    if (etatApres === "distribution") {
+    // L'état "distribution" est transitoire (always → encheres1),
+    // donc après CONTINUER on atterrit directement en "encheres1"
+    if (etatApres === "encheres1") {
       lancerDistributionAnimee(snapApres.context);
     } else {
       // Pas de distribution (fin de partie) — on annule le flag
@@ -731,12 +857,17 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
       scoreEquipe2: 0,
       pointsEquipe1: 0,
       pointsEquipe2: 0,
+      scoreMancheEquipe1: 0,
+      scoreMancheEquipe2: 0,
       cartesJouables: [],
       estTourHumain: false,
       phaseEncheres: null,
       indexPreneur: null,
       historiquePlis: [],
       historiqueEncheres: [],
+      plisEquipe1: 0,
+      plisEquipe2: 0,
+      annonceBelote: null,
     }));
   }, []);
 
@@ -762,12 +893,12 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
       }));
 
       animations.lancerDistribution(mainsRecord, {
-        onCarteArrivee: (joueur, carte) => {
+        onPaquetArrive: (joueur, cartes) => {
           if (estDemonte.current) return;
           if (joueur === "sud") {
             setEtatJeu((prev) => ({
               ...prev,
-              mainJoueur: trierMainJoueur([...prev.mainJoueur, carte]),
+              mainJoueur: [...prev.mainJoueur, ...cartes],
             }));
           } else {
             setEtatJeu((prev) => ({
@@ -775,7 +906,8 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
               nbCartesAdversaires: {
                 ...prev.nbCartesAdversaires,
                 [joueur]:
-                  prev.nbCartesAdversaires[joueur as "nord" | "est" | "ouest"] + 1,
+                  prev.nbCartesAdversaires[joueur as "nord" | "est" | "ouest"] +
+                  cartes.length,
               },
             }));
           }
@@ -783,27 +915,45 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
         onTerminee: () => {
           if (estDemonte.current) return;
 
-          // Relâcher le verrou
-          animationDistribEnCours.current = false;
-
           const acteur = acteurRef.current;
           if (!acteur) return;
           const snap = acteur.getSnapshot();
           const etat = snap.value as string;
           const ctx = snap.context;
 
-          setEtatJeu((prev) => ({
-            ...prev,
-            ...extraireEtatUI(ctx, etat),
-            mainJoueur: trierMainJoueur(ctx.mains[INDEX_HUMAIN]),
-            nbCartesAdversaires: {
-              nord: ctx.mains[2].length,
-              est: ctx.mains[3].length,
-              ouest: ctx.mains[1].length,
-            },
-          }));
+          // Phase de tri après une pause (cartes posées brut → tri animé)
+          setTimeout(() => {
+            if (estDemonte.current) return;
 
-          setTimeout(() => jouerBotSiNecessaire(), 50);
+            // Relâcher le verrou
+            animationDistribEnCours.current = false;
+
+            // D'abord afficher les cartes en tri normal (sans priorité atout)
+            setEtatJeu((prev) => ({
+              ...prev,
+              ...extraireEtatUI(ctx, etat),
+              mainJoueur: trierMainJoueur(ctx.mains[INDEX_HUMAIN]),
+              nbCartesAdversaires: {
+                nord: ctx.mains[2].length,
+                est: ctx.mains[3].length,
+                ouest: ctx.mains[1].length,
+              },
+            }));
+
+            // Après un court délai, réorganiser avec les atouts à gauche
+            // (MainJoueur anime la transition automatiquement via Reanimated)
+            if (ctx.couleurAtout) {
+              setTimeout(() => {
+                if (estDemonte.current) return;
+                setEtatJeu((prev) => ({
+                  ...prev,
+                  mainJoueur: trierMainAvecAtout(prev.mainJoueur, ctx.couleurAtout!),
+                }));
+              }, 500);
+            }
+
+            setTimeout(() => jouerBotSiNecessaire(), 600);
+          }, ANIMATIONS.distribution.pauseAvantTri);
         },
       });
     },

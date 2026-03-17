@@ -46,28 +46,6 @@ export function PanneauEncheres({
   return (
     <View style={styles.conteneur}>
       <View style={styles.panneau}>
-        {/* Titre */}
-        <Text style={styles.titre}>
-          {estTour1 ? "Prendre ?" : "Annoncer une couleur ?"}
-        </Text>
-
-        {/* Carte retournée (tour 1) */}
-        {estTour1 && carteRetournee && (
-          <View style={styles.carteRetournee}>
-            <Text style={styles.carteRetourneeLabel}>Carte retournée :</Text>
-            <Text
-              style={[
-                styles.carteRetourneeValeur,
-                { color: COULEURS_SYMBOLE[carteRetournee.couleur] },
-              ]}
-            >
-              {carteRetournee.rang.toUpperCase()}{" "}
-              {SYMBOLES_COULEUR[carteRetournee.couleur]}
-            </Text>
-          </View>
-        )}
-
-        {/* Boutons */}
         <View style={styles.boutons}>
           {estTour1 ? (
             // Tour 1 : Prendre ou Passer
@@ -119,10 +97,10 @@ const estWeb = Platform.OS === "web";
 const styles = StyleSheet.create({
   conteneur: {
     position: "absolute",
-    bottom: estWeb ? "28%" : "25%",
-    left: 0,
-    right: 0,
-    alignItems: "center",
+    top: 0,
+    bottom: 0,
+    left: "62%",
+    justifyContent: "center",
     zIndex: 30,
   },
   panneau: {

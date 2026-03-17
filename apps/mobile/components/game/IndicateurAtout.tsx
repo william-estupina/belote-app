@@ -1,4 +1,4 @@
-import type { Couleur } from "@belote/shared-types";
+import type { Couleur, PositionJoueur } from "@belote/shared-types";
 import { Platform, StyleSheet, Text, View } from "react-native";
 
 import { COULEURS } from "../../constants/theme";
@@ -17,27 +17,30 @@ const COULEURS_SYMBOLE: Record<Couleur, string> = {
   trefle: "#ffffff",
 };
 
-const NOMS_COULEUR: Record<Couleur, string> = {
-  coeur: "C\u0153ur",
-  carreau: "Carreau",
-  pique: "Pique",
-  trefle: "Tr\u00e8fle",
+const NOMS_JOUEUR: Record<PositionJoueur, string> = {
+  sud: "Vous",
+  nord: "Nord",
+  ouest: "Ouest",
+  est: "Est",
 };
 
 interface PropsIndicateurAtout {
   couleurAtout: Couleur | null;
+  positionPreneur: PositionJoueur | null;
 }
 
-export function IndicateurAtout({ couleurAtout }: PropsIndicateurAtout) {
-  if (!couleurAtout) return null;
+export function IndicateurAtout({ couleurAtout, positionPreneur }: PropsIndicateurAtout) {
+  if (!couleurAtout || !positionPreneur) return null;
 
   return (
     <View style={styles.conteneur}>
-      <Text style={styles.label}>Atout</Text>
       <Text style={[styles.symbole, { color: COULEURS_SYMBOLE[couleurAtout] }]}>
         {SYMBOLES_COULEUR[couleurAtout]}
       </Text>
-      <Text style={styles.nom}>{NOMS_COULEUR[couleurAtout]}</Text>
+      <View style={styles.textes}>
+        <Text style={styles.label}>Atout</Text>
+        <Text style={styles.preneur}>{NOMS_JOUEUR[positionPreneur]}</Text>
+      </View>
     </View>
   );
 }
@@ -54,16 +57,20 @@ const styles = StyleSheet.create({
     paddingVertical: estWeb ? 5 : 3,
     gap: estWeb ? 6 : 4,
   },
+  textes: {
+    alignItems: "flex-start",
+  },
   label: {
     color: COULEURS.texteSecondaire,
-    fontSize: estWeb ? 11 : 8,
+    fontSize: estWeb ? 10 : 7,
     textTransform: "uppercase",
   },
-  nom: {
+  preneur: {
     color: COULEURS.textePrincipal,
-    fontSize: estWeb ? 12 : 9,
+    fontSize: estWeb ? 11 : 8,
+    fontWeight: "bold",
   },
   symbole: {
-    fontSize: estWeb ? 20 : 14,
+    fontSize: estWeb ? 22 : 16,
   },
 });

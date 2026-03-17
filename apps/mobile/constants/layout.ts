@@ -7,10 +7,10 @@ export const RATIO_ASPECT_CARTE = 1.45; // hauteur / largeur
 
 // --- Zone du pli (positions des cartes jouées au centre, resserrées) ---
 export const POSITIONS_PLI = {
-  sud: { x: 0.5, y: 0.54 },
-  nord: { x: 0.5, y: 0.39 },
-  ouest: { x: 0.39, y: 0.47 },
-  est: { x: 0.61, y: 0.47 },
+  sud: { x: 0.5, y: 0.52 },
+  nord: { x: 0.5, y: 0.41 },
+  ouest: { x: 0.42, y: 0.47 },
+  est: { x: 0.58, y: 0.47 },
 } as const;
 
 // --- Rotation de base par position (aspect « posé par le joueur ») ---
@@ -35,13 +35,13 @@ function hashCarte(couleur: string, rang: string): number {
 export function variationCartePli(couleur: string, rang: string, position: string) {
   const h = hashCarte(couleur, rang);
   const rotationBase = ROTATIONS_BASE[position] ?? 0;
-  // Rotation supplémentaire entre -5° et +5°
-  const rotationAleatoire = ((h % 110) / 110) * 10 - 5;
+  // Rotation supplémentaire entre -12° et +12°
+  const rotationAleatoire = ((h % 110) / 110) * 24 - 12;
   const rotation = rotationBase + rotationAleatoire;
-  // Décalage X entre -0.008 et +0.008 (fraction de largeur écran)
-  const decalageX = (((h >> 8) % 90) / 90) * 0.016 - 0.008;
-  // Décalage Y entre -0.006 et +0.006 (fraction de hauteur écran)
-  const decalageY = (((h >> 16) % 70) / 70) * 0.012 - 0.006;
+  // Décalage X entre -0.018 et +0.018 (fraction de largeur écran)
+  const decalageX = (((h >> 8) % 90) / 90) * 0.036 - 0.018;
+  // Décalage Y entre -0.014 et +0.014 (fraction de hauteur écran)
+  const decalageY = (((h >> 16) % 70) / 70) * 0.028 - 0.014;
   return { rotation, decalageX, decalageY };
 }
 
@@ -54,8 +54,8 @@ export const EVENTAIL = {
 
 // --- Mains adversaires (éventail adapté par côté) ---
 export const ADVERSAIRE = {
-  ratioLargeurCarte: 0.04, // cartes adversaires très petites (juste indicatives)
-  chevauchement: 0.7, // fort chevauchement
+  ratioLargeurCarte: 0.055, // cartes adversaires plus visibles
+  chevauchement: 0.65, // chevauchement modéré
   margeNordY: -0.02, // déborde légèrement en haut
   margeCoteX: -0.01, // déborde légèrement sur les côtés
   angleTotal: 20, // éventail discret
@@ -69,10 +69,13 @@ export const INDICATEURS = {
 
 // --- Animations ---
 export const ANIMATIONS = {
-  // Distribution : cartes volent du centre vers les mains
+  // Distribution : cartes volent du centre vers les mains (paquets comme en vraie Belote)
   distribution: {
-    dureeCarte: 200, // durée par carte (ms)
-    delaiEntre: 80, // délai entre chaque carte (ms)
+    dureeCarte: 350, // durée de vol par carte (ms)
+    delaiDansPaquet: 60, // délai entre cartes d'un même paquet (ms) — quasi-simultané
+    delaiEntreJoueurs: 250, // délai entre les paquets de chaque joueur (ms)
+    pauseEntreTours: 600, // pause entre le tour de 3 et le tour de 2 (ms)
+    pauseAvantTri: 400, // pause après distribution avant animation de tri (ms)
     originX: 0.5, // position X de départ (centre)
     originY: 0.45, // position Y de départ (centre)
   },
@@ -97,6 +100,12 @@ export const ANIMATIONS = {
   },
   // Pause après la distribution pour montrer la carte retournée avant les enchères
   pauseAvantEncheres: 3000, // ms
+} as const;
+
+// --- Piles de plis remportés (positions des tas de cartes par équipe) ---
+export const POSITIONS_PILES = {
+  equipe1: { x: 0.82, y: 0.82 }, // en bas à droite, près de sud
+  equipe2: { x: 0.08, y: 0.22 }, // à gauche, bien au-dessus de ouest
 } as const;
 
 // --- Positions de départ/arrivée pour les animations ---

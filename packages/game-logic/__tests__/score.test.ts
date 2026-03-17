@@ -169,7 +169,7 @@ describe("calculerScoreManche", () => {
   });
 
   describe("chute", () => {
-    it("le preneur qui fait moins de 82 chute → adversaire marque 252", () => {
+    it("le preneur qui fait moins de 82 chute → adversaire marque 162", () => {
       const entree: EntreeScoreManche = {
         pointsEquipePreneur: 70,
         pointsEquipeDefenseur: 82,
@@ -181,7 +181,7 @@ describe("calculerScoreManche", () => {
       };
       const resultat = calculerScoreManche(entree);
       expect(resultat.scorePreneur).toBe(0);
-      expect(resultat.scoreDefenseur).toBe(252);
+      expect(resultat.scoreDefenseur).toBe(162);
       expect(resultat.estChute).toBe(true);
     });
 
@@ -197,7 +197,7 @@ describe("calculerScoreManche", () => {
       };
       const resultat = calculerScoreManche(entree);
       expect(resultat.scorePreneur).toBe(20); // 0 + 20 belote
-      expect(resultat.scoreDefenseur).toBe(252);
+      expect(resultat.scoreDefenseur).toBe(162);
       expect(resultat.estChute).toBe(true);
     });
 
@@ -213,7 +213,7 @@ describe("calculerScoreManche", () => {
       };
       const resultat = calculerScoreManche(entree);
       expect(resultat.scorePreneur).toBe(0);
-      expect(resultat.scoreDefenseur).toBe(272); // 252 + 20 belote
+      expect(resultat.scoreDefenseur).toBe(182); // 162 + 20 belote
     });
 
     it("81 points pour le preneur = chute (il faut strictement 82)", () => {
@@ -230,7 +230,7 @@ describe("calculerScoreManche", () => {
       // 81 + 0 (dix de der au défenseur) = 81 < 82
       expect(resultat.estChute).toBe(true);
       expect(resultat.scorePreneur).toBe(0);
-      expect(resultat.scoreDefenseur).toBe(252);
+      expect(resultat.scoreDefenseur).toBe(162);
     });
   });
 

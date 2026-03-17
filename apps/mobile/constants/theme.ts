@@ -24,8 +24,8 @@ export const COULEURS = {
   succes: "#33aa55",
 
   // Cartes / surfaces
-  surfaceCarte: "#f5f0e1",
-  bordureCarte: "#c0b090",
+  surfaceCarte: "#f0e8d4",
+  bordureCarte: "#b8a88a",
   ombre: "rgba(0, 0, 0, 0.3)",
 } as const;
 

@@ -16,7 +16,7 @@ interface AppStore {
 }
 
 const PREFERENCES_PAR_DEFAUT: PreferencesUtilisateur = {
-  difficulte: "moyen",
+  difficulte: "difficile",
   sonActive: true,
   scoreObjectif: 1000,
 };

@@ -20,6 +20,7 @@ interface PropsZonePli {
   largeurEcran: number;
   hauteurEcran: number;
   couleurAtout: Couleur | null;
+  afficherCadre?: boolean;
 }
 
 const SYMBOLES_COULEUR: Record<Couleur, string> = {
@@ -30,10 +31,10 @@ const SYMBOLES_COULEUR: Record<Couleur, string> = {
 };
 
 const COULEUR_SYMBOLE: Record<Couleur, string> = {
-  coeur: "#e03030",
-  carreau: "#e03030",
-  pique: "#1a1a1a",
-  trefle: "#1a1a1a",
+  coeur: "#8b1a1a",
+  carreau: "#8b1a1a",
+  pique: "#0a0a0a",
+  trefle: "#0a0a0a",
 };
 
 // Marge entre le cadre et les cartes les plus extérieures
@@ -44,6 +45,7 @@ export function ZonePli({
   largeurEcran,
   hauteurEcran,
   couleurAtout,
+  afficherCadre = false,
 }: PropsZonePli) {
   const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE * 0.9);
   const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
@@ -83,8 +85,8 @@ export function ZonePli({
       }}
       pointerEvents="none"
     >
-      {/* Cadre décoratif */}
-      {couleurAtout && (
+      {/* Cadre décoratif (tapis) — visible pendant une partie */}
+      {afficherCadre && (
         <View
           style={[
             styles.cadre,
@@ -96,27 +98,31 @@ export function ZonePli({
             },
           ]}
         >
-          {/* Coins atout */}
-          <Text
-            style={[styles.coinAtout, styles.coinHautGauche, { color: couleurSymbole }]}
-          >
-            {symbole}
-          </Text>
-          <Text
-            style={[styles.coinAtout, styles.coinHautDroit, { color: couleurSymbole }]}
-          >
-            {symbole}
-          </Text>
-          <Text
-            style={[styles.coinAtout, styles.coinBasGauche, { color: couleurSymbole }]}
-          >
-            {symbole}
-          </Text>
-          <Text
-            style={[styles.coinAtout, styles.coinBasDroit, { color: couleurSymbole }]}
-          >
-            {symbole}
-          </Text>
+          {/* Coins atout (visibles uniquement quand un atout est défini) */}
+          {couleurAtout && (
+            <>
+              <View style={[styles.coinAtout, styles.coinHautGauche]}>
+                <Text style={[styles.texteAtout, { color: couleurSymbole }]}>
+                  {symbole}
+                </Text>
+              </View>
+              <View style={[styles.coinAtout, styles.coinHautDroit]}>
+                <Text style={[styles.texteAtout, { color: couleurSymbole }]}>
+                  {symbole}
+                </Text>
+              </View>
+              <View style={[styles.coinAtout, styles.coinBasGauche]}>
+                <Text style={[styles.texteAtout, { color: couleurSymbole }]}>
+                  {symbole}
+                </Text>
+              </View>
+              <View style={[styles.coinAtout, styles.coinBasDroit]}>
+                <Text style={[styles.texteAtout, { color: couleurSymbole }]}>
+                  {symbole}
+                </Text>
+              </View>
+            </>
+          )}
         </View>
       )}
 
@@ -163,23 +169,35 @@ const styles = StyleSheet.create({
   },
   coinAtout: {
     position: "absolute",
-    fontSize: 20,
-    opacity: 0.55,
+    width: 28,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.10)",
+    borderRadius: 6,
+  },
+  texteAtout: {
+    fontSize: 18,
+    opacity: 0.85,
   },
   coinHautGauche: {
-    top: 4,
+    top: 6,
     left: 6,
+    borderTopLeftRadius: 8,
   },
   coinHautDroit: {
-    top: 4,
+    top: 6,
     right: 6,
+    borderTopRightRadius: 8,
   },
   coinBasGauche: {
-    bottom: 4,
+    bottom: 6,
     left: 6,
+    borderBottomLeftRadius: 8,
   },
   coinBasDroit: {
-    bottom: 4,
+    bottom: 6,
     right: 6,
+    borderBottomRightRadius: 8,
   },
 });

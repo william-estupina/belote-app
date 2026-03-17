@@ -8,7 +8,9 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:www.npmjs.com)",
       "WebFetch(domain:expo.dev)",
-      "WebFetch(domain:job-logs.eascdn.net)"
+      "WebFetch(domain:job-logs.eascdn.net)",
+      "WebFetch(domain:printcss.net)",
+      "WebFetch(domain:selfthinker.github.io)"
     ]
   }
 }

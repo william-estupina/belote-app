@@ -14,41 +14,41 @@ Tu vas construire une application mobile et web de **Belote française** (jeu de
 
 ## Stack technique
 
-| Couche | Technologie | Version minimum |
-|---|---|---|
-| Framework app | **Expo SDK 52+** avec **Expo Router v4** | SDK 52 |
-| Langage | **TypeScript** (strict mode) | 5.4+ |
-| Rendu du jeu | **@shopify/react-native-skia** | 1.x |
-| Animations | **react-native-reanimated** | v3 |
-| Gestes | **react-native-gesture-handler** | v2 |
-| Machine à états (jeu) | **XState** | v5 |
-| État applicatif | **Zustand** | v4+ |
-| Monorepo | **Turborepo** + **pnpm** workspaces | - |
-| Tests unitaires (packages TS purs) | **Vitest** | 2.x |
-| Tests unitaires (app Expo) | **Jest** + **jest-expo** | 29+ |
-| Tests composants | **React Native Testing Library** | 12+ |
-| Tests E2E | **Maestro** | 1.x |
-| Validation runtime | **Zod** | v3 |
-| Serveur multijoueur (Phase 2) | **Colyseus** (Node.js) | 0.15+ |
-| Build mobile | **EAS Build** + **EAS Workflows** | - |
+| Couche                             | Technologie                              | Version minimum |
+| ---------------------------------- | ---------------------------------------- | --------------- |
+| Framework app                      | **Expo SDK 52+** avec **Expo Router v4** | SDK 52          |
+| Langage                            | **TypeScript** (strict mode)             | 5.4+            |
+| Rendu du jeu                       | **@shopify/react-native-skia**           | 1.x             |
+| Animations                         | **react-native-reanimated**              | v3              |
+| Gestes                             | **react-native-gesture-handler**         | v2              |
+| Machine à états (jeu)              | **XState**                               | v5              |
+| État applicatif                    | **Zustand**                              | v4+             |
+| Monorepo                           | **Turborepo** + **pnpm** workspaces      | -               |
+| Tests unitaires (packages TS purs) | **Vitest**                               | 2.x             |
+| Tests unitaires (app Expo)         | **Jest** + **jest-expo**                 | 29+             |
+| Tests composants                   | **React Native Testing Library**         | 12+             |
+| Tests E2E                          | **Maestro**                              | 1.x             |
+| Validation runtime                 | **Zod**                                  | v3              |
+| Serveur multijoueur (Phase 2)      | **Colyseus** (Node.js)                   | 0.15+           |
+| Build mobile                       | **EAS Build** + **EAS Workflows**        | -               |
 
 ### Qualité de code et sécurité
 
-| Outil | Rôle |
-|---|---|
-| **ESLint** (flat config) | Linting avec plugins : `@typescript-eslint`, `react`, `react-hooks`, `react-native` |
-| **Prettier** | Formatage automatique du code |
-| **eslint-plugin-simple-import-sort** | Tri automatique des imports |
-| **eslint-plugin-unused-imports** | Suppression automatique des imports inutilisés |
-| **Knip** | Détection de code mort, fichiers orphelins, dépendances inutilisées dans le monorepo |
-| **Husky** | Gestionnaire de git hooks (pre-commit, commit-msg) |
-| **lint-staged** | Exécute lint/format uniquement sur les fichiers staged |
-| **commitlint** (`@commitlint/config-conventional`) | Impose les Conventional Commits (`feat:`, `fix:`, `chore:`, etc.) |
-| **Gitleaks** | Scan des secrets (clés API, tokens) en pre-commit hook + CI |
-| **npm audit** | Scan des vulnérabilités connues dans les dépendances |
-| **Snyk** | Base de vulnérabilités étendue + analyse SAST du code TypeScript |
-| **@total-typescript/ts-reset** | Corrige les faiblesses de TS (`JSON.parse` → `unknown`, `.filter(Boolean)` typé, etc.) |
-| **Syncpack** | Cohérence des versions de dépendances à travers le monorepo |
+| Outil                                              | Rôle                                                                                   |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| **ESLint** (flat config)                           | Linting avec plugins : `@typescript-eslint`, `react`, `react-hooks`, `react-native`    |
+| **Prettier**                                       | Formatage automatique du code                                                          |
+| **eslint-plugin-simple-import-sort**               | Tri automatique des imports                                                            |
+| **eslint-plugin-unused-imports**                   | Suppression automatique des imports inutilisés                                         |
+| **Knip**                                           | Détection de code mort, fichiers orphelins, dépendances inutilisées dans le monorepo   |
+| **Husky**                                          | Gestionnaire de git hooks (pre-commit, commit-msg)                                     |
+| **lint-staged**                                    | Exécute lint/format uniquement sur les fichiers staged                                 |
+| **commitlint** (`@commitlint/config-conventional`) | Impose les Conventional Commits (`feat:`, `fix:`, `chore:`, etc.)                      |
+| **Gitleaks**                                       | Scan des secrets (clés API, tokens) en pre-commit hook + CI                            |
+| **npm audit**                                      | Scan des vulnérabilités connues dans les dépendances                                   |
+| **Snyk**                                           | Base de vulnérabilités étendue + analyse SAST du code TypeScript                       |
+| **@total-typescript/ts-reset**                     | Corrige les faiblesses de TS (`JSON.parse` → `unknown`, `.filter(Boolean)` typé, etc.) |
+| **Syncpack**                                       | Cohérence des versions de dépendances à travers le monorepo                            |
 
 ---
 
@@ -201,28 +201,28 @@ belote/
 **À l'atout :**
 
 | Carte | Points |
-|---|---|
-| Valet | 20 |
-| 9 | 14 |
-| As | 11 |
-| 10 | 10 |
-| Roi | 4 |
-| Dame | 3 |
-| 8 | 0 |
-| 7 | 0 |
+| ----- | ------ |
+| Valet | 20     |
+| 9     | 14     |
+| As    | 11     |
+| 10    | 10     |
+| Roi   | 4      |
+| Dame  | 3      |
+| 8     | 0      |
+| 7     | 0      |
 
 **Hors atout :**
 
 | Carte | Points |
-|---|---|
-| As | 11 |
-| 10 | 10 |
-| Roi | 4 |
-| Dame | 3 |
-| Valet | 2 |
-| 9 | 0 |
-| 8 | 0 |
-| 7 | 0 |
+| ----- | ------ |
+| As    | 11     |
+| 10    | 10     |
+| Roi   | 4      |
+| Dame  | 3      |
+| Valet | 2      |
+| 9     | 0      |
+| 8     | 0      |
+| 7     | 0      |
 
 **Total** : 152 points (62 à l'atout + 30×3 hors atout). Le dernier pli vaut **10 points bonus** ("Dix de der").
 
@@ -241,12 +241,14 @@ belote/
 ### Enchères (2 tours)
 
 **Tour 1** : Chaque joueur, dans le sens des aiguilles d'une montre en commençant par celui à droite du donneur, peut :
+
 - **Prendre** : accepter la retourne comme atout (la couleur de la retourne devient l'atout)
 - **Passer**
 
 Si personne ne prend au tour 1 :
 
 **Tour 2** : Chaque joueur peut :
+
 - **Proposer une autre couleur** comme atout (n'importe quelle couleur SAUF celle de la retourne)
 - **Passer**
 
@@ -278,14 +280,17 @@ Si un joueur possède le **Roi ET la Dame d'atout**, il annonce "Belote" en joua
 ### Scoring de la manche
 
 Après les 8 plis :
+
 1. Chaque équipe compte ses points (cartes remportées + 10 de der si applicable)
 2. Ajouter les 20 points de Belote/Rebelote si annoncée
 
 **Cas du preneur :**
+
 - Si l'équipe du preneur atteint **82+ points** → chaque équipe marque ses propres points
-- Si l'équipe du preneur fait **moins de 82 points** ("chute") → l'équipe adverse marque **252 points** (totalité : 162 de base + 90 restants). L'équipe du preneur marque 0 (mais conserve les 20 de Belote/Rebelote si annoncée)
+- Si l'équipe du preneur fait **moins de 82 points** ("chute") → l'équipe adverse marque **162 points** (totalité des points de la manche). L'équipe du preneur marque 0 (mais conserve les 20 de Belote/Rebelote si annoncée)
 
 **Capot** (tous les plis gagnés par une même équipe) :
+
 - L'équipe qui fait capot marque **252 points**
 - Si le preneur fait capot → il marque 252
 - Si le preneur se fait "capoter" → l'adversaire marque 252
@@ -345,10 +350,12 @@ gameOver
 ## IA des bots — Stratégie par niveau
 
 ### Facile
+
 - **Enchères** : Prend aléatoirement si ≥ 3 atouts en main
 - **Jeu** : Joue une carte légale au hasard parmi les cartes jouables
 
 ### Moyen
+
 - **Enchères** : Évalue la main (Valet + 9 d'atout = très bon, 3+ atouts avec des points = prendre)
 - **Jeu** :
   - Entame avec un As hors-atout si disponible
@@ -358,6 +365,7 @@ gameOver
   - Monte à l'atout quand obligé
 
 ### Difficile
+
 - **Enchères** : Compte les points potentiels si cette couleur est atout. Prend si ≥ 5 points attendus au-delà du minimum (82)
 - **Jeu** :
   - Tout ce que fait le bot moyen +
@@ -372,25 +380,25 @@ gameOver
 // Le bot reçoit uniquement ce qu'un vrai joueur verrait
 interface BotGameView {
   myHand: Card[];
-  myPosition: PlayerPosition;        // north | south | east | west
+  myPosition: PlayerPosition; // north | south | east | west
   partnerPosition: PlayerPosition;
   trumpSuit: Suit | null;
   currentTrick: { player: PlayerPosition; card: Card }[];
-  leadSuit: Suit | null;             // couleur demandée dans ce pli
-  trickHistory: CompletedTrick[];    // plis précédents (visibles)
+  leadSuit: Suit | null; // couleur demandée dans ce pli
+  trickHistory: CompletedTrick[]; // plis précédents (visibles)
   myTeamScore: number;
   opponentTeamScore: number;
-  gamePhase: 'bidding1' | 'bidding2' | 'playing';
-  turnedCard: Card | null;           // la retourne (pendant les enchères)
-  biddingHistory: BidAction[];       // qui a passé/pris
+  gamePhase: "bidding1" | "bidding2" | "playing";
+  turnedCard: Card | null; // la retourne (pendant les enchères)
+  biddingHistory: BidAction[]; // qui a passé/pris
 }
 
 type BotAction =
-  | { type: 'TAKE' }                          // prendre la retourne (tour 1)
-  | { type: 'BID'; suit: Suit }               // proposer un atout (tour 2)
-  | { type: 'PASS' }                          // passer
-  | { type: 'PLAY_CARD'; card: Card }         // jouer une carte
-  | { type: 'ANNOUNCE_BELOTE' }               // annoncer belote/rebelote
+  | { type: "TAKE" } // prendre la retourne (tour 1)
+  | { type: "BID"; suit: Suit } // proposer un atout (tour 2)
+  | { type: "PASS" } // passer
+  | { type: "PLAY_CARD"; card: Card } // jouer une carte
+  | { type: "ANNOUNCE_BELOTE" }; // annoncer belote/rebelote
 
 function botDecide(view: BotGameView, difficulty: Difficulty): BotAction;
 ```
@@ -437,13 +445,13 @@ function botDecide(view: BotGameView, difficulty: Difficulty): BotAction;
 
 ### Animations clés
 
-| Animation | Déclencheur | Description |
-|---|---|---|
-| Distribution | Début de manche | Les cartes glissent du centre vers chaque joueur avec un délai progressif (spring) |
-| Jouer une carte | Le joueur tap/drag une carte | La carte se déplace de la main vers la zone du pli (timing 300ms) |
-| Bot joue | C'est le tour du bot | Après un délai de 500-1000ms, la carte glisse vers le pli |
-| Ramasser le pli | Les 4 cartes sont posées | Les 4 cartes glissent vers le vainqueur du pli (timing 400ms) |
-| Retourner carte | Enchères | La retourne apparaît au centre avec un flip 3D |
+| Animation       | Déclencheur                  | Description                                                                        |
+| --------------- | ---------------------------- | ---------------------------------------------------------------------------------- |
+| Distribution    | Début de manche              | Les cartes glissent du centre vers chaque joueur avec un délai progressif (spring) |
+| Jouer une carte | Le joueur tap/drag une carte | La carte se déplace de la main vers la zone du pli (timing 300ms)                  |
+| Bot joue        | C'est le tour du bot         | Après un délai de 500-1000ms, la carte glisse vers le pli                          |
+| Ramasser le pli | Les 4 cartes sont posées     | Les 4 cartes glissent vers le vainqueur du pli (timing 400ms)                      |
+| Retourner carte | Enchères                     | La retourne apparaît au centre avec un flip 3D                                     |
 
 ### Responsive
 
@@ -467,11 +475,11 @@ function botDecide(view: BotGameView, difficulty: Difficulty): BotAction;
 interface AppState {
   // Préférences
   settings: {
-    difficulty: 'easy' | 'medium' | 'hard';
-    cardStyle: 'classic' | 'modern';
+    difficulty: "easy" | "medium" | "hard";
+    cardStyle: "classic" | "modern";
     soundEnabled: boolean;
     targetScore: 501 | 1000;
-    language: 'fr' | 'en';
+    language: "fr" | "en";
   };
 
   // Statistiques
@@ -511,11 +519,12 @@ packages/bot-engine/__tests__/
 **Couverture cible : > 90%** pour `game-logic` (c'est le cœur métier).
 
 Exemples de tests critiques :
+
 - Une partie complète simulée (8 plis) doit donner un total de 162 points entre les deux équipes
 - Le joueur DOIT fournir si il a la couleur demandée
 - Le joueur DOIT couper si il n'a pas la couleur ET a de l'atout (sauf si partenaire maître)
 - Le joueur DOIT monter à l'atout si il en a la possibilité
-- La chute donne 252 points à l'adversaire
+- La chute donne 162 points à l'adversaire
 - Belote/Rebelote = 20 points conservés même en cas de chute
 
 ### Tests de composants — App Expo
@@ -535,6 +544,7 @@ apps/mobile/__tests__/
 ```
 
 Tests orientés **comportement utilisateur** (pas d'implementation details) :
+
 - "Quand c'est mon tour, les cartes jouables sont interactives"
 - "Quand je clique sur Passer, le joueur suivant enchérit"
 - "Le score s'affiche correctement après un pli"
@@ -553,6 +563,7 @@ e2e/
 ```
 
 Exemple de flow Maestro :
+
 ```yaml
 appId: com.belote.app
 ---
@@ -569,24 +580,25 @@ appId: com.belote.app
 ### Validation runtime — Zod
 
 Utiliser Zod pour valider :
+
 - Les données persistées dans AsyncStorage (au chargement)
 - Les messages réseau en Phase 2 (Colyseus)
 - Les paramètres de configuration
 
 ```typescript
-import { z } from 'zod';
+import { z } from "zod";
 
 const SettingsSchema = z.object({
-  difficulty: z.enum(['easy', 'medium', 'hard']),
-  cardStyle: z.enum(['classic', 'modern']),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+  cardStyle: z.enum(["classic", "modern"]),
   soundEnabled: z.boolean(),
   targetScore: z.union([z.literal(501), z.literal(1000)]),
-  language: z.enum(['fr', 'en']),
+  language: z.enum(["fr", "en"]),
 });
 
 // Chargement sécurisé depuis AsyncStorage
 const loadSettings = async (): Promise<Settings> => {
-  const raw = await AsyncStorage.getItem('settings');
+  const raw = await AsyncStorage.getItem("settings");
   if (!raw) return DEFAULT_SETTINGS;
   const parsed = SettingsSchema.safeParse(JSON.parse(raw));
   return parsed.success ? parsed.data : DEFAULT_SETTINGS;
@@ -612,11 +624,11 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
       - run: pnpm install --frozen-lockfile
-      - run: pnpm turbo typecheck      # Vérification TypeScript
-      - run: pnpm turbo lint            # ESLint
-      - run: pnpm turbo test            # Tests unitaires (Vitest + Jest)
-      - run: pnpm knip                  # Détection code mort
-      - run: pnpm syncpack list-mismatches  # Versions cohérentes
+      - run: pnpm turbo typecheck # Vérification TypeScript
+      - run: pnpm turbo lint # ESLint
+      - run: pnpm turbo test # Tests unitaires (Vitest + Jest)
+      - run: pnpm knip # Détection code mort
+      - run: pnpm syncpack list-mismatches # Versions cohérentes
 
   security:
     runs-on: ubuntu-latest
@@ -624,9 +636,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v2   # Scan des secrets
-      - run: pnpm audit --audit-level=high  # Vulnérabilités dépendances
-      - uses: snyk/actions/node@master      # Scan Snyk
+      - uses: gitleaks/gitleaks-action@v2 # Scan des secrets
+      - run: pnpm audit --audit-level=high # Vulnérabilités dépendances
+      - uses: snyk/actions/node@master # Scan Snyk
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 ```
@@ -676,10 +688,12 @@ jobs:
 ```
 
 **Setup requis** :
+
 1. Lancer `/install-github-app` dans Claude Code pour configurer le GitHub App
 2. Ajouter `ANTHROPIC_API_KEY` dans les secrets du repo GitHub (Settings → Secrets → Actions)
 
 **Fonctionnement** :
+
 - Chaque PR ouverte/mise à jour → Claude review automatiquement et poste des commentaires
 - `@claude` dans un commentaire de PR/issue → Claude répond à la question
 - Les reviews sont contextuelles : Claude lit le PROMPT.md et les skills pour comprendre le projet
@@ -707,7 +721,7 @@ jobs:
       - run: eas build --platform all --non-interactive --no-wait
 
   e2e:
-    runs-on: macos-latest   # Nécessaire pour le simulateur iOS
+    runs-on: macos-latest # Nécessaire pour le simulateur iOS
     steps:
       - uses: actions/checkout@v4
       - run: |
@@ -720,6 +734,7 @@ jobs:
 ## Pre-commit hooks — Configuration
 
 ### .husky/pre-commit
+
 ```bash
 #!/bin/sh
 # Lint et format les fichiers staged
@@ -730,6 +745,7 @@ gitleaks protect --staged --verbose
 ```
 
 ### .husky/commit-msg
+
 ```bash
 #!/bin/sh
 # Valide le format du message de commit (Conventional Commits)
@@ -737,6 +753,7 @@ pnpm commitlint --edit "$1"
 ```
 
 ### .lintstagedrc.json
+
 ```json
 {
   "*.{ts,tsx}": ["eslint --fix", "prettier --write"],
@@ -745,17 +762,23 @@ pnpm commitlint --edit "$1"
 ```
 
 ### .commitlintrc.json
+
 ```json
 {
   "extends": ["@commitlint/config-conventional"],
   "rules": {
-    "scope-enum": [2, "always", ["game-logic", "bot-engine", "mobile", "server", "shared", "ci", "deps"]],
+    "scope-enum": [
+      2,
+      "always",
+      ["game-logic", "bot-engine", "mobile", "server", "shared", "ci", "deps"]
+    ],
     "subject-case": [2, "always", "lower-case"]
   }
 }
 ```
 
 Exemples de commits valides :
+
 - `feat(game-logic): add trick evaluation`
 - `fix(bot-engine): correct bidding threshold for hard difficulty`
 - `test(game-logic): add scoring edge cases for capot`
@@ -775,6 +798,7 @@ Mesures à appliquer dès la Phase 1 :
 6. **Pas de `eval()` ou `new Function()`** — Jamais d'exécution dynamique de code
 
 Mesures supplémentaires pour la Phase 2 (multijoueur) :
+
 - Serveur Colyseus autoritaire (le client ne peut pas tricher)
 - Rate limiting sur les connexions WebSocket
 - Validation côté serveur de chaque action (le client envoie des intentions, le serveur valide)
@@ -785,6 +809,7 @@ Mesures supplémentaires pour la Phase 2 (multijoueur) :
 ## Plan d'implémentation — Phase 1 (MVP hors-ligne)
 
 ### Étape 1 : Setup du monorepo et outillage
+
 - Initialiser le monorepo Turborepo + pnpm
 - Configurer les workspaces (`packages/*`, `apps/*`)
 - Setup TypeScript configs partagés (`tsconfig.base.json`, `@total-typescript/ts-reset`)
@@ -801,6 +826,7 @@ Mesures supplémentaires pour la Phase 2 (multijoueur) :
 - Vérifier que `pnpm turbo test`, `pnpm turbo lint`, `pnpm turbo typecheck` fonctionnent
 
 ### Étape 2 : Package `game-logic`
+
 - Définir tous les types (`Card`, `Suit`, `Rank`, `Player`, `Team`, `GamePhase`, etc.)
 - Implémenter `deck.ts` : création du deck 32 cartes, mélange (Fisher-Yates), distribution
 - Implémenter `rules.ts` : calculer les cartes jouables selon les règles (fournir, couper, monter, défausser)
@@ -809,6 +835,7 @@ Mesures supplémentaires pour la Phase 2 (multijoueur) :
 - Écrire les tests unitaires pour chaque module (couverture > 90%)
 
 ### Étape 3 : State machine XState
+
 - Implémenter la machine à états complète dans `machine.ts`
 - Tous les états : idle → dealing → bidding → playing → trickEnd → roundScoring → gameOver
 - Les guards : `isValidPlay`, `trickComplete`, `allPassed`, `gameNotOver`, etc.
@@ -816,6 +843,7 @@ Mesures supplémentaires pour la Phase 2 (multijoueur) :
 - Tests unitaires de la machine (simuler des parties complètes)
 
 ### Étape 4 : Package `bot-engine`
+
 - Implémenter le bot facile (jeu aléatoire légal)
 - Implémenter le bot moyen (heuristiques de base)
 - Implémenter le bot difficile (comptage de cartes, stratégie avancée)
@@ -823,12 +851,14 @@ Mesures supplémentaires pour la Phase 2 (multijoueur) :
 - Tests unitaires
 
 ### Étape 5 : UI — Écrans et navigation
+
 - Écran d'accueil (menu principal : Jouer, Paramètres, Règles)
 - Écran de paramètres (difficulté, son, style, score objectif)
 - Navigation avec Expo Router
 - Thème et constantes visuelles
 
 ### Étape 6 : UI — GameBoard (Skia)
+
 - Rendu du tapis de jeu (fond vert)
 - Rendu d'une carte (image Skia + ombre)
 - Position des 4 joueurs (sud = humain, nord = partenaire bot, est/ouest = adversaires)
@@ -838,6 +868,7 @@ Mesures supplémentaires pour la Phase 2 (multijoueur) :
 - Indicateur d'atout + scores
 
 ### Étape 7 : Animations et interactions
+
 - Animation de distribution
 - Tap pour jouer une carte
 - Griser les cartes non jouables
@@ -847,6 +878,7 @@ Mesures supplémentaires pour la Phase 2 (multijoueur) :
 - Sons (optionnel)
 
 ### Étape 8 : Game Controller (orchestration)
+
 - Hook `useGameController` qui :
   - Crée et pilote la machine XState
   - Gère le tour du joueur humain (attend le tap)
@@ -856,12 +888,14 @@ Mesures supplémentaires pour la Phase 2 (multijoueur) :
   - Gère la fin de manche et la fin de partie
 
 ### Étape 9 : Tests d'intégration et E2E
+
 - Tests d'intégration : simuler des parties complètes (enchères → 8 plis → scoring)
 - Tests de composants avec React Native Testing Library
 - Tests E2E avec Maestro (flows complets : démarrer une partie, jouer, vérifier le score)
 - Vérifier le responsive (web desktop + mobile)
 
 ### Étape 10 : CI/CD et polish
+
 - Mettre en place la pipeline GitHub Actions (CI : lint, typecheck, tests, sécurité)
 - Configurer EAS Build pour les builds mobiles
 - Gestion des edge cases (redistribution si personne ne prend, etc.)

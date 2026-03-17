@@ -1,18 +1,21 @@
-import { useCallback, useState } from "react";
+import type { ActionEnchere, PositionJoueur } from "@belote/shared-types";
+import { POSITIONS_JOUEUR } from "@belote/shared-types";
+import { useCallback, useMemo, useState } from "react";
 import type { LayoutChangeEvent } from "react-native";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useControleurJeu } from "../../hooks/useControleurJeu";
 import { useAppStore } from "../../stores/app-store";
+import { AvatarJoueur } from "./AvatarJoueur";
+import { BulleBelote } from "./BulleBelote";
 import { CoucheAnimation } from "./CoucheAnimation";
 import { DernierPli } from "./DernierPli";
 import { DialogueFinManche } from "./DialogueFinManche";
 import { DialogueFinPartie } from "./DialogueFinPartie";
-import { HistoriqueEncheresUI } from "./HistoriqueEncheresUI";
-import { LabelJoueur } from "./LabelJoueur";
 import { MainAdversaire } from "./MainAdversaire";
 import { MainJoueur } from "./MainJoueur";
 import { PanneauEncheres } from "./PanneauEncheres";
+import { PilePlis } from "./PilePlis";
 import { TableauScores } from "./TableauScores";
 import { ZoneCarteRetournee } from "./ZoneCarteRetournee";
 import { ZonePli } from "./ZonePli";
@@ -45,6 +48,19 @@ export default function PlateauJeu() {
   }, []);
 
   const { largeur, hauteur } = dimensions;
+
+  // Dernière action d'enchère par joueur (pour les badges sur les avatars)
+  const derniereActionParJoueur = useMemo(() => {
+    const map = new Map<PositionJoueur, ActionEnchere>();
+    for (const action of etatJeu.historiqueEncheres) {
+      map.set(action.joueur, action);
+    }
+    return map;
+  }, [etatJeu.historiqueEncheres]);
+
+  // Position du preneur
+  const positionPreneur =
+    etatJeu.indexPreneur !== null ? POSITIONS_JOUEUR[etatJeu.indexPreneur] : null;
 
   return (
     <View style={styles.plateau} onLayout={surLayout}>
@@ -82,9 +98,9 @@ export default function PlateauJeu() {
             hauteurEcran={hauteur}
           />
 
-          {/* Labels des joueurs — avec indicateur de tour actif pendant enchères/jeu */}
+          {/* Avatars des joueurs — identité, enchères et indicateur preneur */}
           {(["sud", "nord", "ouest", "est"] as const).map((pos) => (
-            <LabelJoueur
+            <AvatarJoueur
               key={pos}
               position={pos}
               largeurEcran={largeur}
@@ -93,6 +109,10 @@ export default function PlateauJeu() {
                 (etatJeu.phaseUI === "encheres" || etatJeu.phaseUI === "jeu") &&
                 etatJeu.joueurActif === pos
               }
+              actionEnchere={derniereActionParJoueur.get(pos) ?? null}
+              estPreneur={positionPreneur === pos}
+              couleurAtout={etatJeu.couleurAtout}
+              phaseUI={etatJeu.phaseUI}
             />
           ))}
 
@@ -102,6 +122,7 @@ export default function PlateauJeu() {
             largeurEcran={largeur}
             hauteurEcran={hauteur}
             couleurAtout={etatJeu.couleurAtout}
+            afficherCadre={etatJeu.phaseUI !== "inactif"}
           />
 
           {/* Scores */}
@@ -116,6 +137,24 @@ export default function PlateauJeu() {
               scoreEquipe2={etatJeu.scoreEquipe2}
             />
           </View>
+
+          {/* Piles de plis remportés */}
+          {etatJeu.phaseUI !== "inactif" && (
+            <>
+              <PilePlis
+                equipe="equipe1"
+                nbPlis={etatJeu.plisEquipe1}
+                largeurEcran={largeur}
+                hauteurEcran={hauteur}
+              />
+              <PilePlis
+                equipe="equipe2"
+                nbPlis={etatJeu.plisEquipe2}
+                largeurEcran={largeur}
+                hauteurEcran={hauteur}
+              />
+            </>
+          )}
 
           {/* Dernier pli (haut à droite) */}
           {etatJeu.phaseUI === "jeu" && etatJeu.historiquePlis.length > 0 && (
@@ -147,15 +186,6 @@ export default function PlateauJeu() {
             />
           )}
 
-          {/* Historique des enchères (bulles par joueur) */}
-          {etatJeu.phaseUI === "encheres" && (
-            <HistoriqueEncheresUI
-              historiqueEncheres={etatJeu.historiqueEncheres}
-              largeurEcran={largeur}
-              hauteurEcran={hauteur}
-            />
-          )}
-
           {/* Couche d'animation (cartes en vol) */}
           <CoucheAnimation
             cartesEnVol={cartesEnVol}
@@ -177,11 +207,21 @@ export default function PlateauJeu() {
               />
             )}
 
+          {/* Bulle belote/rebelote */}
+          {etatJeu.annonceBelote && (
+            <BulleBelote
+              joueur={etatJeu.annonceBelote.joueur}
+              type={etatJeu.annonceBelote.type}
+              largeurEcran={largeur}
+              hauteurEcran={hauteur}
+            />
+          )}
+
           {/* Dialogue fin de manche */}
           {etatJeu.phaseUI === "scoresManche" && (
             <DialogueFinManche
-              pointsEquipe1={etatJeu.pointsEquipe1}
-              pointsEquipe2={etatJeu.pointsEquipe2}
+              scoreMancheEquipe1={etatJeu.scoreMancheEquipe1}
+              scoreMancheEquipe2={etatJeu.scoreMancheEquipe2}
               scoreEquipe1={etatJeu.scoreEquipe1}
               scoreEquipe2={etatJeu.scoreEquipe2}
               onContinuer={continuerApresScore}

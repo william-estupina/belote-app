@@ -1,5 +1,12 @@
 import type { Carte } from "@belote/shared-types";
+import { useEffect, useRef } from "react";
 import { Pressable, View } from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 import {
   EVENTAIL,
@@ -8,13 +15,19 @@ import {
 } from "../../constants/layout";
 import { CarteSkia } from "./Carte";
 
+/** Position proportionnelle (0–1) d'une carte sur l'écran */
+export interface PositionProportionnelle {
+  x: number;
+  y: number;
+}
+
 interface PropsMainJoueur {
   cartes: Carte[];
   largeurEcran: number;
   hauteurEcran: number;
   cartesJouables?: Carte[];
   interactionActive?: boolean;
-  onCarteJouee?: (carte: Carte) => void;
+  onCarteJouee?: (carte: Carte, position: PositionProportionnelle) => void;
 }
 
 /** Vérifie si une carte est dans la liste des cartes jouables */
@@ -22,6 +35,98 @@ function estJouable(carte: Carte, cartesJouables?: Carte[]): boolean {
   if (!cartesJouables) return true;
   return cartesJouables.some((c) => c.rang === carte.rang && c.couleur === carte.couleur);
 }
+
+const DUREE_ANIMATION_REORG = 350;
+const EASING_REORG = Easing.inOut(Easing.cubic);
+
+// --- Sous-composant animé pour une carte dans l'éventail ---
+
+interface PropsCarteEventail {
+  carte: Carte;
+  x: number;
+  decalageY: number;
+  angle: number;
+  largeurCarte: number;
+  hauteurCarte: number;
+  jouable: boolean;
+  grisee: boolean;
+  interactionActive: boolean;
+  xProp: number;
+  yProp: number;
+  zIndex: number;
+  onCarteJouee?: (carte: Carte, position: PositionProportionnelle) => void;
+}
+
+function CarteEventailAnimee({
+  carte,
+  x,
+  decalageY,
+  angle,
+  largeurCarte,
+  hauteurCarte,
+  jouable,
+  grisee,
+  interactionActive,
+  xProp,
+  yProp,
+  zIndex,
+  onCarteJouee,
+}: PropsCarteEventail) {
+  const estPremierRendu = useRef(true);
+  const animX = useSharedValue(x);
+  const animBottom = useSharedValue(decalageY);
+  const animAngle = useSharedValue(angle);
+
+  useEffect(() => {
+    if (estPremierRendu.current) {
+      estPremierRendu.current = false;
+      return;
+    }
+    const config = { duration: DUREE_ANIMATION_REORG, easing: EASING_REORG };
+    animX.value = withTiming(x, config);
+    animBottom.value = withTiming(decalageY, config);
+    animAngle.value = withTiming(angle, config);
+  }, [x, decalageY, angle, animX, animBottom, animAngle]);
+
+  const styleAnime = useAnimatedStyle(() => ({
+    position: "absolute" as const,
+    left: animX.value,
+    bottom: animBottom.value,
+    transformOrigin: `${largeurCarte / 2}px ${hauteurCarte}px`,
+    transform: [{ rotate: `${animAngle.value}deg` }],
+    zIndex,
+  }));
+
+  return (
+    <Animated.View style={styleAnime}>
+      {interactionActive && jouable && onCarteJouee ? (
+        <Pressable
+          onPress={() => onCarteJouee(carte, { x: xProp, y: yProp })}
+          style={({ pressed }) => ({
+            transform: pressed ? [{ translateY: -8 }] : [],
+          })}
+        >
+          <CarteSkia
+            carte={carte}
+            largeur={largeurCarte}
+            hauteur={hauteurCarte}
+            faceVisible
+          />
+        </Pressable>
+      ) : (
+        <CarteSkia
+          carte={carte}
+          largeur={largeurCarte}
+          hauteur={hauteurCarte}
+          faceVisible
+          grisee={grisee}
+        />
+      )}
+    </Animated.View>
+  );
+}
+
+// --- Composant principal ---
 
 export function MainJoueur({
   cartes,
@@ -75,45 +180,30 @@ export function MainJoueur({
         const jouable = estJouable(carte, cartesJouables);
         const grisee = interactionActive && !jouable;
 
-        const contenuCarte = (
-          <View
-            key={`${carte.couleur}-${carte.rang}`}
-            style={{
-              position: "absolute",
-              left: x,
-              bottom: decalageY,
-              transformOrigin: `${largeurCarte / 2}px ${hauteurCarte}px`,
-              transform: [{ rotate: `${angle}deg` }],
-              zIndex: index,
-            }}
-          >
-            {interactionActive && jouable && onCarteJouee ? (
-              <Pressable
-                onPress={() => onCarteJouee(carte)}
-                style={({ pressed }) => ({
-                  transform: pressed ? [{ translateY: -8 }] : [],
-                })}
-              >
-                <CarteSkia
-                  carte={carte}
-                  largeur={largeurCarte}
-                  hauteur={hauteurCarte}
-                  faceVisible
-                />
-              </Pressable>
-            ) : (
-              <CarteSkia
-                carte={carte}
-                largeur={largeurCarte}
-                hauteur={hauteurCarte}
-                faceVisible
-                grisee={grisee}
-              />
-            )}
-          </View>
-        );
+        // Position proportionnelle du centre de la carte sur l'écran
+        const xProp = (x + largeurCarte / 2) / largeurEcran;
+        // Le conteneur a bottom: -hauteurCarte * 0.15, la carte a bottom: decalageY dans le conteneur
+        const yProp =
+          1 - (decalageY + hauteurCarte / 2 - hauteurCarte * 0.15) / hauteurEcran;
 
-        return contenuCarte;
+        return (
+          <CarteEventailAnimee
+            key={`${carte.couleur}-${carte.rang}`}
+            carte={carte}
+            x={x}
+            decalageY={decalageY}
+            angle={angle}
+            largeurCarte={largeurCarte}
+            hauteurCarte={hauteurCarte}
+            jouable={jouable}
+            grisee={grisee}
+            interactionActive={interactionActive}
+            xProp={xProp}
+            yProp={yProp}
+            zIndex={index}
+            onCarteJouee={onCarteJouee}
+          />
+        );
       })}
     </View>
   );
