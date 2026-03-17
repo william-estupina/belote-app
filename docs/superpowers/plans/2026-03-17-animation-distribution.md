@@ -151,7 +151,7 @@ import type { Carte, PositionJoueur } from "@belote/shared-types";
 import { View } from "react-native";
 
 import { RATIO_ASPECT_CARTE, RATIO_LARGEUR_CARTE } from "../../constants/layout";
-import { CarteDos } from "./Carte";
+import { CarteDos, CarteFace } from "./Carte";
 import { CarteAnimee, type PositionCarte } from "./CarteAnimee";
 
 export interface CarteEnVol {
@@ -258,7 +258,7 @@ export function CoucheAnimation({
 }
 ```
 
-Note : on importe `CarteFace` aussi — ajouter l'import. Attention : `CarteFace` nécessite la prop `carte`, pas `faceVisible`.
+Note : `CarteFace` est importé avec `CarteDos` dans le même import (corrigé ci-dessus).
 
 - [ ] **Step 2: Vérifier le typecheck**
 
@@ -750,7 +750,7 @@ export function useAnimations() {
       xDepart: number,
       yDepart: number,
       preneur: PositionJoueur,
-      onTerminee?: () => void,
+      onTerminee?: (carteSurTapis: CarteSurTapis) => void,
     ) => {
       const { distribution } = ANIMATIONS;
       const posTapis = POSITIONS_TAPIS[preneur];
@@ -783,7 +783,7 @@ export function useAnimations() {
 
       setCartesEnVol((prev) => [...prev, vol]);
 
-      // Créer CarteSurTapis quand elle arrive
+      // Créer CarteSurTapis quand elle arrive et la passer au callback
       const timeout = setTimeout(() => {
         const cst: CarteSurTapis = {
           id: `tapis-${id}`,
@@ -796,7 +796,7 @@ export function useAnimations() {
           paquet: 1,
         };
         setCartesSurTapis((prev) => [...prev, cst]);
-        onTerminee?.();
+        onTerminee?.(cst);
       }, distribution.dureeSlideRetournee);
 
       timeoutsRef.current.push(timeout);
@@ -967,6 +967,30 @@ C'est la tâche la plus importante. Le hook doit orchestrer :
 2. Phase 2 : prise en main par joueur (dès 5 cartes posées)
 3. Phase 3 : tri (existant)
 
+- [ ] **Step 0: Ajouter les refs nécessaires**
+
+Près des autres refs (ligne ~232), ajouter :
+
+```typescript
+const cartesTapisParJoueurRef = useRef<Record<PositionJoueur, CarteSurTapis[]>>({
+  sud: [],
+  ouest: [],
+  nord: [],
+  est: [],
+});
+// Timeouts gérés par le contrôleur (pour les phases 2 et 3)
+const timeoutsControleurRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+```
+
+Ajouter l'import de `CarteSurTapis` en haut du fichier :
+
+```typescript
+import type { CarteSurTapis } from "../components/game/CoucheAnimation";
+import { ANIMATIONS, POSITIONS_MAINS } from "../constants/layout";
+```
+
+**Important** : dans tout ce qui suit, `timeoutsRef` fait référence à `timeoutsControleurRef`. Tous les `setTimeout` créés dans le contrôleur doivent être enregistrés dans cette ref et nettoyés dans le cleanup.
+
 - [ ] **Step 1: Exposer `cartesSurTapis` dans le return du hook**
 
 À la fin du hook (ligne ~966), dans le `return`, ajouter `cartesSurTapis`:
@@ -1056,78 +1080,89 @@ const lancerDistributionAnimee = useCallback(
         });
       }, distribution.pauseAvantPrise);
 
-      timeoutsRef.current.push(timeoutPrise);
+      timeoutsControleurRef.current.push(timeoutPrise);
     };
+
+    // Réinitialiser le ref des cartes tapis
+    cartesTapisParJoueurRef.current = { sud: [], ouest: [], nord: [], est: [] };
 
     // Phase 1 : distribution sur le tapis
     animations.lancerDistribution(mainsRecord, {
+      onCarteArrivee: (cst) => {
+        cartesTapisParJoueurRef.current[cst.position].push(cst);
+      },
       onJoueurComplet: (position) => {
         if (estDemonte.current) return;
         lancerPhase2PourJoueur(position);
       },
     });
   },
-  [animations],
+  [animations, lancerPhase3],
 );
 ```
 
 Note : `setCartesSurTapisEtLancerPrise` et `lancerPhase3` sont des helper functions à définir. Voir step suivant.
 
-- [ ] **Step 3: Ajouter les helpers `setCartesSurTapisEtLancerPrise` et `lancerPhase3`**
+- [ ] **Step 3: Comprendre la mécanique Phase 2 dans `lancerDistributionAnimee`**
 
-Avant `lancerDistributionAnimee`, ajouter :
+La Phase 2 pour chaque joueur est lancée dans le callback `lancerPhase2PourJoueur` défini dans Step 2. Ce callback :
+
+1. Attend `pauseAvantPrise` (200ms) après que les cartes sont posées
+2. Lit les cartes du joueur depuis `cartesTapisParJoueurRef.current[position]`
+3. Appelle `animations.lancerPriseEnMain()` avec les positions d'arrivée (position de la main)
+4. Le flip est activé pour sud (`flipVers: 180`), désactivé pour les bots
+
+**Note sur les positions d'arrivée** : pour simplifier, toutes les cartes arrivent au point central de la main (`POSITIONS_MAINS[position]`). `MainJoueur`/`MainAdversaire` gèrent ensuite le placement en éventail quand les cartes sont ajoutées au state. Si le résultat visuel n'est pas satisfaisant (toutes les cartes convergent vers le même point), on pourra calculer des positions d'éventail dans une itération future.
+
+Réécrire le `lancerPhase2PourJoueur` dans `lancerDistributionAnimee` pour utiliser directement le ref :
 
 ```typescript
-// Accès direct aux refs de timeouts pour les helpers
-const timeoutsRef2 = useRef<ReturnType<typeof setTimeout>[]>([]);
+const lancerPhase2PourJoueur = (position: PositionJoueur) => {
+  const { distribution } = ANIMATIONS;
 
-// Helper : lire les cartesSurTapis du joueur et lancer la prise en main
-const setCartesSurTapisEtLancerPrise = useCallback(
-  (position: PositionJoueur, cartesJoueur: Carte[], onTerminee: () => void) => {
-    // On doit récupérer les cartesSurTapis courantes pour ce joueur
-    // On utilise un pattern setState-read pour lire le state courant
+  const timeoutPrise = setTimeout(() => {
+    if (estDemonte.current) return;
+
+    const cartesTapis = cartesTapisParJoueurRef.current[position];
     const posArrivee = POSITIONS_MAINS[position];
-    // Positions d'éventail simplifié pour l'arrivée (alignées sur la position de main)
-    const positionsArrivee = cartesJoueur.map(() => ({
+    const positionsArrivee = cartesTapis.map(() => ({
       x: posArrivee.x,
       y: posArrivee.y,
     }));
 
     const estSud = position === "sud";
 
-    // Lire cartesSurTapis via le setter (pattern fonctionnel)
-    animations.cartesSurTapis; // pas utilisable directement car c'est le state du render
-    // On lance la prise en main en utilisant les CarteSurTapis du joueur
-    // via un getCartesSurTapisParJoueur
-    // Approche : on utilise un ref qui est mis à jour quand les cartes arrivent
-    const cartesTapisJoueurRef = cartesTapisParJoueurRef.current[position];
-
-    animations.lancerPriseEnMain(position, cartesTapisJoueurRef, positionsArrivee, {
+    animations.lancerPriseEnMain(position, cartesTapis, positionsArrivee, {
       flipVers: estSud ? 180 : undefined,
-      onTerminee,
+      onTerminee: () => {
+        prisesTerminees.count += 1;
+
+        if (position === "sud") {
+          setEtatJeu((prev) => ({
+            ...prev,
+            mainJoueur: [...prev.mainJoueur, ...mainsRecord[position]],
+          }));
+        } else {
+          setEtatJeu((prev) => ({
+            ...prev,
+            nbCartesAdversaires: {
+              ...prev.nbCartesAdversaires,
+              [position]:
+                prev.nbCartesAdversaires[position as "nord" | "est" | "ouest"] +
+                mainsRecord[position].length,
+            },
+          }));
+        }
+
+        if (prisesTerminees.count >= nbJoueurs) {
+          lancerPhase3(contexte);
+        }
+      },
     });
-  },
-  [animations],
-);
-```
+  }, distribution.pauseAvantPrise);
 
-**Important** : cette approche nécessite un `cartesTapisParJoueurRef`. Ajouter près des autres refs (ligne ~232) :
-
-```typescript
-const cartesTapisParJoueurRef = useRef<Record<PositionJoueur, CarteSurTapis[]>>({
-  sud: [],
-  ouest: [],
-  nord: [],
-  est: [],
-});
-```
-
-Et dans la Phase 1, ajouter un callback `onCarteArrivee` qui accumule :
-
-```typescript
-onCarteArrivee: (cst) => {
-  cartesTapisParJoueurRef.current[cst.position].push(cst);
-},
+  timeoutsControleurRef.current.push(timeoutPrise);
+};
 ```
 
 - [ ] **Step 4: Ajouter la fonction `lancerPhase3`**
@@ -1172,7 +1207,7 @@ const lancerPhase3 = useCallback(
       setTimeout(() => jouerBotSiNecessaire(), delaiAvantBot);
     }, distribution.pauseAvantTri);
 
-    timeoutsRef.current.push(timeout);
+    timeoutsControleurRef.current.push(timeout);
   },
   [extraireEtatUI, jouerBotSiNecessaire],
 );
@@ -1197,12 +1232,10 @@ const lancerDistributionRestanteAnimee = useCallback(
 
     const indexPreneur = contexte.indexPreneur!;
     const positionPreneur = POSITIONS_JOUEUR[indexPreneur];
-    const ordreDistribution = POSITIONS_JOUEUR.slice(); // copie
 
-    // Déterminer qui est premier dans l'ordre de distribution
-    // (le premier servi est le joueur après le donneur)
-    const premierServi = ordreDistribution[0]; // simplifié : sud toujours premier pour l'instant
-
+    // Le premier servi est le joueur après le donneur (sens anti-horaire dans la machine)
+    // La machine utilise (indexDonneur + 3) % 4 comme premierJoueurApres
+    const premierServi = POSITIONS_JOUEUR[(contexte.indexDonneur + 3) % 4];
     const estPreneurPremier = positionPreneur === premierServi;
 
     // Construire les mains restantes (indices 5-7 pour les non-preneurs, 5-6 ou 6-7 pour le preneur)
@@ -1280,7 +1313,7 @@ const lancerDistributionRestanteAnimee = useCallback(
         });
       }, distribution.pauseAvantPrise);
 
-      timeoutsRef.current.push(timeoutPrise);
+      timeoutsControleurRef.current.push(timeoutPrise);
     };
 
     const lancerDistribApresSlide = () => {
@@ -1317,15 +1350,14 @@ const lancerDistributionRestanteAnimee = useCallback(
         0.5, // x départ (centre)
         0.35, // y départ (au-dessus du pli)
         positionPreneur,
-        () => {
-          // Ajouter au ref du preneur
-          // (la carte a déjà été ajoutée dans cartesSurTapis par glisserCarteRetournee)
-          // On doit aussi l'ajouter au ref
-          const derniereTapis = animations.cartesSurTapis;
-          // Utiliser un timeout court pour laisser le state se mettre à jour
-          setTimeout(() => {
+        (carteSurTapis) => {
+          // Ajouter la carte retournée au ref du preneur pour la Phase 2
+          cartesTapisParJoueurRef.current[positionPreneur].push(carteSurTapis);
+          // Courte pause puis distribuer les cartes restantes
+          const timeoutSlide = setTimeout(() => {
             lancerDistribApresSlide();
           }, ANIMATIONS.distribution.pauseAvantPrise);
+          timeoutsControleurRef.current.push(timeoutSlide);
         },
       );
 
@@ -1394,9 +1426,9 @@ const lancerPhase3Restante = useCallback(
       setTimeout(() => jouerBotSiNecessaire(), 600);
     }, distribution.pauseAvantTri);
 
-    timeoutsRef.current.push(timeout);
+    timeoutsControleurRef.current.push(timeout);
   },
-  [extraireEtatUI, jouerBotSiNecessaire],
+  [extraireEtatUI, jouerBotSiNecessaire, lancerPhase3Restante],
 );
 ```
 
@@ -1411,6 +1443,8 @@ return () => {
   annulerDelai();
   if (timerBeloteRef.current) clearTimeout(timerBeloteRef.current);
   animations.annulerAnimations();
+  for (const t of timeoutsControleurRef.current) clearTimeout(t);
+  timeoutsControleurRef.current = [];
   cartesTapisParJoueurRef.current = { sud: [], ouest: [], nord: [], est: [] };
   acteur.stop();
   acteurRef.current = null;
