@@ -13,10 +13,17 @@ const SYMBOLES_COULEUR: Record<Couleur, string> = {
 };
 
 const COULEURS_SYMBOLE: Record<Couleur, string> = {
-  coeur: "#cc0000",
-  carreau: "#cc0000",
-  pique: "#1a1a1a",
-  trefle: "#1a1a1a",
+  coeur: "#ff4444",
+  carreau: "#ff4444",
+  pique: "#ffffff",
+  trefle: "#ffffff",
+};
+
+const FONDS_ATOUT: Record<Couleur, string> = {
+  coeur: "rgba(180, 30, 30, 0.85)",
+  carreau: "rgba(180, 30, 30, 0.85)",
+  pique: "rgba(40, 40, 60, 0.85)",
+  trefle: "rgba(40, 40, 60, 0.85)",
 };
 
 const NOMS_JOUEUR: Record<PositionJoueur, string> = {
@@ -40,16 +47,16 @@ const INITIALES: Record<PositionJoueur, string> = {
   est: "E",
 };
 
-// Positions des avatars — à gauche des cartes de chaque joueur
+// Positions des avatars — sud : près des cartes ; ouest/est : devant le fan
 const POSITIONS_AVATAR: Record<PositionJoueur, { x: number; y: number }> = {
-  sud: { x: 0.18, y: 0.86 }, // à gauche du fan horizontal en bas
-  nord: { x: 0.28, y: 0.03 }, // à gauche du fan horizontal en haut
-  ouest: { x: 0.01, y: 0.2 }, // à gauche du fan vertical, au-dessus
-  est: { x: 0.82, y: 0.48 }, // à gauche du fan vertical à droite
+  sud: { x: 0.24, y: 0.78 }, // collé au bord gauche du fan en bas
+  nord: { x: 0.65, y: 0.12 }, // à droite du fan horizontal en haut
+  ouest: { x: 0.11, y: 0.5 }, // devant le fan vertical (entre cartes et centre)
+  est: { x: 0.87, y: 0.5 }, // devant le fan vertical (entre cartes et centre)
 };
 
 const estWeb = Platform.OS === "web";
-const TAILLE_AVATAR = estWeb ? 38 : 30;
+const TAILLE_AVATAR = estWeb ? 52 : 44;
 
 // --- Props ---
 
@@ -191,8 +198,8 @@ function determineBadge(
     couleurAtout
   ) {
     return {
-      texte: `${SYMBOLES_COULEUR[couleurAtout]}`,
-      fond: "rgba(0,0,0,0.7)",
+      texte: `${SYMBOLES_COULEUR[couleurAtout]} Prend`,
+      fond: FONDS_ATOUT[couleurAtout],
       couleurTexte: COULEURS_SYMBOLE[couleurAtout],
     };
   }
@@ -207,7 +214,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     alignItems: "center",
     zIndex: 12,
-    width: TAILLE_AVATAR + 20,
+    width: TAILLE_AVATAR + 24,
   },
   avatar: {
     width: TAILLE_AVATAR,
@@ -218,26 +225,29 @@ const styles = StyleSheet.create({
   },
   initiale: {
     color: "#ffffff",
-    fontSize: estWeb ? 16 : 13,
+    fontSize: estWeb ? 22 : 18,
     fontWeight: "bold",
   },
   nom: {
     color: "#ffffff",
-    fontSize: estWeb ? 10 : 8,
-    marginTop: 2,
+    fontSize: estWeb ? 12 : 10,
+    marginTop: 3,
     textShadowColor: "rgba(0,0,0,0.8)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   badge: {
-    marginTop: 2,
-    paddingHorizontal: estWeb ? 8 : 6,
-    paddingVertical: estWeb ? 3 : 2,
-    borderRadius: 8,
+    marginTop: 3,
+    paddingHorizontal: estWeb ? 10 : 8,
+    paddingVertical: estWeb ? 4 : 3,
+    borderRadius: 10,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
   },
   texteBadge: {
-    fontSize: estWeb ? 12 : 10,
+    fontSize: estWeb ? 13 : 11,
     fontWeight: "bold",
+    letterSpacing: 0.3,
   },
 });

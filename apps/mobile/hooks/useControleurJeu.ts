@@ -372,7 +372,12 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
 
   // --- Boucle de jeu des bots ---
   const jouerBotSiNecessaire = useCallback(async () => {
-    if (estDemonte.current || estOccupe.current || animationDistribEnCours.current)
+    if (
+      estDemonte.current ||
+      estOccupe.current ||
+      animationDistribEnCours.current ||
+      animationPliEnCours.current
+    )
       return;
 
     const acteur = acteurRef.current;
@@ -441,11 +446,17 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
           }));
         }
 
-        // Animer le jeu de carte du bot
-        animations.lancerAnimationJeuCarte(action.carte, positionBot, () => {
-          if (estDemonte.current) return;
-          // Envoyer l'événement après l'animation
-          acteur.send(actionBotVersEvenement(action));
+        // Animer le jeu de carte du bot et attendre la fin avant de relâcher estOccupe
+        await new Promise<void>((resolve) => {
+          animations.lancerAnimationJeuCarte(action.carte, positionBot, () => {
+            if (estDemonte.current) {
+              resolve();
+              return;
+            }
+            // Envoyer l'événement après l'animation
+            acteur.send(actionBotVersEvenement(action));
+            resolve();
+          });
         });
       } else if (action.type === "PRENDRE" || action.type === "ANNONCER") {
         // Bot prend/annonce → distribution restante à animer
@@ -662,6 +673,10 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
 
       // Mettre à jour l'état UI — mais ne pas écraser les mains pendant l'animation
       const nouvelEtat = extraireEtatUI(contexte, etatMachine);
+
+      // Détecter un nouveau pli AVANT la mise à jour d'état
+      const nouveauPliDetecte = contexte.historiquePlis.length > nbPlisVus.current;
+
       if (animationDistribEnCours.current) {
         // Pendant la distribution animée, on ne met à jour que les champs non-visuels
         // (les mains, le nombre de cartes adversaires et la phaseUI sont gérés
@@ -675,6 +690,15 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
           nbCartesAdversaires: prev.nbCartesAdversaires,
           carteRetournee: prev.carteRetournee,
           phaseEncheres: prev.phaseEncheres,
+        }));
+      } else if (nouveauPliDetecte) {
+        // Nouveau pli complété — afficher les 4 cartes depuis l'historique
+        // (le contexte machine a déjà vidé pliEnCours, on le restaure ici)
+        const dernierPli = contexte.historiquePlis[contexte.historiquePlis.length - 1];
+        setEtatJeu((prev) => ({
+          ...prev,
+          ...nouvelEtat,
+          pliEnCours: dernierPli.cartes,
         }));
       } else if (animationPliEnCours.current) {
         // Pendant le ramassage du pli, préserver les cartes visuelles au centre
@@ -697,10 +721,8 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
         }, 2000);
       }
 
-      // Détecter un nouveau pli complété (historiquePlis a grandi)
-      // Note : finPli a une transition `always` donc le subscriber ne le voit jamais,
-      // on détecte donc la complétion par la longueur de l'historique
-      if (contexte.historiquePlis.length > nbPlisVus.current) {
+      // Lancer l'animation de ramassage pour le nouveau pli détecté
+      if (nouveauPliDetecte) {
         nbPlisVus.current = contexte.historiquePlis.length;
         lancerRamassagePli(contexte);
         return; // Ne pas lancer le bot, on attend la fin de l'animation
