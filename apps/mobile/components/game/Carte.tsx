@@ -102,7 +102,7 @@ export function CarteSkia({
 
 // --- Dos de carte ---
 
-function CarteDos({ largeur, hauteur }: { largeur: number; hauteur: number }) {
+export function CarteDos({ largeur, hauteur }: { largeur: number; hauteur: number }) {
   const marge = largeur * 0.08;
   const tailleMotif = largeur * 0.12;
 
@@ -196,7 +196,7 @@ const dosStyles = StyleSheet.create({
 
 // --- Face de carte (image PNG) ---
 
-function CarteFace({
+export function CarteFace({
   carte,
   largeur,
   hauteur,

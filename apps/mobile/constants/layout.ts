@@ -69,15 +69,27 @@ export const INDICATEURS = {
 
 // --- Animations ---
 export const ANIMATIONS = {
-  // Distribution : cartes volent du centre vers les mains (paquets comme en vraie Belote)
+  // Distribution : 3 phases — tapis → prise en main (flip) → tri
   distribution: {
-    dureeCarte: 350, // durée de vol par carte (ms)
-    delaiDansPaquet: 60, // délai entre cartes d'un même paquet (ms) — quasi-simultané
-    delaiEntreJoueurs: 250, // délai entre les paquets de chaque joueur (ms)
-    pauseEntreTours: 600, // pause entre le tour de 3 et le tour de 2 (ms)
-    pauseAvantTri: 400, // pause après distribution avant animation de tri (ms)
-    originX: 0.5, // position X de départ (centre)
-    originY: 0.45, // position Y de départ (centre)
+    // Phase 1 — vol centre → tapis
+    dureeCarte: 300, // durée de vol par carte (ms)
+    delaiDansPaquet: 60, // délai entre cartes d'un même paquet (ms)
+    delaiEntreJoueurs: 200, // délai entre les paquets de chaque joueur (ms)
+    pauseEntreTours: 500, // pause entre le tour de 3 et le tour de 2 (ms)
+    offsetAleatoireMax: 0.02, // ±2% position aléatoire sur le tapis
+    rotationAleatoireMax: 15, // ±15° rotation aléatoire sur le tapis
+    decalagePaquet2: 0.03, // décalage x entre paquet 1 et 2
+    // Phase 2 — prise en main (flip + vol tapis → main)
+    dureePriseEnMain: 400, // durée du vol tapis → main (ms)
+    staggerPriseEnMain: 80, // délai entre chaque carte (ms)
+    pauseAvantPrise: 200, // pause après atterrissage avant prise (ms)
+    // Phase 3 — tri (existant)
+    pauseAvantTri: 400, // pause avant animation de tri (ms)
+    // Distribution restante — slide carte retournée
+    dureeSlideRetournee: 300, // durée du slide vers tapis preneur (ms)
+    // Origine (centre du tapis)
+    originX: 0.5,
+    originY: 0.45,
   },
   // Jeu de carte : main → centre
   jeuCarte: {
@@ -114,4 +126,12 @@ export const POSITIONS_MAINS = {
   nord: { x: 0.5, y: 0.02 },
   ouest: { x: 0.02, y: 0.5 },
   est: { x: 0.98, y: 0.5 },
+} as const;
+
+// --- Positions tapis (où les cartes atterrissent face cachée avant la prise en main) ---
+export const POSITIONS_TAPIS = {
+  sud: { x: 0.5, y: 0.75 },
+  nord: { x: 0.5, y: 0.18 },
+  ouest: { x: 0.18, y: 0.5 },
+  est: { x: 0.82, y: 0.5 },
 } as const;
