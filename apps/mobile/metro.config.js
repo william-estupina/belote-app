@@ -1,6 +1,17 @@
 const { getDefaultConfig } = require("expo/metro-config");
+const path = require("path");
 
-const config = getDefaultConfig(__dirname);
+const projectRoot = __dirname;
+const monorepoRoot = path.resolve(projectRoot, "../..");
+
+const config = getDefaultConfig(projectRoot);
+
+// Support monorepo : permettre à Metro de résoudre les packages workspace
+config.watchFolders = [monorepoRoot];
+config.resolver.nodeModulesPaths = [
+  path.resolve(projectRoot, "node_modules"),
+  path.resolve(monorepoRoot, "node_modules"),
+];
 
 // Zustand ESM (.mjs) utilise import.meta.env qui n'est pas supporté
 // dans les scripts non-module (Metro web). On force la résolution vers
