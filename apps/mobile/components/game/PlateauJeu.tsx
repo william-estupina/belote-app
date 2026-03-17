@@ -29,6 +29,7 @@ export default function PlateauJeu() {
   const {
     etatJeu,
     cartesEnVol,
+    cartesSurTapis,
     surAnimationTerminee,
     demarrerPartie,
     jouerCarte,
@@ -189,6 +190,7 @@ export default function PlateauJeu() {
           {/* Couche d'animation (cartes en vol) */}
           <CoucheAnimation
             cartesEnVol={cartesEnVol}
+            cartesSurTapis={cartesSurTapis}
             largeurEcran={largeur}
             hauteurEcran={hauteur}
             onAnimationTerminee={surAnimationTerminee}
