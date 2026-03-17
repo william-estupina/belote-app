@@ -74,7 +74,13 @@
 
 ### Étape 7 : Animations et interactions ✅
 
-- [x] Animation de distribution (`useAnimations.lancerDistribution` : cartes volent du centre vers chaque main avec délais échelonnés)
+- [x] Animation de distribution réaliste en 3 phases :
+  - Phase 1 : cartes volent du centre vers le tapis face cachée (éventails 3+2 avec position/rotation aléatoire)
+  - Phase 2 : prise en main par joueur avec flip 3D (`backfaceVisibility: 'hidden'`, `rotateY` 0→180°) — face révélée pour sud, dos pour bots
+  - Phase 3 : tri de la main (existant)
+  - Distribution restante gère la carte retournée du preneur (slide vers tapis + 2 cas preneur premier/non)
+  - Types : `CarteSurTapis`, `CarteEnVol` enrichi (`flipDe`, `flipVers`, `easing`)
+  - Composants : `CoucheAnimation` (rendu tapis + vol), `CarteAnimee` (flip 3D dual-layer), `useAnimations` (3 méthodes), `useControleurJeu` (orchestration)
 - [x] Tap pour jouer une carte (`MainJoueur` avec `Pressable` + feedback visuel au press)
 - [x] Griser les cartes non jouables (`CarteSkia` prop `grisee` + overlay semi-transparent)
 - [x] Animation de jeu de carte (main → centre) (`useAnimations.lancerAnimationJeuCarte` avec Reanimated)
