@@ -7,6 +7,7 @@ import type {
   Difficulte,
   VueBotJeu,
 } from "@belote/shared-types";
+import { POSITIONS_JOUEUR } from "@belote/shared-types";
 
 /** Compte le nombre de cartes d'une couleur dans la main */
 function compterCouleur(main: Carte[], couleur: Couleur): number {
@@ -159,8 +160,119 @@ function encheresMoyenTour1(vue: VueBotJeu): ActionBot {
   return { type: "PASSER" };
 }
 
-/** Bot difficile : stub en attente d'implémentation expert */
-function encheresDifficileTour1(_vue: VueBotJeu): ActionBot {
+/** Compte le nombre de couleurs couvertes hors atout (As ou 3+ cartes) */
+function compterCouleursCouvertes(main: Carte[], couleurAtout: Couleur): number {
+  const couleurs: Couleur[] = ["pique", "coeur", "carreau", "trefle"];
+  let couvertes = 0;
+  for (const couleur of couleurs) {
+    if (couleur === couleurAtout) continue;
+    const aAs = main.some((c) => c.couleur === couleur && c.rang === "as");
+    const nombreCartes = compterCouleur(main, couleur);
+    if (aAs || nombreCartes >= 3) {
+      couvertes++;
+    }
+  }
+  return couvertes;
+}
+
+/** Vérifie si la main contient Roi + Dame d'atout (belote/rebelote) */
+function aBeloteRebelote(main: Carte[], couleurAtout: Couleur): boolean {
+  const aRoi = main.some((c) => c.couleur === couleurAtout && c.rang === "roi");
+  const aDame = main.some((c) => c.couleur === couleurAtout && c.rang === "dame");
+  return aRoi && aDame;
+}
+
+/** Calcule la position relative du bot par rapport au donneur (0-3) */
+function calculerPositionRelative(maPosition: string, positionDonneur: string): number {
+  const indexBot = POSITIONS_JOUEUR.indexOf(
+    maPosition as (typeof POSITIONS_JOUEUR)[number],
+  );
+  const indexDonneur = POSITIONS_JOUEUR.indexOf(
+    positionDonneur as (typeof POSITIONS_JOUEUR)[number],
+  );
+  return (indexBot - indexDonneur + 4) % 4;
+}
+
+/** Bot difficile tour 1 : logique expert avec anti-chute et seuil adaptatif */
+function encheresDifficileTour1(vue: VueBotJeu): ActionBot {
+  if (vue.carteRetournee === null) {
+    return { type: "PASSER" };
+  }
+
+  const couleurRetournee = vue.carteRetournee.couleur;
+  const nombreAtouts = compterCouleur(vue.maMain, couleurRetournee);
+  const aValet = aValetAtout(vue.maMain, couleurRetournee);
+  const aNeuf = aNeufAtout(vue.maMain, couleurRetournee);
+
+  // Calcul des points d'atout (main + carte retournée)
+  let pointsAtout = 0;
+  for (const c of vue.maMain) {
+    if (c.couleur === couleurRetournee) {
+      pointsAtout += getPointsAtout(c.rang);
+    }
+  }
+  pointsAtout += getPointsAtout(vue.carteRetournee.rang);
+
+  // Calcul des points hors atout (As plein, 10 demi)
+  let pointsHorsAtout = 0;
+  for (const c of vue.maMain) {
+    if (c.couleur !== couleurRetournee) {
+      if (c.rang === "as") {
+        pointsHorsAtout += getPointsHorsAtout(c.rang);
+      } else if (c.rang === "10") {
+        pointsHorsAtout += getPointsHorsAtout(c.rang) / 2;
+      }
+    }
+  }
+
+  // Bonus belote/rebelote (+20 pts)
+  const belote = aBeloteRebelote(vue.maMain, couleurRetournee);
+  const bonusBelote = belote ? 20 : 0;
+
+  const pointsTotal = pointsAtout + pointsHorsAtout + bonusBelote;
+
+  // Couleurs couvertes hors atout
+  const couleursCouvertes = compterCouleursCouvertes(vue.maMain, couleurRetournee);
+
+  // Anti-chute : sans V+9, il faut au moins 2 couleurs couvertes et 2 atouts
+  if (!aValet || !aNeuf) {
+    if (couleursCouvertes < 2) {
+      return { type: "PASSER" };
+    }
+    if (nombreAtouts < 2) {
+      return { type: "PASSER" };
+    }
+  }
+
+  // Auto-prend : V+9 est une combinaison trop forte
+  if (aValet && aNeuf) {
+    return { type: "PRENDRE" };
+  }
+
+  // Seuil adaptatif
+  let seuil = 87;
+
+  // Bonus de position : donneur (pos 0, dernier à parler) ou 3e position
+  const posRelative = calculerPositionRelative(vue.maPosition, vue.positionDonneur);
+  if (posRelative === 0 || posRelative === 3) {
+    seuil -= 7;
+  }
+
+  // Bonus si écart de score important
+  if (Math.abs(vue.scoreMonEquipe - vue.scoreAdversaire) > 200) {
+    seuil -= 5;
+  }
+
+  // Main suffisamment forte en points avec au moins 2 atouts
+  if (pointsTotal >= seuil && nombreAtouts >= 2) {
+    return { type: "PRENDRE" };
+  }
+
+  // Bonus valet : seuil réduit de 5
+  if (aValet && pointsTotal >= seuil - 5) {
+    return { type: "PRENDRE" };
+  }
+
   return { type: "PASSER" };
 }
 
@@ -261,9 +373,107 @@ function encheresMoyenTour2(vue: VueBotJeu): ActionBot {
   return { type: "PASSER" };
 }
 
-/** Bot difficile tour 2 : stub en attente d'implémentation expert */
-function encheresDifficileTour2(_vue: VueBotJeu): ActionBot {
-  return { type: "PASSER" };
+/** Bot difficile tour 2 : logique expert avec seuil adaptatif */
+function encheresDifficileTour2(vue: VueBotJeu): ActionBot {
+  if (vue.carteRetournee === null) {
+    return { type: "PASSER" };
+  }
+
+  const couleurExclue = vue.carteRetournee.couleur;
+  const couleursCandidates: Couleur[] = (
+    ["pique", "coeur", "carreau", "trefle"] as Couleur[]
+  ).filter((c) => c !== couleurExclue);
+
+  let meilleureAction: ActionBot = { type: "PASSER" };
+  let meilleurPoints = -1;
+
+  for (const couleurCandidate of couleursCandidates) {
+    const nombreAtouts = compterCouleur(vue.maMain, couleurCandidate);
+    const aValet = aValetAtout(vue.maMain, couleurCandidate);
+    const aNeuf = aNeufAtout(vue.maMain, couleurCandidate);
+
+    // Calcul des points d'atout (pas de carte retournée au tour 2)
+    let pointsAtout = 0;
+    for (const c of vue.maMain) {
+      if (c.couleur === couleurCandidate) {
+        pointsAtout += getPointsAtout(c.rang);
+      }
+    }
+
+    // Calcul des points hors atout
+    let pointsHorsAtout = 0;
+    for (const c of vue.maMain) {
+      if (c.couleur !== couleurCandidate) {
+        if (c.rang === "as") {
+          pointsHorsAtout += getPointsHorsAtout(c.rang);
+        } else if (c.rang === "10") {
+          pointsHorsAtout += getPointsHorsAtout(c.rang) / 2;
+        }
+      }
+    }
+
+    // Bonus belote/rebelote
+    const belote = aBeloteRebelote(vue.maMain, couleurCandidate);
+    const bonusBelote = belote ? 20 : 0;
+
+    const pointsTotal = pointsAtout + pointsHorsAtout + bonusBelote;
+
+    // Couleurs couvertes
+    const couleursCouvertes = compterCouleursCouvertes(vue.maMain, couleurCandidate);
+
+    // Auto-prend : V+9 dans la couleur candidate
+    if (aValet && aNeuf) {
+      if (pointsTotal > meilleurPoints) {
+        meilleurPoints = pointsTotal;
+        meilleureAction = { type: "ANNONCER", couleur: couleurCandidate };
+      }
+      continue;
+    }
+
+    // Main longue : 4+ cartes avec V ou 9 → auto-annonce
+    if (nombreAtouts >= 4 && (aValet || aNeuf)) {
+      if (pointsTotal > meilleurPoints) {
+        meilleurPoints = pointsTotal;
+        meilleureAction = { type: "ANNONCER", couleur: couleurCandidate };
+      }
+      continue;
+    }
+
+    // Anti-chute : sans V+9, il faut 2 couleurs couvertes et 2+ atouts
+    if (couleursCouvertes < 2 || nombreAtouts < 2) {
+      continue;
+    }
+
+    // Seuil adaptatif (tour 2 : base 92, prime de risque +5)
+    let seuil = 92;
+
+    // Bonus de position
+    const posRelative = calculerPositionRelative(vue.maPosition, vue.positionDonneur);
+    if (posRelative === 0 || posRelative === 3) {
+      seuil -= 7;
+    }
+
+    // Bonus si écart de score important
+    if (Math.abs(vue.scoreMonEquipe - vue.scoreAdversaire) > 200) {
+      seuil -= 5;
+    }
+
+    // Main suffisamment forte
+    if (pointsTotal >= seuil && nombreAtouts >= 2) {
+      if (pointsTotal > meilleurPoints) {
+        meilleurPoints = pointsTotal;
+        meilleureAction = { type: "ANNONCER", couleur: couleurCandidate };
+      }
+    }
+
+    // Bonus valet
+    if (aValet && pointsTotal >= seuil - 5 && pointsTotal > meilleurPoints) {
+      meilleurPoints = pointsTotal;
+      meilleureAction = { type: "ANNONCER", couleur: couleurCandidate };
+    }
+  }
+
+  return meilleureAction;
 }
 
 // ──────────────────────────────────────────────

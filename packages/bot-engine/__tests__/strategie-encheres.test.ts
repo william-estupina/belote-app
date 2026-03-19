@@ -203,22 +203,102 @@ describe("deciderEncheres — Tour 1", () => {
     });
   });
 
-  describe("Bot difficile (stub expert)", () => {
-    it("passe toujours (stub en attente d'implémentation expert)", () => {
+  describe("Bot difficile tour 1 (expert)", () => {
+    it("prend avec valet + 9 + as hors atout (auto-prend)", () => {
       const vue = creerVueEncheres({
         maMain: [
-          carte("valet", "coeur"),
-          carte("9", "coeur"),
-          carte("as", "coeur"),
-          carte("as", "pique"),
-          carte("as", "trefle"),
+          carte("valet", "pique"),
+          carte("9", "pique"),
+          carte("7", "pique"),
+          carte("as", "carreau"),
+          carte("roi", "coeur"),
         ],
         phaseJeu: "encheres1",
-        carteRetournee: carte("10", "coeur"),
+        carteRetournee: carte("dame", "pique"),
+        positionDonneur: "est",
+        positionPreneur: null,
       });
+      const action = deciderEncheres(vue, "difficile");
+      expect(action.type).toBe("PRENDRE");
+    });
 
+    it("refuse sans 2 couleurs couvertes hors atout (anti-chute)", () => {
+      // Main sans valet+9, beaucoup d'atout mais rien hors atout
+      const vue = creerVueEncheres({
+        maMain: [
+          carte("as", "pique"),
+          carte("10", "pique"),
+          carte("roi", "pique"),
+          carte("dame", "pique"),
+          carte("8", "pique"),
+        ],
+        phaseJeu: "encheres1",
+        carteRetournee: carte("7", "pique"),
+        positionDonneur: "est",
+        positionPreneur: null,
+      });
       const action = deciderEncheres(vue, "difficile");
       expect(action.type).toBe("PASSER");
+    });
+
+    it("passe avec main faible en points", () => {
+      const vue = creerVueEncheres({
+        maMain: [
+          carte("7", "pique"),
+          carte("8", "trefle"),
+          carte("7", "carreau"),
+          carte("8", "carreau"),
+          carte("dame", "pique"),
+        ],
+        phaseJeu: "encheres1",
+        carteRetournee: carte("7", "coeur"),
+        positionDonneur: "est",
+        positionPreneur: null,
+      });
+      const action = deciderEncheres(vue, "difficile");
+      expect(action.type).toBe("PASSER");
+    });
+
+    it("prend avec main très forte en points", () => {
+      const vue = creerVueEncheres({
+        maMain: [
+          carte("valet", "coeur"), // 20 atout
+          carte("9", "coeur"), // 14 atout
+          carte("as", "coeur"), // 11 atout
+          carte("as", "pique"), // 11 hors atout
+          carte("as", "trefle"), // 11 hors atout
+        ],
+        phaseJeu: "encheres1",
+        carteRetournee: carte("10", "coeur"), // 10 atout
+        positionDonneur: "est",
+        positionPreneur: null,
+      });
+      const action = deciderEncheres(vue, "difficile");
+      expect(action.type).toBe("PRENDRE");
+    });
+
+    it("compte belote/rebelote (+20 pts) dans l'évaluation", () => {
+      // Roi+Dame d'atout + Valet = Belote possible
+      const vue = creerVueEncheres({
+        maMain: [
+          carte("roi", "pique"),
+          carte("dame", "pique"),
+          carte("valet", "pique"), // 20 pts atout
+          carte("as", "carreau"), // 11 pts hors atout
+          carte("as", "coeur"), // 11 pts hors atout
+        ],
+        phaseJeu: "encheres1",
+        carteRetournee: carte("9", "pique"), // 14 pts atout
+        positionDonneur: "sud",
+        maPosition: "sud",
+        positionPreneur: null,
+      });
+      // Atout: roi(3)+dame(2)+valet(20)+retournée 9(14) = 39
+      // Belote: +20 = 59
+      // Hors: as(11)+as(11) = 22
+      // Total: 81 → sous seuil 87 normal, mais position donneur (seuil 80) → PRENDRE
+      const action = deciderEncheres(vue, "difficile");
+      expect(action.type).toBe("PRENDRE");
     });
   });
 
@@ -332,22 +412,64 @@ describe("deciderEncheres — Tour 2", () => {
     });
   });
 
-  describe("Bot difficile (stub expert)", () => {
-    it("passe toujours (stub en attente d'implémentation expert)", () => {
+  describe("Bot difficile tour 2 (expert)", () => {
+    it("annonce avec main longue (4+ cartes) contenant valet", () => {
       const vue = creerVueEncheres({
         maMain: [
-          carte("valet", "trefle"),
-          carte("9", "trefle"),
-          carte("as", "trefle"),
-          carte("as", "pique"),
-          carte("10", "carreau"),
+          carte("valet", "coeur"),
+          carte("as", "coeur"),
+          carte("10", "coeur"),
+          carte("roi", "coeur"),
+          carte("7", "carreau"),
         ],
         phaseJeu: "encheres2",
-        carteRetournee: carte("roi", "coeur"),
+        carteRetournee: carte("roi", "pique"), // pique exclu
+        positionDonneur: "est",
+        positionPreneur: null,
       });
+      const action = deciderEncheres(vue, "difficile");
+      expect(action.type).toBe("ANNONCER");
+      if (action.type === "ANNONCER") {
+        expect(action.couleur).toBe("coeur");
+      }
+    });
 
+    it("passe avec main faible", () => {
+      const vue = creerVueEncheres({
+        maMain: [
+          carte("7", "coeur"),
+          carte("8", "carreau"),
+          carte("dame", "trefle"),
+          carte("7", "trefle"),
+          carte("8", "pique"),
+        ],
+        phaseJeu: "encheres2",
+        carteRetournee: carte("roi", "pique"),
+        positionDonneur: "est",
+        positionPreneur: null,
+      });
       const action = deciderEncheres(vue, "difficile");
       expect(action.type).toBe("PASSER");
+    });
+
+    it("ne propose pas la couleur de la retournée", () => {
+      const vue = creerVueEncheres({
+        maMain: [
+          carte("valet", "pique"),
+          carte("9", "pique"),
+          carte("as", "pique"),
+          carte("7", "carreau"),
+          carte("8", "trefle"),
+        ],
+        phaseJeu: "encheres2",
+        carteRetournee: carte("roi", "pique"), // pique exclu
+        positionDonneur: "est",
+        positionPreneur: null,
+      });
+      const action = deciderEncheres(vue, "difficile");
+      if (action.type === "ANNONCER") {
+        expect(action.couleur).not.toBe("pique");
+      }
     });
   });
 
