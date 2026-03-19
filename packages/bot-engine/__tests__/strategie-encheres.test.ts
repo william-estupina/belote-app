@@ -36,48 +36,7 @@ function creerVueEncheres(
 // ──────────────────────────────────────────────
 
 describe("deciderEncheres — Tour 1", () => {
-  describe("Bot facile", () => {
-    it("passe si moins de 2 atouts", () => {
-      const vue = creerVueEncheres({
-        maMain: [
-          carte("as", "pique"),
-          carte("roi", "pique"),
-          carte("dame", "trefle"),
-          carte("10", "carreau"),
-          carte("7", "coeur"), // 1 seul atout (coeur)
-        ],
-        phaseJeu: "encheres1",
-        carteRetournee: carte("valet", "coeur"),
-      });
-
-      // Avec 1 seul atout, le bot facile passe toujours
-      const resultats = new Set<string>();
-      for (let i = 0; i < 50; i++) {
-        resultats.add(deciderEncheres(vue, "facile").type);
-      }
-      expect(resultats.has("PRENDRE")).toBe(false);
-    });
-
-    it("prend parfois avec 3+ atouts", () => {
-      const vue = creerVueEncheres({
-        maMain: [
-          carte("as", "coeur"),
-          carte("roi", "coeur"),
-          carte("dame", "coeur"),
-          carte("10", "pique"),
-          carte("7", "trefle"),
-        ],
-        phaseJeu: "encheres1",
-        carteRetournee: carte("valet", "coeur"),
-      });
-
-      // Avec 3 atouts, le bot facile prend toujours
-      const action = deciderEncheres(vue, "facile");
-      expect(action.type).toBe("PRENDRE");
-    });
-  });
-
-  describe("Bot moyen", () => {
+  describe("Bot facile (ancien moyen + erreurs 12%)", () => {
     it("prend avec Valet + 9 d'atout", () => {
       const vue = creerVueEncheres({
         maMain: [
@@ -91,8 +50,13 @@ describe("deciderEncheres — Tour 1", () => {
         carteRetournee: carte("as", "coeur"),
       });
 
-      const action = deciderEncheres(vue, "moyen");
-      expect(action.type).toBe("PRENDRE");
+      // La majorité des appels doit retourner PRENDRE (sauf erreur 12%)
+      let nbPrises = 0;
+      for (let i = 0; i < 100; i++) {
+        const action = deciderEncheres(vue, "facile");
+        if (action.type === "PRENDRE") nbPrises++;
+      }
+      expect(nbPrises).toBeGreaterThan(75);
     });
 
     it("prend avec Valet d'atout + un As", () => {
@@ -108,8 +72,13 @@ describe("deciderEncheres — Tour 1", () => {
         carteRetournee: carte("roi", "coeur"),
       });
 
-      const action = deciderEncheres(vue, "moyen");
-      expect(action.type).toBe("PRENDRE");
+      // La majorité des appels doit retourner PRENDRE
+      let nbPrises = 0;
+      for (let i = 0; i < 100; i++) {
+        const action = deciderEncheres(vue, "facile");
+        if (action.type === "PRENDRE") nbPrises++;
+      }
+      expect(nbPrises).toBeGreaterThan(75);
     });
 
     it("passe avec une main faible", () => {
@@ -125,8 +94,13 @@ describe("deciderEncheres — Tour 1", () => {
         carteRetournee: carte("as", "coeur"),
       });
 
-      const action = deciderEncheres(vue, "moyen");
-      expect(action.type).toBe("PASSER");
+      // La majorité des appels doit retourner PASSER (sauf erreur 12%)
+      let nbPasses = 0;
+      for (let i = 0; i < 100; i++) {
+        const action = deciderEncheres(vue, "facile");
+        if (action.type === "PASSER") nbPasses++;
+      }
+      expect(nbPasses).toBeGreaterThan(75);
     });
 
     it("prend avec 4+ atouts même sans Valet/9", () => {
@@ -142,12 +116,41 @@ describe("deciderEncheres — Tour 1", () => {
         carteRetournee: carte("10", "coeur"),
       });
 
-      const action = deciderEncheres(vue, "moyen");
-      expect(action.type).toBe("PRENDRE");
+      // La majorité des appels doit retourner PRENDRE
+      let nbPrises = 0;
+      for (let i = 0; i < 100; i++) {
+        const action = deciderEncheres(vue, "facile");
+        if (action.type === "PRENDRE") nbPrises++;
+      }
+      expect(nbPrises).toBeGreaterThan(75);
+    });
+
+    it("inverse parfois la décision (composante aléatoire 12%)", () => {
+      // Main forte (Valet+9) qui devrait toujours PRENDRE
+      const vue = creerVueEncheres({
+        maMain: [
+          carte("valet", "coeur"),
+          carte("9", "coeur"),
+          carte("as", "pique"),
+          carte("as", "trefle"),
+          carte("as", "carreau"),
+        ],
+        phaseJeu: "encheres1",
+        carteRetournee: carte("as", "coeur"),
+      });
+
+      let nbPrises = 0;
+      for (let i = 0; i < 100; i++) {
+        const action = deciderEncheres(vue, "facile");
+        if (action.type === "PRENDRE") nbPrises++;
+      }
+      // Doit prendre souvent mais pas toujours (erreur ~12%)
+      expect(nbPrises).toBeGreaterThan(75);
+      expect(nbPrises).toBeLessThan(100);
     });
   });
 
-  describe("Bot difficile", () => {
+  describe("Bot moyen (ancien difficile)", () => {
     it("prend avec Valet + 9 d'atout (toujours)", () => {
       const vue = creerVueEncheres({
         maMain: [
@@ -161,7 +164,7 @@ describe("deciderEncheres — Tour 1", () => {
         carteRetournee: carte("as", "coeur"),
       });
 
-      const action = deciderEncheres(vue, "difficile");
+      const action = deciderEncheres(vue, "moyen");
       expect(action.type).toBe("PRENDRE");
     });
 
@@ -178,7 +181,7 @@ describe("deciderEncheres — Tour 1", () => {
         carteRetournee: carte("7", "coeur"),
       });
 
-      const action = deciderEncheres(vue, "difficile");
+      const action = deciderEncheres(vue, "moyen");
       expect(action.type).toBe("PASSER");
     });
 
@@ -195,8 +198,27 @@ describe("deciderEncheres — Tour 1", () => {
         carteRetournee: carte("10", "coeur"), // 10 pts atout
       });
 
-      const action = deciderEncheres(vue, "difficile");
+      const action = deciderEncheres(vue, "moyen");
       expect(action.type).toBe("PRENDRE");
+    });
+  });
+
+  describe("Bot difficile (stub expert)", () => {
+    it("passe toujours (stub en attente d'implémentation expert)", () => {
+      const vue = creerVueEncheres({
+        maMain: [
+          carte("valet", "coeur"),
+          carte("9", "coeur"),
+          carte("as", "coeur"),
+          carte("as", "pique"),
+          carte("as", "trefle"),
+        ],
+        phaseJeu: "encheres1",
+        carteRetournee: carte("10", "coeur"),
+      });
+
+      const action = deciderEncheres(vue, "difficile");
+      expect(action.type).toBe("PASSER");
     });
   });
 
@@ -219,7 +241,7 @@ describe("deciderEncheres — Tour 1", () => {
 // ──────────────────────────────────────────────
 
 describe("deciderEncheres — Tour 2", () => {
-  describe("Bot moyen", () => {
+  describe("Bot facile (ancien moyen + erreurs 12%)", () => {
     it("propose une couleur avec Valet + 9", () => {
       const vue = creerVueEncheres({
         maMain: [
@@ -233,11 +255,16 @@ describe("deciderEncheres — Tour 2", () => {
         carteRetournee: carte("as", "coeur"), // coeur exclu au tour 2
       });
 
-      const action = deciderEncheres(vue, "moyen");
-      expect(action.type).toBe("ANNONCER");
-      if (action.type === "ANNONCER") {
-        expect(action.couleur).toBe("pique");
+      // La majorité des appels doit retourner ANNONCER (sauf erreur 12%)
+      let nbAnnonces = 0;
+      for (let i = 0; i < 100; i++) {
+        const action = deciderEncheres(vue, "facile");
+        if (action.type === "ANNONCER") {
+          nbAnnonces++;
+          expect(action.couleur).toBe("pique");
+        }
       }
+      expect(nbAnnonces).toBeGreaterThan(75);
     });
 
     it("passe avec une main faible dans toutes les couleurs", () => {
@@ -253,12 +280,17 @@ describe("deciderEncheres — Tour 2", () => {
         carteRetournee: carte("as", "coeur"),
       });
 
-      const action = deciderEncheres(vue, "moyen");
-      expect(action.type).toBe("PASSER");
+      // La majorité des appels doit retourner PASSER
+      let nbPasses = 0;
+      for (let i = 0; i < 100; i++) {
+        const action = deciderEncheres(vue, "facile");
+        if (action.type === "PASSER") nbPasses++;
+      }
+      expect(nbPasses).toBeGreaterThan(75);
     });
   });
 
-  describe("Bot difficile", () => {
+  describe("Bot moyen (ancien difficile)", () => {
     it("propose la meilleure couleur avec des points suffisants", () => {
       const vue = creerVueEncheres({
         maMain: [
@@ -272,7 +304,7 @@ describe("deciderEncheres — Tour 2", () => {
         carteRetournee: carte("roi", "coeur"),
       });
 
-      const action = deciderEncheres(vue, "difficile");
+      const action = deciderEncheres(vue, "moyen");
       expect(action.type).toBe("ANNONCER");
       if (action.type === "ANNONCER") {
         expect(action.couleur).toBe("trefle");
@@ -292,11 +324,30 @@ describe("deciderEncheres — Tour 2", () => {
         carteRetournee: carte("roi", "coeur"), // coeur exclu
       });
 
-      const action = deciderEncheres(vue, "difficile");
+      const action = deciderEncheres(vue, "moyen");
       // Même avec une super main coeur, on ne peut pas proposer coeur au tour 2
       if (action.type === "ANNONCER") {
         expect(action.couleur).not.toBe("coeur");
       }
+    });
+  });
+
+  describe("Bot difficile (stub expert)", () => {
+    it("passe toujours (stub en attente d'implémentation expert)", () => {
+      const vue = creerVueEncheres({
+        maMain: [
+          carte("valet", "trefle"),
+          carte("9", "trefle"),
+          carte("as", "trefle"),
+          carte("as", "pique"),
+          carte("10", "carreau"),
+        ],
+        phaseJeu: "encheres2",
+        carteRetournee: carte("roi", "coeur"),
+      });
+
+      const action = deciderEncheres(vue, "difficile");
+      expect(action.type).toBe("PASSER");
     });
   });
 

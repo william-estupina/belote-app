@@ -50,32 +50,46 @@ function estimerPointsPotentiels(main: Carte[], couleurAtout: Couleur): number {
   return points;
 }
 
+/** Inverse la décision avec une probabilité de 12% (taux d'erreur bot facile) */
+function avecErreurAleatoire(action: ActionBot): ActionBot {
+  if (Math.random() < 0.12) {
+    // Inverser la décision
+    if (action.type === "PRENDRE") {
+      return { type: "PASSER" };
+    }
+    if (action.type === "PASSER") {
+      return { type: "PRENDRE" };
+    }
+    // Pour ANNONCER, on passe
+    if (action.type === "ANNONCER") {
+      return { type: "PASSER" };
+    }
+  }
+  return action;
+}
+
+/** Inverse la décision tour 2 avec une probabilité de 12% */
+function avecErreurAleatoireTour2(
+  action: ActionBot,
+  couleurOriginale: Couleur | null,
+): ActionBot {
+  if (Math.random() < 0.12) {
+    if (action.type === "ANNONCER") {
+      return { type: "PASSER" };
+    }
+    if (action.type === "PASSER" && couleurOriginale !== null) {
+      return { type: "ANNONCER", couleur: couleurOriginale };
+    }
+  }
+  return action;
+}
+
 // ──────────────────────────────────────────────
 // Enchères tour 1 : prendre la retourne ou passer
 // ──────────────────────────────────────────────
 
-/** Bot facile : prend aléatoirement si ≥ 3 atouts en main */
+/** Bot facile : heuristiques (ancien moyen) + 12% d'erreur aléatoire */
 function encheresFacileTour1(vue: VueBotJeu): ActionBot {
-  if (vue.carteRetournee === null) {
-    return { type: "PASSER" };
-  }
-
-  const couleurRetournee = vue.carteRetournee.couleur;
-  const nombreAtouts = compterCouleur(vue.maMain, couleurRetournee);
-
-  // Prend si ≥ 3 atouts (en comptant la retourne qu'on récupérera)
-  if (nombreAtouts >= 2 && Math.random() < 0.6) {
-    return { type: "PRENDRE" };
-  }
-  if (nombreAtouts >= 3) {
-    return { type: "PRENDRE" };
-  }
-
-  return { type: "PASSER" };
-}
-
-/** Bot moyen : évalue la main (Valet + 9 d'atout = très bon, 3+ atouts avec des points = prendre) */
-function encheresMoyenTour1(vue: VueBotJeu): ActionBot {
   if (vue.carteRetournee === null) {
     return { type: "PASSER" };
   }
@@ -86,31 +100,32 @@ function encheresMoyenTour1(vue: VueBotJeu): ActionBot {
   const aNeuf = aNeufAtout(vue.maMain, couleurRetournee);
   const nombreAs = compterAsHorsAtout(vue.maMain, couleurRetournee);
 
+  let decision: ActionBot;
+
   // Valet + 9 d'atout = excellente main, prendre sans hésiter
   if (aValet && aNeuf) {
-    return { type: "PRENDRE" };
+    decision = { type: "PRENDRE" };
   }
-
   // Valet d'atout + 2 autres atouts ou un As = bonne main
-  if (aValet && (nombreAtouts >= 2 || nombreAs >= 1)) {
-    return { type: "PRENDRE" };
+  else if (aValet && (nombreAtouts >= 2 || nombreAs >= 1)) {
+    decision = { type: "PRENDRE" };
   }
-
   // 3+ atouts avec des points significatifs
-  if (nombreAtouts >= 3 && (aValet || aNeuf)) {
-    return { type: "PRENDRE" };
+  else if (nombreAtouts >= 3 && (aValet || aNeuf)) {
+    decision = { type: "PRENDRE" };
   }
-
   // 4+ atouts même sans le valet/9
-  if (nombreAtouts >= 4) {
-    return { type: "PRENDRE" };
+  else if (nombreAtouts >= 4) {
+    decision = { type: "PRENDRE" };
+  } else {
+    decision = { type: "PASSER" };
   }
 
-  return { type: "PASSER" };
+  return avecErreurAleatoire(decision);
 }
 
-/** Bot difficile : compte les points potentiels, prend si ≥ 5 points au-delà du minimum (82) */
-function encheresDifficileTour1(vue: VueBotJeu): ActionBot {
+/** Bot moyen : compte les points potentiels (ancien difficile) */
+function encheresMoyenTour1(vue: VueBotJeu): ActionBot {
   if (vue.carteRetournee === null) {
     return { type: "PASSER" };
   }
@@ -141,6 +156,11 @@ function encheresDifficileTour1(vue: VueBotJeu): ActionBot {
     return { type: "PRENDRE" };
   }
 
+  return { type: "PASSER" };
+}
+
+/** Bot difficile : stub en attente d'implémentation expert */
+function encheresDifficileTour1(_vue: VueBotJeu): ActionBot {
   return { type: "PASSER" };
 }
 
@@ -175,24 +195,8 @@ function trouverMeilleureCouleur(
   return meilleure;
 }
 
-/** Bot facile tour 2 : propose rarement, si ≥ 3 atouts dans une autre couleur */
+/** Bot facile tour 2 : heuristiques (ancien moyen) + 12% d'erreur */
 function encheresFacileTour2(vue: VueBotJeu): ActionBot {
-  if (vue.carteRetournee === null) {
-    return { type: "PASSER" };
-  }
-
-  const couleurExclue = vue.carteRetournee.couleur;
-  const meilleure = trouverMeilleureCouleur(vue.maMain, couleurExclue);
-
-  if (meilleure !== null && meilleure.nombreAtouts >= 3 && Math.random() < 0.5) {
-    return { type: "ANNONCER", couleur: meilleure.couleur };
-  }
-
-  return { type: "PASSER" };
-}
-
-/** Bot moyen tour 2 : propose si bonne main dans une autre couleur */
-function encheresMoyenTour2(vue: VueBotJeu): ActionBot {
   if (vue.carteRetournee === null) {
     return { type: "PASSER" };
   }
@@ -207,21 +211,24 @@ function encheresMoyenTour2(vue: VueBotJeu): ActionBot {
   const aValet = aValetAtout(vue.maMain, meilleure.couleur);
   const aNeuf = aNeufAtout(vue.maMain, meilleure.couleur);
 
+  let decision: ActionBot;
+
   // Valet + 9 ou 4+ atouts
   if ((aValet && aNeuf) || meilleure.nombreAtouts >= 4) {
-    return { type: "ANNONCER", couleur: meilleure.couleur };
+    decision = { type: "ANNONCER", couleur: meilleure.couleur };
   }
-
   // Valet + 2 atouts
-  if (aValet && meilleure.nombreAtouts >= 2) {
-    return { type: "ANNONCER", couleur: meilleure.couleur };
+  else if (aValet && meilleure.nombreAtouts >= 2) {
+    decision = { type: "ANNONCER", couleur: meilleure.couleur };
+  } else {
+    decision = { type: "PASSER" };
   }
 
-  return { type: "PASSER" };
+  return avecErreurAleatoireTour2(decision, meilleure.couleur);
 }
 
-/** Bot difficile tour 2 : analyse fine des points potentiels */
-function encheresDifficileTour2(vue: VueBotJeu): ActionBot {
+/** Bot moyen tour 2 : analyse fine des points potentiels (ancien difficile) */
+function encheresMoyenTour2(vue: VueBotJeu): ActionBot {
   if (vue.carteRetournee === null) {
     return { type: "PASSER" };
   }
@@ -251,6 +258,11 @@ function encheresDifficileTour2(vue: VueBotJeu): ActionBot {
     return { type: "ANNONCER", couleur: meilleure.couleur };
   }
 
+  return { type: "PASSER" };
+}
+
+/** Bot difficile tour 2 : stub en attente d'implémentation expert */
+function encheresDifficileTour2(_vue: VueBotJeu): ActionBot {
   return { type: "PASSER" };
 }
 
