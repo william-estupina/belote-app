@@ -111,7 +111,7 @@ export function estCarteMaitresse(
   carte: Carte,
   couleurAtout: Couleur,
   suivi: SuiviCartes,
-  maMain: Carte[],
+  _maMain: Carte[],
 ): boolean {
   if (carte.couleur === couleurAtout) {
     // Pour l'atout, vérifier l'ordre atout

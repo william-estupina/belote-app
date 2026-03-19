@@ -271,7 +271,7 @@ function contrerAdversaireMoyen(
   jouables: Carte[],
   couleurAtout: Couleur,
   vue: VueBotJeu,
-  suivi: ReturnType<typeof construireSuiviCartes>,
+  _suivi: ReturnType<typeof construireSuiviCartes>,
 ): ActionBot {
   const couleurDemandee = vue.pliEnCours[0].carte.couleur;
 
