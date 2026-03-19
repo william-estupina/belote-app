@@ -351,6 +351,9 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
         phaseJeu,
         carteRetournee: contexte.carteRetournee,
         historiqueEncheres: contexte.historiqueEncheres,
+        positionPreneur:
+          contexte.indexPreneur !== null ? POSITIONS_JOUEUR[contexte.indexPreneur] : null,
+        positionDonneur: POSITIONS_JOUEUR[contexte.indexDonneur],
       };
     },
     [],

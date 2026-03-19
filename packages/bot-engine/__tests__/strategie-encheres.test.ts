@@ -25,6 +25,8 @@ function creerVueEncheres(
     scoreAdversaire: 0,
     carteRetournee: carte("valet", "coeur"),
     historiqueEncheres: [],
+    positionPreneur: "sud",
+    positionDonneur: "est",
     ...partiel,
   };
 }

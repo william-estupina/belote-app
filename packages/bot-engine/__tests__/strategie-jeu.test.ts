@@ -24,6 +24,8 @@ function creerVueJeu(partiel: Partial<VueBotJeu> & { maMain: Carte[] }): VueBotJ
     phaseJeu: "jeu",
     carteRetournee: null,
     historiqueEncheres: [],
+    positionPreneur: "sud",
+    positionDonneur: "est",
     ...partiel,
   };
 }

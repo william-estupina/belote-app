@@ -59,6 +59,8 @@ export interface VueBotJeu {
   phaseJeu: "encheres1" | "encheres2" | "jeu";
   carteRetournee: Carte | null;
   historiqueEncheres: ActionEnchere[];
+  positionPreneur: PositionJoueur | null;
+  positionDonneur: PositionJoueur;
 }
 
 export type ActionBot =
