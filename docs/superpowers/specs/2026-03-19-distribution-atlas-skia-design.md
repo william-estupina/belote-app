@@ -36,16 +36,23 @@ Une image unique (~1336×1210px) contenant les 32 faces de cartes + 1 dos, organ
 
 - `assets/sprites/sprite-sheet.png` — sprite sheet générée
 - `assets/sprites/dos.png` — dos seul (pour usages hors Atlas)
-- `apps/mobile/scripts/generer-sprite-sheet.ts` — script Node (sharp) pour assembler les PNG existants
+- `apps/mobile/scripts/generer-sprite-sheet.ts` — script Node (`sharp` en devDependency de `@belote/mobile`) pour assembler les PNG existants
 
-**Module utilitaire** `apps/mobile/utils/atlas-cartes.ts` :
+**Hook utilitaire** `apps/mobile/hooks/useAtlasCartes.ts` (`.ts` car pas de JSX, mais c'est un hook React) :
 
 - `SPRITE_COLS = 8`, `SPRITE_ROWS = 5`
-- `rectSource(couleur, rang) → SkRect` — retourne le rectangle source dans la sprite sheet
+- `rectSource(couleur: Couleur, rang: Rang) → SkRect` — retourne le rectangle source dans la sprite sheet
 - `rectDos() → SkRect` — rectangle du dos (ligne 5, col 0)
-- Charge la sprite sheet via `useImage(require('assets/sprites/sprite-sheet.png'))`
+- Exporte un hook `useAtlasCartes()` qui appelle `useImage(require('assets/sprites/sprite-sheet.png'))` et retourne `{ image: SkImage | null, rectSource, rectDos }`
+- Les dimensions exactes des cellules sont calculées dynamiquement à partir de l'image chargée : `cellW = image.width() / SPRITE_COLS`, `cellH = image.height() / SPRITE_ROWS`
 
-### 3. Trajectoire : arc subtil (Bézier quadratique)
+### 3. Face visible vs dos pendant la distribution
+
+Pendant la distribution, **toutes les cartes volent face cachée (dos)** sauf celles passées dans `cartesVisibles` (identique au comportement actuel). L'Atlas utilise `rectDos()` par défaut et `rectSource(couleur, rang)` pour les cartes visibles. Il n'y a **pas de flip en vol** — la face est fixe pendant tout le trajet (même comportement que `CarteAnimee` actuel pendant la distribution).
+
+Le `glisserCarteRetournee` (slide de la carte retournée vers le preneur) reste géré par `useAnimations.ts` via `CarteAnimee` — ce n'est pas une distribution Atlas.
+
+### 4. Trajectoire : arc subtil (Bézier quadratique)
 
 Chaque carte suit un arc léger au lieu d'une ligne droite :
 
@@ -64,11 +71,11 @@ arcDistribution: {
 }
 ```
 
-### 4. Atterrissage : ease-out fort
+### 5. Atterrissage : ease-out fort
 
 - **Easing** : `Easing.out(Easing.cubic)` — forte décélération, la carte ralentit naturellement en arrivant
-- Remplace `inout-cubic` pour la distribution uniquement
-- Les animations de jeu et ramassage utilisent aussi cet ease-out (appliqué dans `CarteAnimee`)
+- Remplace `inout-cubic` pour la distribution et le jeu de carte
+- Les animations de ramassage et `glisserCarteRetournee` conservent `inout-cubic` (départ et arrivée doux adaptés à ces mouvements)
 
 Constante dans `layout.ts` :
 
@@ -76,7 +83,7 @@ Constante dans `layout.ts` :
 easingDistribution: "out-cubic" as const, // ease-out fort (était "inout-cubic")
 ```
 
-### 5. Orchestration : withDelay natif Reanimated
+### 6. Orchestration : withDelay natif Reanimated
 
 Remplacer **tous les `setTimeout`** de la distribution par `withDelay(delai, withTiming(...))` :
 
@@ -84,52 +91,62 @@ Remplacer **tous les `setTimeout`** de la distribution par `withDelay(delai, wit
 - L'intégralité de l'orchestration tourne sur le **UI thread** via worklets
 - Les callbacks JS (`onPaquetArrive`, `onTerminee`) sont déclenchés via `runOnJS` depuis `withTiming({ finished })`
 
-### 6. Hook dédié : useAnimationsDistribution
+### 7. Hook dédié : useAnimationsDistribution
 
 Nouveau hook qui encapsule toute la logique Atlas :
 
+Les types utilisés sont ceux existants du projet (`Carte`, `PositionJoueur` de `@belote/shared-types`) :
+
 ```ts
 useAnimationsDistribution(params: {
-  spriteSheet: SkImage;
+  atlas: ReturnType<typeof useAtlasCartes>; // { image, rectSource, rectDos }
   largeurEcran: number;
   hauteurEcran: number;
-  onPaquetArrive: (joueur: PositionJoueur, cartes: CarteId[]) => void;
+  onPaquetArrive: (joueur: PositionJoueur, cartes: Carte[]) => void;
   onTerminee: () => void;
 }) => {
-  lancerDistribution: (plan: PlanDistribution) => void;
-  composantAtlas: React.ReactNode; // le <Canvas> Skia à rendre
+  lancerDistribution: (
+    mains: Record<PositionJoueur, Carte[]>,
+    options?: { cartesVisibles?: Carte[] },
+  ) => void;
   enCours: boolean;
 }
 ```
+
+La signature de `lancerDistribution` est **identique** à celle de `useAnimations.lancerDistribution` actuelle, pour faciliter l'intégration dans `useControleurJeu`.
 
 - Gère les `SharedValue` Reanimated pour chaque carte (progression 0→1)
 - Calcule les `RSXform` dans `useRSXformBuffer` : Bézier + rotation + scale
 - Appelle `runOnJS(onPaquetArrive)` quand un paquet atterrit
 - Appelle `runOnJS(onTerminee)` quand toutes les cartes sont arrivées
+- Rend en interne le `<Canvas>` Skia avec `drawAtlas`
 
-### 7. Composant DistributionCanvas
+### 8. Intégration dans CoucheAnimation et useControleurJeu
 
-Composant wrapper léger :
+`CoucheAnimation.tsx` ajoute le rendu conditionnel :
 
 ```tsx
-// Rendu conditionnel dans CoucheAnimation
-{phaseDistribution ? (
-  <DistributionCanvas {...propsDistribution} />
-) : (
-  // CarteAnimee existants pour jeu/ramassage
-)}
+{
+  phaseDistribution && <DistributionCanvas {...propsDistribution} />;
+}
+{
+  /* CarteAnimee existants pour jeu/ramassage (toujours rendus) */
+}
 ```
 
-- Reçoit les props du hook `useAnimationsDistribution`
-- Rend le `<Canvas>` Skia avec `drawAtlas`
-- Visible uniquement pendant la distribution
+`useControleurJeu.ts` est modifié pour :
+
+- Appeler `useAtlasCartes()` et passer le résultat à `useAnimationsDistribution`
+- Appeler `useAnimationsDistribution.lancerDistribution()` au lieu de `useAnimations.lancerDistribution()` pendant la distribution
+- Les callbacks `onPaquetArrive` et `onTerminee` restent identiques (même logique de mise à jour d'état)
+- `annulerAnimations` de `useAnimations` suffit pour les animations non-distribution ; la distribution Atlas s'arrête naturellement quand les SharedValues atteignent 1
 
 ## Changements sur les animations existantes (jeu/ramassage)
 
 `CarteAnimee.tsx` est enrichi pour les animations non-distribution :
 
 - **Arc subtil** : même Bézier quadratique avec décalage perpendiculaire ~5%
-- **Ease-out** : `Easing.out(Easing.cubic)` au lieu de linéaire
+- **Ease-out** : `Easing.out(Easing.cubic)` pour le jeu de carte ; ramassage conserve `inout-cubic`
 - Pas de migration vers Atlas (composants individuels suffisent pour 1-4 cartes)
 
 ## Changements techniques
@@ -140,8 +157,8 @@ Composant wrapper léger :
 | ---------------------------------------------------- | ----------------------------------------------------- |
 | `assets/sprites/sprite-sheet.png`                    | Sprite sheet 8×5 (32 faces + 1 dos)                   |
 | `assets/sprites/dos.png`                             | Dos de carte seul                                     |
-| `apps/mobile/scripts/generer-sprite-sheet.ts`        | Script génération sprite sheet (sharp)                |
-| `apps/mobile/utils/atlas-cartes.ts`                  | Utilitaire : rectSource, rectDos, chargement image    |
+| `apps/mobile/scripts/generer-sprite-sheet.ts`        | Script génération sprite sheet (sharp en devDep)      |
+| `apps/mobile/hooks/useAtlasCartes.ts`                | Hook : chargement sprite sheet, rectSource, rectDos   |
 | `apps/mobile/components/game/DistributionCanvas.tsx` | Canvas Skia Atlas pour la distribution                |
 | `apps/mobile/hooks/useAnimationsDistribution.ts`     | Hook orchestration distribution (withDelay + RSXform) |
 
@@ -151,6 +168,7 @@ Composant wrapper léger :
 | ------------------------------------------------- | -------------------------------------------------------------------------------- |
 | `apps/mobile/constants/layout.ts`                 | Ajout `arcDistribution.decalagePerpendiculaire`, changement easing → `out-cubic` |
 | `apps/mobile/hooks/useAnimations.ts`              | Retirer la logique distribution, déléguer à `useAnimationsDistribution`          |
+| `apps/mobile/hooks/useControleurJeu.ts`           | Intégrer `useAtlasCartes` + `useAnimationsDistribution`, router les appels       |
 | `apps/mobile/components/game/CoucheAnimation.tsx` | Routage conditionnel : `DistributionCanvas` si distribution, sinon `CarteAnimee` |
 | `apps/mobile/components/game/CarteAnimee.tsx`     | Ajouter arc Bézier + ease-out pour jeu/ramassage                                 |
 
