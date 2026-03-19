@@ -104,20 +104,10 @@ function asHorsAtout(cartes: Carte[], couleurAtout: Couleur): Carte[] {
 }
 
 // ──────────────────────────────────────────────
-// Bot facile : jeu aléatoire légal
+// Bot facile : heuristiques de base (ancien moyen)
 // ──────────────────────────────────────────────
 
 function jouerFacile(vue: VueBotJeu): ActionBot {
-  const jouables = obtenirCartesJouables(vue);
-  const index = Math.floor(Math.random() * jouables.length);
-  return { type: "JOUER_CARTE", carte: jouables[index] };
-}
-
-// ──────────────────────────────────────────────
-// Bot moyen : heuristiques de base
-// ──────────────────────────────────────────────
-
-function jouerMoyen(vue: VueBotJeu): ActionBot {
   const jouables = obtenirCartesJouables(vue);
   const couleurAtout = vue.couleurAtout!;
 
@@ -145,7 +135,7 @@ function jouerMoyen(vue: VueBotJeu): ActionBot {
   return { type: "JOUER_CARTE", carte: cartePlusForte(jouables, couleurAtout) };
 }
 
-/** Entame pour le bot moyen */
+/** Entame pour le bot facile (heuristiques de base) */
 function entameMoyen(jouables: Carte[], couleurAtout: Couleur): ActionBot {
   // Entamer avec un As hors atout si disponible
   const as = asHorsAtout(jouables, couleurAtout);
@@ -165,10 +155,10 @@ function entameMoyen(jouables: Carte[], couleurAtout: Couleur): ActionBot {
 }
 
 // ──────────────────────────────────────────────
-// Bot difficile : comptage de cartes + stratégie avancée
+// Bot moyen : comptage de cartes + stratégie avancée (ancien difficile)
 // ──────────────────────────────────────────────
 
-function jouerDifficile(vue: VueBotJeu): ActionBot {
+function jouerMoyen(vue: VueBotJeu): ActionBot {
   const jouables = obtenirCartesJouables(vue);
   const couleurAtout = vue.couleurAtout!;
 
@@ -181,25 +171,25 @@ function jouerDifficile(vue: VueBotJeu): ActionBot {
 
   // Entame
   if (vue.pliEnCours.length === 0) {
-    return entameDifficile(jouables, couleurAtout, vue, suivi);
+    return entameMoyenAvancee(jouables, couleurAtout, vue, suivi);
   }
 
   // Partenaire est maître → jouer le plus faible (donner des points si possible)
   if (partenaireMaitrePli(vue)) {
-    return donnerAuPartenaire(jouables, couleurAtout);
+    return donnerAuPartenaireMoyen(jouables, couleurAtout);
   }
 
   // Adversaire est maître → essayer de gagner intelligemment
   if (adversaireMaitrePli(vue)) {
-    return contrerAdversaire(jouables, couleurAtout, vue, suivi);
+    return contrerAdversaireMoyen(jouables, couleurAtout, vue, suivi);
   }
 
   // Position neutre → jouer la plus forte
   return { type: "JOUER_CARTE", carte: cartePlusForte(jouables, couleurAtout) };
 }
 
-/** Entame pour le bot difficile avec comptage de cartes */
-function entameDifficile(
+/** Entame pour le bot moyen avec comptage de cartes */
+function entameMoyenAvancee(
   jouables: Carte[],
   couleurAtout: Couleur,
   vue: VueBotJeu,
@@ -250,7 +240,7 @@ function entameDifficile(
 }
 
 /** Quand le partenaire est maître : donner des points si possible */
-function donnerAuPartenaire(jouables: Carte[], couleurAtout: Couleur): ActionBot {
+function donnerAuPartenaireMoyen(jouables: Carte[], couleurAtout: Couleur): ActionBot {
   // Donner la carte avec le plus de points parmi les jouables
   // (mais préférer ne pas gâcher un atout fort)
   const horsAtout = jouables.filter((c) => c.couleur !== couleurAtout);
@@ -271,7 +261,7 @@ function donnerAuPartenaire(jouables: Carte[], couleurAtout: Couleur): ActionBot
 }
 
 /** Quand l'adversaire est maître : essayer de reprendre le pli */
-function contrerAdversaire(
+function contrerAdversaireMoyen(
   jouables: Carte[],
   couleurAtout: Couleur,
   vue: VueBotJeu,
@@ -299,6 +289,15 @@ function contrerAdversaire(
     (a, b) => getPointsCarte(a, couleurAtout) - getPointsCarte(b, couleurAtout),
   );
   return { type: "JOUER_CARTE", carte: parPoints[0] };
+}
+
+// ──────────────────────────────────────────────
+// Bot difficile : stub temporaire (délègue au moyen)
+// ──────────────────────────────────────────────
+
+function jouerDifficile(vue: VueBotJeu): ActionBot {
+  // Temporaire : délègue au moyen en attendant l'implémentation expert
+  return jouerMoyen(vue);
 }
 
 // ──────────────────────────────────────────────
