@@ -10,6 +10,7 @@ import Animated, {
 
 import {
   EVENTAIL,
+  POSITIONS_MAINS,
   RATIO_ASPECT_CARTE,
   RATIO_LARGEUR_CARTE,
 } from "../../constants/layout";
@@ -48,6 +49,8 @@ interface PropsCarteEventail {
   angle: number;
   largeurCarte: number;
   hauteurCarte: number;
+  largeurEcran: number;
+  hauteurConteneur: number;
   jouable: boolean;
   grisee: boolean;
   interactionActive: boolean;
@@ -64,6 +67,8 @@ function CarteEventailAnimee({
   angle,
   largeurCarte,
   hauteurCarte,
+  largeurEcran,
+  hauteurConteneur,
   jouable,
   grisee,
   interactionActive,
@@ -73,25 +78,43 @@ function CarteEventailAnimee({
   onCarteJouee,
 }: PropsCarteEventail) {
   const estPremierRendu = useRef(true);
+
+  // Position d'entrée : centre de la main (là où les cartes animées atterrissent)
+  const centreMainX = largeurEcran * POSITIONS_MAINS.sud.x - largeurCarte / 2;
+  const centreMainBottom = 0;
+
   const animX = useSharedValue(x);
   const animBottom = useSharedValue(decalageY);
   const animAngle = useSharedValue(angle);
+  const animOpacite = useSharedValue(1);
 
   useEffect(() => {
     if (estPremierRendu.current) {
       estPremierRendu.current = false;
+      // Animer l'entrée depuis le centre de la main vers la position en éventail
+      animX.value = centreMainX;
+      animBottom.value = centreMainBottom;
+      animAngle.value = 0;
+      animOpacite.value = 0;
+
+      const config = { duration: DUREE_ANIMATION_REORG, easing: EASING_REORG };
+      animX.value = withTiming(x, config);
+      animBottom.value = withTiming(decalageY, config);
+      animAngle.value = withTiming(angle, config);
+      animOpacite.value = withTiming(1, { duration: 100 });
       return;
     }
     const config = { duration: DUREE_ANIMATION_REORG, easing: EASING_REORG };
     animX.value = withTiming(x, config);
     animBottom.value = withTiming(decalageY, config);
     animAngle.value = withTiming(angle, config);
-  }, [x, decalageY, angle, animX, animBottom, animAngle]);
+  }, [x, decalageY, angle, animX, animBottom, animAngle, animOpacite, centreMainX]);
 
   const styleAnime = useAnimatedStyle(() => ({
     position: "absolute" as const,
     left: animX.value,
     bottom: animBottom.value,
+    opacity: animOpacite.value,
     transformOrigin: `${largeurCarte / 2}px ${hauteurCarte}px`,
     transform: [{ rotate: `${animAngle.value}deg` }],
     zIndex,
@@ -195,6 +218,8 @@ export function MainJoueur({
             angle={angle}
             largeurCarte={largeurCarte}
             hauteurCarte={hauteurCarte}
+            largeurEcran={largeurEcran}
+            hauteurConteneur={hauteurConteneur}
             jouable={jouable}
             grisee={grisee}
             interactionActive={interactionActive}

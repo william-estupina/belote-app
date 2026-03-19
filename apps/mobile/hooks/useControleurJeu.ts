@@ -14,8 +14,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Actor } from "xstate";
 import { createActor } from "xstate";
 
-import type { CarteSurTapis } from "../components/game/CoucheAnimation";
-import { ANIMATIONS, POSITIONS_MAINS } from "../constants/layout";
+import { ANIMATIONS } from "../constants/layout";
 import { useAnimations } from "./useAnimations";
 import { useDelaiBot } from "./useDelaiBot";
 
@@ -73,6 +72,8 @@ export interface EtatJeu {
   plisEquipe2: number;
   /** Annonce belote/rebelote en cours */
   annonceBelote: { joueur: PositionJoueur; type: "belote" | "rebelote" } | null;
+  /** Nombre de cartes restantes dans le paquet central (pour l'animation) */
+  cartesRestantesPaquet: number;
 }
 
 interface OptionsControleur {
@@ -216,6 +217,7 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
     plisEquipe1: 0,
     plisEquipe2: 0,
     annonceBelote: null,
+    cartesRestantesPaquet: 0,
   });
 
   // Timer pour effacer la bulle belote/rebelote
@@ -231,12 +233,6 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
   const animationDistribEnCours = useRef(false);
   const animationPliEnCours = useRef(false);
   const nbPlisVus = useRef(0);
-  const cartesTapisParJoueurRef = useRef<Record<PositionJoueur, CarteSurTapis[]>>({
-    sud: [],
-    ouest: [],
-    nord: [],
-    est: [],
-  });
   const timeoutsControleurRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   // Ref pour appeler lancerDistributionRestanteAnimee depuis les callbacks déclarés avant
@@ -506,15 +502,14 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
         setEtatJeu((prev) => ({
           ...prev,
           ...extraireEtatUI(ctx, etat),
-          mainJoueur: trierMainJoueur(ctx.mains[INDEX_HUMAIN]),
+          mainJoueur: trierMainJoueur(ctx.mains[INDEX_HUMAIN], ctx.couleurAtout),
           nbCartesAdversaires: {
             nord: ctx.mains[2].length,
             est: ctx.mains[3].length,
             ouest: ctx.mains[1].length,
           },
+          cartesRestantesPaquet: 0,
         }));
-
-        cartesTapisParJoueurRef.current = { sud: [], ouest: [], nord: [], est: [] };
 
         const estPhaseEncheres = etat === "encheres1" || etat === "encheres2";
         const delaiAvantBot = estPhaseEncheres ? ANIMATIONS.pauseAvantEncheres : 50;
@@ -539,72 +534,51 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
         est: contexte.mains[3],
       };
 
+      // Calculer le nombre total de cartes à distribuer (5 par joueur = 20)
+      let totalCartesAttendues = 0;
+      for (const pos of POSITIONS_JOUEUR) {
+        totalCartesAttendues += mainsRecord[pos].length;
+      }
+
       setEtatJeu((prev) => ({
         ...prev,
+        phaseUI: "distribution",
         mainJoueur: [],
         nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
         pliEnCours: [],
+        cartesRestantesPaquet: totalCartesAttendues,
       }));
 
-      const prisesTerminees = { count: 0 };
-      const nbJoueurs = 4;
-
-      const lancerPhase2PourJoueur = (position: PositionJoueur) => {
-        const { distribution } = ANIMATIONS;
-
-        const timeoutPrise = setTimeout(() => {
-          if (estDemonte.current) return;
-
-          const cartesTapis = cartesTapisParJoueurRef.current[position];
-          const posArrivee = POSITIONS_MAINS[position];
-          const positionsArrivee = cartesTapis.map(() => ({
-            x: posArrivee.x,
-            y: posArrivee.y,
-          }));
-
-          const estSud = position === "sud";
-
-          animations.lancerPriseEnMain(position, cartesTapis, positionsArrivee, {
-            flipVers: estSud ? 180 : undefined,
-            onTerminee: () => {
-              prisesTerminees.count += 1;
-
-              if (position === "sud") {
-                setEtatJeu((prev) => ({
-                  ...prev,
-                  mainJoueur: [...prev.mainJoueur, ...mainsRecord[position]],
-                }));
-              } else {
-                setEtatJeu((prev) => ({
-                  ...prev,
-                  nbCartesAdversaires: {
-                    ...prev.nbCartesAdversaires,
-                    [position]:
-                      prev.nbCartesAdversaires[position as "nord" | "est" | "ouest"] +
-                      mainsRecord[position].length,
-                  },
-                }));
-              }
-
-              if (prisesTerminees.count >= nbJoueurs) {
-                lancerPhase3(contexte);
-              }
-            },
-          });
-        }, distribution.pauseAvantPrise);
-
-        timeoutsControleurRef.current.push(timeoutPrise);
-      };
-
-      cartesTapisParJoueurRef.current = { sud: [], ouest: [], nord: [], est: [] };
+      let cartesRecues = 0;
 
       animations.lancerDistribution(mainsRecord, {
-        onCarteArrivee: (cst) => {
-          cartesTapisParJoueurRef.current[cst.position].push(cst);
-        },
-        onJoueurComplet: (position) => {
+        cartesVisibles: mainsRecord.sud,
+        onPaquetArrive: (position, cartes) => {
           if (estDemonte.current) return;
-          lancerPhase2PourJoueur(position);
+
+          if (position === "sud") {
+            setEtatJeu((prev) => ({
+              ...prev,
+              mainJoueur: [...prev.mainJoueur, ...cartes],
+              cartesRestantesPaquet: prev.cartesRestantesPaquet - cartes.length,
+            }));
+          } else {
+            setEtatJeu((prev) => ({
+              ...prev,
+              nbCartesAdversaires: {
+                ...prev.nbCartesAdversaires,
+                [position]:
+                  prev.nbCartesAdversaires[position as "nord" | "est" | "ouest"] +
+                  cartes.length,
+              },
+              cartesRestantesPaquet: prev.cartesRestantesPaquet - cartes.length,
+            }));
+          }
+
+          cartesRecues += cartes.length;
+          if (cartesRecues >= totalCartesAttendues) {
+            lancerPhase3(contexte);
+          }
         },
       });
     },
@@ -697,18 +671,25 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
       } else if (nouveauPliDetecte) {
         // Nouveau pli complété — afficher les 4 cartes depuis l'historique
         // (le contexte machine a déjà vidé pliEnCours, on le restaure ici)
+        // Préserver le nombre de plis des piles pour ne pas les afficher
+        // avant que l'animation de ramassage n'arrive
         const dernierPli = contexte.historiquePlis[contexte.historiquePlis.length - 1];
         setEtatJeu((prev) => ({
           ...prev,
           ...nouvelEtat,
           pliEnCours: dernierPli.cartes,
+          plisEquipe1: prev.plisEquipe1,
+          plisEquipe2: prev.plisEquipe2,
         }));
       } else if (animationPliEnCours.current) {
         // Pendant le ramassage du pli, préserver les cartes visuelles au centre
+        // et ne pas mettre à jour les piles avant la fin de l'animation
         setEtatJeu((prev) => ({
           ...prev,
           ...nouvelEtat,
           pliEnCours: prev.pliEnCours,
+          plisEquipe1: prev.plisEquipe1,
+          plisEquipe2: prev.plisEquipe2,
         }));
       } else {
         setEtatJeu((prev) => ({ ...prev, ...nouvelEtat }));
@@ -763,7 +744,6 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
       animations.annulerAnimations();
       for (const t of timeoutsControleurRef.current) clearTimeout(t);
       timeoutsControleurRef.current = [];
-      cartesTapisParJoueurRef.current = { sud: [], ouest: [], nord: [], est: [] };
       acteur.stop();
       acteurRef.current = null;
     };
@@ -946,6 +926,7 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
       plisEquipe1: 0,
       plisEquipe2: 0,
       annonceBelote: null,
+      cartesRestantesPaquet: 0,
     }));
   }, []);
 
@@ -968,27 +949,16 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
         setEtatJeu((prev) => ({
           ...prev,
           ...extraireEtatUI(ctx, etat),
-          mainJoueur: trierMainJoueur(ctx.mains[INDEX_HUMAIN]),
+          mainJoueur: trierMainJoueur(ctx.mains[INDEX_HUMAIN], ctx.couleurAtout),
           nbCartesAdversaires: {
             nord: ctx.mains[2].length,
             est: ctx.mains[3].length,
             ouest: ctx.mains[1].length,
           },
+          cartesRestantesPaquet: 0,
         }));
 
-        cartesTapisParJoueurRef.current = { sud: [], ouest: [], nord: [], est: [] };
-
-        if (ctx.couleurAtout) {
-          setTimeout(() => {
-            if (estDemonte.current) return;
-            setEtatJeu((prev) => ({
-              ...prev,
-              mainJoueur: trierMainAvecAtout(prev.mainJoueur, ctx.couleurAtout!),
-            }));
-          }, 500);
-        }
-
-        setTimeout(() => jouerBotSiNecessaire(), 600);
+        setTimeout(() => jouerBotSiNecessaire(), 50);
       }, distribution.pauseAvantTri);
 
       timeoutsControleurRef.current.push(timeout);
@@ -1000,8 +970,6 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
   const lancerDistributionRestanteAnimee = useCallback(
     (contexte: ContextePartie) => {
       animationDistribEnCours.current = true;
-
-      cartesTapisParJoueurRef.current = { sud: [], ouest: [], nord: [], est: [] };
 
       const indexPreneur = contexte.indexPreneur!;
       const positionPreneur = POSITIONS_JOUEUR[indexPreneur];
@@ -1027,65 +995,58 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
 
       const carteRetournee = contexte.carteRetournee;
 
+      // Compter les cartes attendues
+      let totalCartesAttendues = 0;
+      for (const pos of POSITIONS_JOUEUR) {
+        totalCartesAttendues += mainsRecord[pos].length;
+      }
+      if (carteRetournee) {
+        totalCartesAttendues += 1;
+      }
+
       setEtatJeu((prev) => ({
         ...prev,
         phaseUI: "distribution",
+        carteRetournee: null,
+        cartesRestantesPaquet: totalCartesAttendues,
       }));
 
-      const prisesTerminees = { count: 0 };
-      const nbJoueurs = 4;
+      let cartesRecues = 0;
 
-      const lancerPhase2Restante = (position: PositionJoueur) => {
-        const { distribution } = ANIMATIONS;
+      const gererPaquetArrive = (position: PositionJoueur, cartes: Carte[]) => {
+        if (estDemonte.current) return;
 
-        const timeoutPrise = setTimeout(() => {
-          if (estDemonte.current) return;
-
-          const cartesTapis = cartesTapisParJoueurRef.current[position];
-          const posArrivee = POSITIONS_MAINS[position];
-          const positionsArrivee = cartesTapis.map(() => ({
-            x: posArrivee.x,
-            y: posArrivee.y,
+        if (position === "sud") {
+          setEtatJeu((prev) => ({
+            ...prev,
+            mainJoueur: [...prev.mainJoueur, ...cartes],
+            cartesRestantesPaquet: prev.cartesRestantesPaquet - cartes.length,
           }));
-
-          const estSud = position === "sud";
-
-          animations.lancerPriseEnMain(position, cartesTapis, positionsArrivee, {
-            flipVers: estSud ? 180 : undefined,
-            onTerminee: () => {
-              prisesTerminees.count += 1;
-
-              if (position === "sud") {
-                setEtatJeu((prev) => ({
-                  ...prev,
-                  mainJoueur: [...prev.mainJoueur, ...contexte.mains[0].slice(5)],
-                }));
-              } else {
-                const idx = POSITIONS_JOUEUR.indexOf(position);
-                setEtatJeu((prev) => ({
-                  ...prev,
-                  nbCartesAdversaires: {
-                    ...prev.nbCartesAdversaires,
-                    [position]:
-                      prev.nbCartesAdversaires[position as "nord" | "est" | "ouest"] +
-                      contexte.mains[idx].slice(5).length,
-                  },
-                }));
-              }
-
-              if (prisesTerminees.count >= nbJoueurs) {
-                lancerPhase3Restante(contexte);
-              }
+        } else {
+          setEtatJeu((prev) => ({
+            ...prev,
+            nbCartesAdversaires: {
+              ...prev.nbCartesAdversaires,
+              [position]:
+                prev.nbCartesAdversaires[position as "nord" | "est" | "ouest"] +
+                cartes.length,
             },
-          });
-        }, distribution.pauseAvantPrise);
+            cartesRestantesPaquet: prev.cartesRestantesPaquet - cartes.length,
+          }));
+        }
 
-        timeoutsControleurRef.current.push(timeoutPrise);
+        cartesRecues += cartes.length;
+        if (cartesRecues >= totalCartesAttendues) {
+          lancerPhase3Restante(contexte);
+        }
       };
 
-      const lancerDistribApresSlide = () => {
+      const lancerDistribRestante = () => {
+        const cartesVisiblesSud = mainsRecord.sud;
         const cartesVisibles =
-          estPreneurPremier && carteRetournee ? [carteRetournee] : [];
+          estPreneurPremier && carteRetournee
+            ? [carteRetournee, ...cartesVisiblesSud]
+            : [...cartesVisiblesSud];
 
         animations.lancerDistribution(
           estPreneurPremier
@@ -1098,13 +1059,7 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
             : mainsRecord,
           {
             cartesVisibles,
-            onCarteArrivee: (cst) => {
-              cartesTapisParJoueurRef.current[cst.position].push(cst);
-            },
-            onJoueurComplet: (position) => {
-              if (estDemonte.current) return;
-              lancerPhase2Restante(position);
-            },
+            onPaquetArrive: gererPaquetArrive,
           },
         );
       };
@@ -1115,25 +1070,13 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
           0.5,
           0.35,
           positionPreneur,
-          (carteSurTapis) => {
-            cartesTapisParJoueurRef.current[positionPreneur].push(carteSurTapis);
-            const timeoutSlide = setTimeout(() => {
-              lancerDistribApresSlide();
-            }, ANIMATIONS.distribution.pauseAvantPrise);
-            timeoutsControleurRef.current.push(timeoutSlide);
+          () => {
+            gererPaquetArrive(positionPreneur, [carteRetournee]);
+            lancerDistribRestante();
           },
         );
-
-        setEtatJeu((prev) => ({
-          ...prev,
-          carteRetournee: null,
-        }));
       } else {
-        setEtatJeu((prev) => ({
-          ...prev,
-          carteRetournee: null,
-        }));
-        lancerDistribApresSlide();
+        lancerDistribRestante();
       }
     },
     [animations, lancerPhase3Restante],

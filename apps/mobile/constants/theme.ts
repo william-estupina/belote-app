@@ -2,19 +2,19 @@
 
 export const COULEURS = {
   // Fond principal (tapis de jeu)
-  fondPrincipal: "#1a5c2a",
-  fondFonce: "#0f3d1a",
-  fondClair: "#2a7a3e",
+  fondPrincipal: "#0b2e12",
+  fondFonce: "#061a09",
+  fondClair: "#124520",
 
   // Texte
   textePrincipal: "#ffffff",
   texteSecondaire: "#cccccc",
   texteDesactive: "#888888",
 
-  // Boutons
-  boutonPrimaire: "#d4a017",
+  // Boutons (dégradé chaud)
+  boutonPrimaire: "#e8b730",
   boutonPrimaireTexte: "#1a1a1a",
-  boutonSecondaire: "#2a7a3e",
+  boutonSecondaire: "#1e6e34",
   boutonSecondaireTexte: "#ffffff",
   boutonDesactive: "#555555",
 

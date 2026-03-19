@@ -69,24 +69,22 @@ export const INDICATEURS = {
 
 // --- Animations ---
 export const ANIMATIONS = {
-  // Distribution : 3 phases — tapis → prise en main (flip) → tri
+  // Distribution : vol centre → main (par paquets simultanés, 3 puis 2)
   distribution: {
-    // Phase 1 — vol centre → tapis
-    dureeCarte: 300, // durée de vol par carte (ms)
-    delaiDansPaquet: 60, // délai entre cartes d'un même paquet (ms)
-    delaiEntreJoueurs: 200, // délai entre les paquets de chaque joueur (ms)
-    pauseEntreTours: 500, // pause entre le tour de 3 et le tour de 2 (ms)
-    offsetAleatoireMax: 0.02, // ±2% position aléatoire sur le tapis
-    rotationAleatoireMax: 15, // ±15° rotation aléatoire sur le tapis
-    decalagePaquet2: 0.03, // décalage x entre paquet 1 et 2
-    // Phase 2 — prise en main (flip + vol tapis → main)
-    dureePriseEnMain: 400, // durée du vol tapis → main (ms)
-    staggerPriseEnMain: 80, // délai entre chaque carte (ms)
-    pauseAvantPrise: 200, // pause après atterrissage avant prise (ms)
-    // Phase 3 — tri (existant)
+    dureeCarte: 400, // durée de vol par carte (ms)
+    delaiEntreJoueurs: 250, // délai entre les paquets de chaque joueur (ms)
+    pauseEntreRounds: 0, // pas de pause entre le paquet de 3 et le paquet de 2
+    easingDistribution: "inout-cubic" as const, // easing doux au départ et à l'arrivée
+    staggerIntraPaquet: 0, // toutes les cartes d'un même paquet partent en même temps
+    // Éventail en vol : spread des cartes dans un même paquet
+    eventailVol: {
+      ecartX: 0.03, // écart horizontal entre cartes adjacentes (fraction écran)
+      ecartRotation: 10, // écart de rotation entre cartes adjacentes (degrés)
+    },
+    // Tri après distribution
     pauseAvantTri: 400, // pause avant animation de tri (ms)
     // Distribution restante — slide carte retournée
-    dureeSlideRetournee: 300, // durée du slide vers tapis preneur (ms)
+    dureeSlideRetournee: 300, // durée du slide vers main preneur (ms)
     // Origine (centre du tapis)
     originX: 0.5,
     originY: 0.45,
@@ -111,7 +109,7 @@ export const ANIMATIONS = {
     max: 3000, // délai maximum (ms)
   },
   // Pause après la distribution pour montrer la carte retournée avant les enchères
-  pauseAvantEncheres: 3000, // ms
+  pauseAvantEncheres: 1500, // ms
 } as const;
 
 // --- Piles de plis remportés (positions des tas de cartes par équipe) ---
@@ -126,12 +124,4 @@ export const POSITIONS_MAINS = {
   nord: { x: 0.5, y: 0.02 },
   ouest: { x: 0.02, y: 0.5 },
   est: { x: 0.98, y: 0.5 },
-} as const;
-
-// --- Positions tapis (où les cartes atterrissent face cachée avant la prise en main) ---
-export const POSITIONS_TAPIS = {
-  sud: { x: 0.5, y: 0.75 },
-  nord: { x: 0.5, y: 0.18 },
-  ouest: { x: 0.18, y: 0.5 },
-  est: { x: 0.82, y: 0.5 },
 } as const;
