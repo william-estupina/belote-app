@@ -11,11 +11,17 @@ import type {
   Carte,
   Couleur,
   Difficulte,
+  PositionJoueur,
   VueBotJeu,
 } from "@belote/shared-types";
+import { POSITIONS_JOUEUR } from "@belote/shared-types";
 
+import type { SuiviCartesAvance } from "./comptage-cartes";
 import {
+  atoutsRestantsAdversaires,
+  carteMaitresseAvancee,
   compterAtoutsRestants,
+  construireSuiviAvance,
   construireSuiviCartes,
   couleurEpuisee,
   estCarteMaitresse,
@@ -292,12 +298,242 @@ function contrerAdversaireMoyen(
 }
 
 // ──────────────────────────────────────────────
-// Bot difficile : stub temporaire (délègue au moyen)
+// Bot difficile : stratégie expert complète
 // ──────────────────────────────────────────────
 
 function jouerDifficile(vue: VueBotJeu): ActionBot {
-  // Temporaire : délègue au moyen en attendant l'implémentation expert
-  return jouerMoyen(vue);
+  const jouables = obtenirCartesJouables(vue);
+  const couleurAtout = vue.couleurAtout!;
+
+  if (jouables.length === 1) {
+    return { type: "JOUER_CARTE", carte: jouables[0] };
+  }
+
+  const suivi = construireSuiviAvance(vue);
+
+  // Entame
+  if (vue.pliEnCours.length === 0) {
+    return entameDifficile(vue, jouables, suivi);
+  }
+
+  // Partenaire est maître
+  if (partenaireMaitrePli(vue)) {
+    return donnerAuPartenaireExpert(vue, jouables, couleurAtout, suivi);
+  }
+
+  // Adversaire est maître
+  if (adversaireMaitrePli(vue)) {
+    return contrerAdversaireExpert(vue, jouables, couleurAtout, suivi);
+  }
+
+  // Position neutre → jouer la plus forte
+  return { type: "JOUER_CARTE", carte: cartePlusForte(jouables, couleurAtout) };
+}
+
+/** Entame expert : tirage atout, cartes maîtresses, singletons */
+function entameDifficile(
+  vue: VueBotJeu,
+  jouables: Carte[],
+  suivi: SuiviCartesAvance,
+): ActionBot {
+  const couleurAtout = vue.couleurAtout!;
+  const atoutsJouables = jouables.filter((c) => c.couleur === couleurAtout);
+  const horsAtout = jouables.filter((c) => c.couleur !== couleurAtout);
+
+  // Priorité 1 : Tirage atout — si notre équipe est preneuse et les adversaires ont encore des atouts
+  const equipePreneuse =
+    vue.positionPreneur === vue.maPosition ||
+    vue.positionPreneur === vue.positionPartenaire;
+  const atoutsAdv = atoutsRestantsAdversaires(suivi, vue.maMain, vue.positionPartenaire);
+
+  if (equipePreneuse && atoutsAdv > 0 && atoutsJouables.length > 0) {
+    // Ne pas gaspiller Roi/Dame si la paire Belote existe
+    const aRoiDameAtout =
+      atoutsJouables.some((c) => c.rang === "roi") &&
+      atoutsJouables.some((c) => c.rang === "dame");
+    if (aRoiDameAtout) {
+      // Jouer un autre atout si disponible, pas roi/dame
+      const autresAtouts = atoutsJouables.filter(
+        (c) => c.rang !== "roi" && c.rang !== "dame",
+      );
+      if (autresAtouts.length > 0) {
+        return { type: "JOUER_CARTE", carte: cartePlusForte(autresAtouts, couleurAtout) };
+      }
+    }
+    return { type: "JOUER_CARTE", carte: cartePlusForte(atoutsJouables, couleurAtout) };
+  }
+
+  // Priorité 2 : Jouer une carte maîtresse hors atout
+  for (const c of horsAtout) {
+    if (carteMaitresseAvancee(c, suivi)) {
+      // Préférer si le partenaire n'est pas épuisé dans cette couleur
+      if (!suivi.couleursEpuisees[vue.positionPartenaire].includes(c.couleur)) {
+        return { type: "JOUER_CARTE", carte: c };
+      }
+    }
+  }
+  // Même si partenaire épuisé, jouer la maîtresse quand même
+  for (const c of horsAtout) {
+    if (carteMaitresseAvancee(c, suivi)) {
+      return { type: "JOUER_CARTE", carte: c };
+    }
+  }
+
+  // Priorité 3 : Forcer la coupe — chercher couleur où un adversaire est épuisé
+  const adversaires = POSITIONS_JOUEUR.filter(
+    (p) => p !== vue.maPosition && p !== vue.positionPartenaire,
+  ) as PositionJoueur[];
+
+  for (const adv of adversaires) {
+    for (const c of horsAtout) {
+      const couleur = c.couleur;
+      if (
+        suivi.couleursEpuisees[adv].includes(couleur) &&
+        !suivi.couleursEpuisees[vue.positionPartenaire].includes(couleur)
+      ) {
+        // Jouer la plus faible de cette couleur pour forcer la coupe adverse
+        const cartesCouleur = cartesDeCouleur(horsAtout, couleur);
+        return {
+          type: "JOUER_CARTE",
+          carte: cartePlusFaible(cartesCouleur, couleurAtout),
+        };
+      }
+    }
+  }
+
+  // Priorité 4 : Singleton — jouer une carte seule dans sa couleur
+  const couleursHorsAtout = new Map<Couleur, Carte[]>();
+  for (const c of horsAtout) {
+    if (!couleursHorsAtout.has(c.couleur)) couleursHorsAtout.set(c.couleur, []);
+    couleursHorsAtout.get(c.couleur)!.push(c);
+  }
+  for (const [, cartes] of couleursHorsAtout) {
+    if (cartes.length === 1) {
+      return { type: "JOUER_CARTE", carte: cartes[0] };
+    }
+  }
+
+  // Priorité 5 : Défaut — plus faible carte de la couleur la plus longue
+  if (horsAtout.length > 0) {
+    let plusLongue: Carte[] = [];
+    for (const [, cartes] of couleursHorsAtout) {
+      if (cartes.length > plusLongue.length) plusLongue = cartes;
+    }
+    if (plusLongue.length > 0) {
+      return { type: "JOUER_CARTE", carte: cartePlusFaible(plusLongue, couleurAtout) };
+    }
+    return { type: "JOUER_CARTE", carte: cartePlusFaible(horsAtout, couleurAtout) };
+  }
+
+  return { type: "JOUER_CARTE", carte: cartePlusFaible(jouables, couleurAtout) };
+}
+
+/** Quand le partenaire est maître : charger en points si maîtresse, sinon jouer faible */
+function donnerAuPartenaireExpert(
+  vue: VueBotJeu,
+  jouables: Carte[],
+  couleurAtout: Couleur,
+  suivi: SuiviCartesAvance,
+): ActionBot {
+  // Si partenaire a joué une carte maîtresse, charger en points
+  if (vue.pliEnCours.length > 0) {
+    const cartePartenaire = vue.pliEnCours.find(
+      (e) => e.joueur === vue.positionPartenaire,
+    );
+    if (cartePartenaire && carteMaitresseAvancee(cartePartenaire.carte, suivi)) {
+      // Donner les cartes avec le plus de points
+      const parPoints = [...jouables].sort(
+        (a, b) => getPointsCarte(b, couleurAtout) - getPointsCarte(a, couleurAtout),
+      );
+      if (getPointsCarte(parPoints[0], couleurAtout) >= 10) {
+        return { type: "JOUER_CARTE", carte: parPoints[0] };
+      }
+    }
+  }
+
+  // Jouer la carte la plus faible
+  return { type: "JOUER_CARTE", carte: cartePlusFaible(jouables, couleurAtout) };
+}
+
+/** Quand l'adversaire est maître : couper intelligemment ou défausser */
+function contrerAdversaireExpert(
+  vue: VueBotJeu,
+  jouables: Carte[],
+  couleurAtout: Couleur,
+  suivi: SuiviCartesAvance,
+): ActionBot {
+  const couleurDemandee = vue.pliEnCours[0].carte.couleur;
+
+  // 1. Si on a la couleur demandée, jouer la plus forte pour tenter de gagner
+  const cartesCouleurDemandee = cartesDeCouleur(jouables, couleurDemandee);
+  if (cartesCouleurDemandee.length > 0) {
+    return {
+      type: "JOUER_CARTE",
+      carte: cartePlusForte(cartesCouleurDemandee, couleurAtout),
+    };
+  }
+
+  // 2. Si on a des atouts et peut couper
+  const atouts = cartesDeCouleur(jouables, couleurAtout);
+  if (atouts.length > 0) {
+    // Vérifier si un adversaire a déjà coupé
+    const coupExistante = vue.pliEnCours.find((e) => {
+      const estAdversaire =
+        e.joueur !== vue.maPosition && e.joueur !== vue.positionPartenaire;
+      return (
+        estAdversaire &&
+        e.carte.couleur === couleurAtout &&
+        couleurDemandee !== couleurAtout
+      );
+    });
+
+    if (coupExistante) {
+      // Évaluer la sur-coupe : compter les points dans le pli
+      let pointsPli = 0;
+      for (const e of vue.pliEnCours) {
+        pointsPli += getPointsCarte(e.carte, couleurAtout);
+      }
+
+      // Trouver le plus petit atout qui bat la coupe existante
+      const forceCoupeAdverse = getForceAtout(coupExistante.carte.rang);
+      const atoutsSuffisants = atouts
+        .filter((c) => getForceAtout(c.rang) > forceCoupeAdverse)
+        .sort((a, b) => getForceAtout(a.rang) - getForceAtout(b.rang));
+
+      if (pointsPli > 15 && atoutsSuffisants.length > 0) {
+        // Sur-couper avec le plus petit atout suffisant
+        return { type: "JOUER_CARTE", carte: atoutsSuffisants[0] };
+      }
+      // Pas rentable de sur-couper → défausser
+    } else {
+      // Pas de coupe existante → couper avec le plus petit atout
+      const atoutsTries = trierParForceCroissante(atouts, couleurAtout);
+      return { type: "JOUER_CARTE", carte: atoutsTries[0] };
+    }
+  }
+
+  // 3. Défausse intelligente — préférer couleurs épuisées pour le partenaire (futures coupes)
+  const defausse = jouables.filter((c) => c.couleur !== couleurAtout);
+  if (defausse.length > 0) {
+    // Préférer les couleurs où le partenaire est épuisé
+    const couleurPartenaireEpuisee = defausse.filter((c) =>
+      suivi.couleursEpuisees[vue.positionPartenaire].includes(c.couleur),
+    );
+    if (couleurPartenaireEpuisee.length > 0) {
+      return {
+        type: "JOUER_CARTE",
+        carte: cartePlusFaible(couleurPartenaireEpuisee, couleurAtout),
+      };
+    }
+    // Sinon défausser le moins de points possible
+    const parPoints = [...defausse].sort(
+      (a, b) => getPointsCarte(a, couleurAtout) - getPointsCarte(b, couleurAtout),
+    );
+    return { type: "JOUER_CARTE", carte: parPoints[0] };
+  }
+
+  // Dernier recours
+  return { type: "JOUER_CARTE", carte: cartePlusFaible(jouables, couleurAtout) };
 }
 
 // ──────────────────────────────────────────────

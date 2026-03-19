@@ -217,12 +217,32 @@ describe("deciderJeu — Bot moyen", () => {
 });
 
 // ──────────────────────────────────────────────
-// Bot difficile (stub qui delegue au moyen)
+// Bot difficile (expert)
 // ──────────────────────────────────────────────
+
+/** Helper pour creer une vue de jeu expert avec des defauts sensibles */
+function creerVueJeuExpert(partiel: Partial<VueBotJeu> & { maMain: Carte[] }): VueBotJeu {
+  return {
+    maPosition: "sud",
+    positionPartenaire: "nord",
+    couleurAtout: "pique",
+    pliEnCours: [],
+    couleurDemandee: null,
+    historiquePlis: [],
+    scoreMonEquipe: 0,
+    scoreAdversaire: 0,
+    phaseJeu: "jeu",
+    carteRetournee: null,
+    historiqueEncheres: [],
+    positionPreneur: "sud",
+    positionDonneur: "est",
+    ...partiel,
+  };
+}
 
 describe("deciderJeu — Bot difficile", () => {
   it("joue la seule carte disponible", () => {
-    const vue = creerVueJeu({
+    const vue = creerVueJeuExpert({
       maMain: [carte("dame", "trefle")],
     });
 
@@ -233,11 +253,12 @@ describe("deciderJeu — Bot difficile", () => {
     }
   });
 
-  it("entame avec une carte maitresse (delegue au moyen)", () => {
-    // Meme test que moyen : le 10 de pique est maitresse apres que l'As a ete joue
-    const vue = creerVueJeu({
+  it("entame avec une carte maitresse hors atout", () => {
+    // L'As de pique a deja ete joue, le 10 est maitresse
+    const vue = creerVueJeuExpert({
       maMain: [carte("10", "pique"), carte("7", "trefle"), carte("8", "carreau")],
       couleurAtout: "coeur",
+      positionPreneur: "nord",
       pliEnCours: [],
       historiquePlis: [
         {
@@ -258,6 +279,170 @@ describe("deciderJeu — Bot difficile", () => {
     if (action.type === "JOUER_CARTE") {
       expect(action.carte.rang).toBe("10");
       expect(action.carte.couleur).toBe("pique");
+    }
+  });
+});
+
+// ──────────────────────────────────────────────
+// Jeu difficile (expert) - entame
+// ──────────────────────────────────────────────
+
+describe("jeu difficile (expert) - entame", () => {
+  it("tire l'atout quand l'equipe est preneuse et a la majorite", () => {
+    const vue = creerVueJeuExpert({
+      maMain: [
+        carte("valet", "pique"),
+        carte("9", "pique"),
+        carte("as", "pique"),
+        carte("roi", "carreau"),
+        carte("as", "coeur"),
+      ],
+      positionPreneur: "sud",
+      maPosition: "sud",
+      couleurAtout: "pique",
+      pliEnCours: [],
+    });
+    const action = deciderJeu(vue, "difficile");
+    expect(action.type).toBe("JOUER_CARTE");
+    if (action.type === "JOUER_CARTE") {
+      expect(action.carte.couleur).toBe("pique");
+    }
+  });
+
+  it("joue carte maitresse hors atout en entame", () => {
+    const vue = creerVueJeuExpert({
+      maMain: [carte("as", "carreau"), carte("7", "coeur"), carte("8", "pique")],
+      positionPreneur: "ouest",
+      couleurAtout: "pique",
+      pliEnCours: [],
+    });
+    const action = deciderJeu(vue, "difficile");
+    if (action.type === "JOUER_CARTE") {
+      expect(action.carte).toEqual(carte("as", "carreau"));
+    }
+  });
+});
+
+// ──────────────────────────────────────────────
+// Jeu difficile (expert) - partenaire gagne
+// ──────────────────────────────────────────────
+
+describe("jeu difficile (expert) - partenaire gagne", () => {
+  it("charge en points si partenaire a la maitresse", () => {
+    const vue = creerVueJeuExpert({
+      pliEnCours: [{ joueur: "nord" as PositionJoueur, carte: carte("as", "carreau") }],
+      maMain: [carte("10", "carreau"), carte("7", "carreau")],
+      couleurDemandee: "carreau",
+      maPosition: "sud",
+      positionPartenaire: "nord",
+    });
+    const action = deciderJeu(vue, "difficile");
+    if (action.type === "JOUER_CARTE") {
+      expect(action.carte).toEqual(carte("10", "carreau"));
+    }
+  });
+
+  it("joue la plus faible si partenaire n'a pas la maitresse", () => {
+    const vue = creerVueJeuExpert({
+      pliEnCours: [{ joueur: "nord" as PositionJoueur, carte: carte("roi", "carreau") }],
+      maMain: [carte("10", "carreau"), carte("7", "carreau")],
+      couleurDemandee: "carreau",
+    });
+    const action = deciderJeu(vue, "difficile");
+    if (action.type === "JOUER_CARTE") {
+      expect(action.carte).toEqual(carte("7", "carreau"));
+    }
+  });
+});
+
+// ──────────────────────────────────────────────
+// Jeu difficile (expert) - adversaire gagne
+// ──────────────────────────────────────────────
+
+describe("jeu difficile (expert) - adversaire gagne", () => {
+  it("coupe avec le plus petit atout suffisant, pas le valet", () => {
+    const vue = creerVueJeuExpert({
+      pliEnCours: [{ joueur: "ouest" as PositionJoueur, carte: carte("as", "carreau") }],
+      maMain: [carte("valet", "pique"), carte("7", "pique"), carte("8", "coeur")],
+      couleurDemandee: "carreau",
+      couleurAtout: "pique",
+    });
+    const action = deciderJeu(vue, "difficile");
+    if (action.type === "JOUER_CARTE") {
+      expect(action.carte).toEqual(carte("7", "pique"));
+    }
+  });
+
+  it("sur-coupe si le pli vaut le coup (beaucoup de points)", () => {
+    const vue = creerVueJeuExpert({
+      pliEnCours: [
+        { joueur: "est" as PositionJoueur, carte: carte("as", "carreau") }, // 11 pts
+        { joueur: "ouest" as PositionJoueur, carte: carte("7", "pique") }, // coupe adverse
+        { joueur: "nord" as PositionJoueur, carte: carte("10", "carreau") }, // 10 pts
+      ],
+      maMain: [
+        carte("8", "pique"), // peut sur-couper
+        carte("7", "coeur"),
+      ],
+      couleurDemandee: "carreau",
+      couleurAtout: "pique",
+    });
+    const action = deciderJeu(vue, "difficile");
+    if (action.type === "JOUER_CARTE") {
+      expect(action.carte).toEqual(carte("8", "pique"));
+    }
+  });
+
+  it("ne sur-coupe pas si le pli ne vaut pas le coup (partenaire maitre)", () => {
+    // Nord (partenaire) a coupe avec le valet d'atout, il est maitre.
+    // Ouest a joue avant. Le pli ne vaut presque rien.
+    // Le bot peut jouer ce qu'il veut (partenaire maitre = toute la main jouable).
+    // Il ne devrait PAS gaspiller un atout fort.
+    const vue = creerVueJeuExpert({
+      pliEnCours: [
+        { joueur: "est" as PositionJoueur, carte: carte("7", "carreau") }, // 0 pts
+        { joueur: "nord" as PositionJoueur, carte: carte("valet", "pique") }, // partenaire coupe → maitre
+        { joueur: "ouest" as PositionJoueur, carte: carte("8", "carreau") }, // 0 pts
+      ],
+      maMain: [
+        carte("9", "pique"), // atout fort, ne pas gaspiller
+        carte("7", "coeur"),
+      ],
+      couleurDemandee: "carreau",
+      couleurAtout: "pique",
+    });
+    const action = deciderJeu(vue, "difficile");
+    if (action.type === "JOUER_CARTE") {
+      // Ne devrait PAS gaspiller le 9 d'atout (14 pts) sur un pli sans valeur
+      // Devrait jouer le 7 de coeur (0 pts)
+      expect(action.carte).toEqual(carte("7", "coeur"));
+    }
+  });
+});
+
+// ──────────────────────────────────────────────
+// Jeu difficile (expert) - belote/rebelote
+// ──────────────────────────────────────────────
+
+describe("jeu difficile (expert) - belote/rebelote", () => {
+  it("garde roi et dame d'atout ensemble quand possible", () => {
+    const vue = creerVueJeuExpert({
+      maMain: [
+        carte("roi", "pique"),
+        carte("dame", "pique"),
+        carte("7", "pique"),
+        carte("as", "carreau"),
+      ],
+      couleurAtout: "pique",
+      pliEnCours: [],
+      positionPreneur: "sud",
+      maPosition: "sud",
+    });
+    const action = deciderJeu(vue, "difficile");
+    if (action.type === "JOUER_CARTE" && action.carte.couleur === "pique") {
+      // Si tire l'atout, devrait jouer le 7, pas roi ou dame
+      expect(action.carte.rang).not.toBe("roi");
+      expect(action.carte.rang).not.toBe("dame");
     }
   });
 });
