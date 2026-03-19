@@ -1,13 +1,23 @@
-import type { Carte, Couleur, PliComplete, PositionJoueur } from "@belote/shared-types";
+import type {
+  Carte,
+  Couleur,
+  PliComplete,
+  PositionJoueur,
+  VueBotJeu,
+} from "@belote/shared-types";
 import { describe, expect, it } from "vitest";
 
 import {
+  atoutsRestantsAdversaires,
   carteEncoreEnJeu,
+  carteMaitresseAvancee,
   cartesRestantesDeCouleur,
   compterAtoutsRestants,
+  construireSuiviAvance,
   construireSuiviCartes,
   couleurEpuisee,
   estCarteMaitresse,
+  joueurACoupe,
 } from "../src/comptage-cartes";
 
 // ──────────────────────────────────────────────
@@ -16,6 +26,34 @@ import {
 
 function carte(rang: Carte["rang"], couleur: Couleur): Carte {
   return { rang, couleur };
+}
+
+/** Crée une VueBotJeu avec un historique de plis donné */
+function creerVueBotAvecHistorique(
+  historiquePlis: PliComplete[],
+  couleurAtout: Couleur = "pique",
+): VueBotJeu {
+  return {
+    maMain: [carte("as", "trefle"), carte("roi", "trefle"), carte("dame", "trefle")],
+    maPosition: "sud",
+    positionPartenaire: "nord",
+    couleurAtout,
+    pliEnCours: [],
+    couleurDemandee: null,
+    historiquePlis,
+    scoreMonEquipe: 0,
+    scoreAdversaire: 0,
+    phaseJeu: "jeu",
+    carteRetournee: null,
+    historiqueEncheres: [],
+    positionPreneur: "sud",
+    positionDonneur: "est",
+  };
+}
+
+/** Crée une VueBotJeu sans historique */
+function creerVueBotSansHistorique(): VueBotJeu {
+  return creerVueBotAvecHistorique([]);
 }
 
 // ──────────────────────────────────────────────
@@ -268,5 +306,263 @@ describe("estCarteMaitresse", () => {
     const suivi = construireSuiviCartes(maMain, [], []);
 
     expect(estCarteMaitresse(carte("9", "coeur"), "coeur", suivi, maMain)).toBe(false);
+  });
+});
+
+// ──────────────────────────────────────────────
+// construireSuiviAvance
+// ──────────────────────────────────────────────
+
+describe("construireSuiviAvance", () => {
+  it("détecte une couleur épuisée quand un joueur ne fournit pas", () => {
+    // Nord joue pique sur une entame carreau → nord n'a plus de carreau
+    const historique: PliComplete[] = [
+      {
+        cartes: [
+          { joueur: "sud" as PositionJoueur, carte: carte("as", "carreau") },
+          { joueur: "ouest" as PositionJoueur, carte: carte("roi", "carreau") },
+          { joueur: "nord" as PositionJoueur, carte: carte("valet", "pique") }, // coupe !
+          { joueur: "est" as PositionJoueur, carte: carte("7", "carreau") },
+        ],
+        gagnant: "nord" as PositionJoueur,
+        points: 25,
+      },
+    ];
+
+    const vue = creerVueBotAvecHistorique(historique, "pique");
+    const suivi = construireSuiviAvance(vue);
+
+    expect(suivi.couleursEpuisees["nord"]).toContain("carreau");
+  });
+
+  it("compte les atouts joués par joueur", () => {
+    // Atout = pique, nord joue le 9 de pique (atout) sur une entame carreau
+    const historique: PliComplete[] = [
+      {
+        cartes: [
+          { joueur: "est" as PositionJoueur, carte: carte("10", "carreau") },
+          { joueur: "sud" as PositionJoueur, carte: carte("dame", "carreau") },
+          { joueur: "ouest" as PositionJoueur, carte: carte("8", "carreau") },
+          { joueur: "nord" as PositionJoueur, carte: carte("9", "pique") }, // coupe atout
+        ],
+        gagnant: "nord" as PositionJoueur,
+        points: 24,
+      },
+    ];
+
+    const vue = creerVueBotAvecHistorique(historique, "pique");
+    const suivi = construireSuiviAvance(vue);
+
+    expect(suivi.atoutsJouesParJoueur["nord"]).toEqual([carte("9", "pique")]);
+    expect(suivi.atoutsJouesParJoueur["est"]).toEqual([]);
+  });
+
+  it("retourne des tableaux vides au premier pli", () => {
+    const vue = creerVueBotSansHistorique();
+    const suivi = construireSuiviAvance(vue);
+
+    expect(suivi.couleursEpuisees["sud"]).toEqual([]);
+    expect(suivi.couleursEpuisees["nord"]).toEqual([]);
+    expect(suivi.atoutsJouesParJoueur["sud"]).toEqual([]);
+    expect(suivi.defaussesParJoueur["sud"]).toEqual([]);
+  });
+
+  it("calcule correctement au dernier pli (tout connu)", () => {
+    // 7 plis complets → 28 cartes jouées, 3 en main, 1 restante
+    const historique: PliComplete[] = [];
+    const rangs: Carte["rang"][] = ["7", "8", "9", "10", "valet", "dame", "roi", "as"];
+    // Pli 1-7 : utiliser différentes couleurs
+    // Pli 1 : 4 piques
+    historique.push({
+      cartes: [
+        { joueur: "sud" as PositionJoueur, carte: carte("7", "pique") },
+        { joueur: "ouest" as PositionJoueur, carte: carte("8", "pique") },
+        { joueur: "nord" as PositionJoueur, carte: carte("9", "pique") },
+        { joueur: "est" as PositionJoueur, carte: carte("10", "pique") },
+      ],
+      gagnant: "est" as PositionJoueur,
+      points: 10,
+    });
+    // Pli 2 : 4 piques
+    historique.push({
+      cartes: [
+        { joueur: "est" as PositionJoueur, carte: carte("valet", "pique") },
+        { joueur: "sud" as PositionJoueur, carte: carte("dame", "pique") },
+        { joueur: "ouest" as PositionJoueur, carte: carte("roi", "pique") },
+        { joueur: "nord" as PositionJoueur, carte: carte("as", "pique") },
+      ],
+      gagnant: "nord" as PositionJoueur,
+      points: 17,
+    });
+    // Pli 3 : 4 coeurs
+    historique.push({
+      cartes: [
+        { joueur: "nord" as PositionJoueur, carte: carte("7", "coeur") },
+        { joueur: "est" as PositionJoueur, carte: carte("8", "coeur") },
+        { joueur: "sud" as PositionJoueur, carte: carte("9", "coeur") },
+        { joueur: "ouest" as PositionJoueur, carte: carte("10", "coeur") },
+      ],
+      gagnant: "ouest" as PositionJoueur,
+      points: 10,
+    });
+    // Pli 4 : 4 coeurs
+    historique.push({
+      cartes: [
+        { joueur: "ouest" as PositionJoueur, carte: carte("valet", "coeur") },
+        { joueur: "nord" as PositionJoueur, carte: carte("dame", "coeur") },
+        { joueur: "est" as PositionJoueur, carte: carte("roi", "coeur") },
+        { joueur: "sud" as PositionJoueur, carte: carte("as", "coeur") },
+      ],
+      gagnant: "sud" as PositionJoueur,
+      points: 17,
+    });
+    // Pli 5 : 4 carreaux
+    historique.push({
+      cartes: [
+        { joueur: "sud" as PositionJoueur, carte: carte("7", "carreau") },
+        { joueur: "ouest" as PositionJoueur, carte: carte("8", "carreau") },
+        { joueur: "nord" as PositionJoueur, carte: carte("9", "carreau") },
+        { joueur: "est" as PositionJoueur, carte: carte("10", "carreau") },
+      ],
+      gagnant: "est" as PositionJoueur,
+      points: 10,
+    });
+    // Pli 6 : 4 carreaux
+    historique.push({
+      cartes: [
+        { joueur: "est" as PositionJoueur, carte: carte("valet", "carreau") },
+        { joueur: "sud" as PositionJoueur, carte: carte("dame", "carreau") },
+        { joueur: "ouest" as PositionJoueur, carte: carte("roi", "carreau") },
+        { joueur: "nord" as PositionJoueur, carte: carte("as", "carreau") },
+      ],
+      gagnant: "nord" as PositionJoueur,
+      points: 17,
+    });
+    // Pli 7 : 4 trefles
+    historique.push({
+      cartes: [
+        { joueur: "nord" as PositionJoueur, carte: carte("7", "trefle") },
+        { joueur: "est" as PositionJoueur, carte: carte("8", "trefle") },
+        { joueur: "sud" as PositionJoueur, carte: carte("9", "trefle") },
+        { joueur: "ouest" as PositionJoueur, carte: carte("10", "trefle") },
+      ],
+      gagnant: "ouest" as PositionJoueur,
+      points: 10,
+    });
+
+    // Main = 3 trefles restants pour le bot sud
+    const vue: VueBotJeu = {
+      maMain: [carte("as", "trefle"), carte("roi", "trefle"), carte("dame", "trefle")],
+      maPosition: "sud",
+      positionPartenaire: "nord",
+      couleurAtout: "pique",
+      pliEnCours: [],
+      couleurDemandee: null,
+      historiquePlis: historique,
+      scoreMonEquipe: 0,
+      scoreAdversaire: 0,
+      phaseJeu: "jeu",
+      carteRetournee: null,
+      historiqueEncheres: [],
+      positionPreneur: "sud",
+      positionDonneur: "est",
+    };
+
+    const suivi = construireSuiviAvance(vue);
+
+    // 32 - 28 jouées - 3 en main = 1 restante (valet de trefle)
+    expect(suivi.cartesRestantes).toHaveLength(1);
+    expect(suivi.cartesJouees).toHaveLength(28);
+  });
+});
+
+// ──────────────────────────────────────────────
+// joueurACoupe
+// ──────────────────────────────────────────────
+
+describe("joueurACoupe", () => {
+  it("retourne true si le joueur a coupé dans une couleur", () => {
+    // Nord joue pique (atout) sur entame carreau → coupe
+    const historique: PliComplete[] = [
+      {
+        cartes: [
+          { joueur: "est" as PositionJoueur, carte: carte("10", "carreau") },
+          { joueur: "sud" as PositionJoueur, carte: carte("dame", "carreau") },
+          { joueur: "ouest" as PositionJoueur, carte: carte("8", "carreau") },
+          { joueur: "nord" as PositionJoueur, carte: carte("9", "pique") },
+        ],
+        gagnant: "nord" as PositionJoueur,
+        points: 24,
+      },
+    ];
+
+    const vue = creerVueBotAvecHistorique(historique, "pique");
+    const suivi = construireSuiviAvance(vue);
+
+    expect(joueurACoupe(suivi, "nord", "carreau")).toBe(true);
+    expect(joueurACoupe(suivi, "est", "carreau")).toBe(false);
+  });
+});
+
+// ──────────────────────────────────────────────
+// atoutsRestantsAdversaires
+// ──────────────────────────────────────────────
+
+describe("atoutsRestantsAdversaires", () => {
+  it("exclut les atouts du bot", () => {
+    // Main avec 2 atouts pique, atout = pique
+    const vue: VueBotJeu = {
+      maMain: [carte("valet", "pique"), carte("9", "pique"), carte("as", "trefle")],
+      maPosition: "sud",
+      positionPartenaire: "nord",
+      couleurAtout: "pique",
+      pliEnCours: [],
+      couleurDemandee: null,
+      historiquePlis: [],
+      scoreMonEquipe: 0,
+      scoreAdversaire: 0,
+      phaseJeu: "jeu",
+      carteRetournee: null,
+      historiqueEncheres: [],
+      positionPreneur: "sud",
+      positionDonneur: "est",
+    };
+
+    const suivi = construireSuiviAvance(vue);
+    const resultat = atoutsRestantsAdversaires(suivi, vue.maMain, "nord");
+
+    // 8 piques total - 2 en main = 6 restants (partenaire + adversaires)
+    expect(resultat).toBe(6);
+    expect(resultat).toBeGreaterThanOrEqual(0);
+    expect(resultat).toBeLessThanOrEqual(6);
+  });
+});
+
+// ──────────────────────────────────────────────
+// carteMaitresseAvancee
+// ──────────────────────────────────────────────
+
+describe("carteMaitresseAvancee", () => {
+  it("considère une carte maîtresse si les cartes plus fortes ont été jouées", () => {
+    // As de carreau joué → 10 de carreau devrait être maîtresse
+    const historique: PliComplete[] = [
+      {
+        cartes: [
+          { joueur: "sud" as PositionJoueur, carte: carte("as", "carreau") },
+          { joueur: "ouest" as PositionJoueur, carte: carte("7", "carreau") },
+          { joueur: "nord" as PositionJoueur, carte: carte("8", "carreau") },
+          { joueur: "est" as PositionJoueur, carte: carte("9", "carreau") },
+        ],
+        gagnant: "sud" as PositionJoueur,
+        points: 11,
+      },
+    ];
+
+    const vue = creerVueBotAvecHistorique(historique, "pique");
+    const suivi = construireSuiviAvance(vue);
+
+    expect(carteMaitresseAvancee(carte("10", "carreau"), suivi)).toBe(true);
+    // Le roi n'est pas maîtresse car le 10 est encore en jeu
+    expect(carteMaitresseAvancee(carte("roi", "carreau"), suivi)).toBe(false);
   });
 });
