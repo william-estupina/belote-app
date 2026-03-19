@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Belote — Comparaison visuelle Thème & Cartes</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #111; color: #eee; }
+
+  h1 { text-align: center; padding: 24px 0 8px; font-size: 28px; letter-spacing: 1px; }
+  h2 { text-align: center; padding: 16px 0 8px; font-size: 20px; color: #d4a017; }
+  h3 { text-align: center; font-size: 15px; color: #aaa; margin-bottom: 12px; }
+
+  .section { padding: 24px 16px; border-bottom: 1px solid #333; }
+
+  /* --- Cartes --- */
+  .cards-row {
+    display: flex; justify-content: center; align-items: flex-end;
+    gap: 12px; flex-wrap: wrap; padding: 16px 0;
+  }
+  .card-wrapper { text-align: center; }
+  .card-label { font-size: 11px; color: #999; margin-top: 6px; }
+
+  .card {
+    width: 90px; height: 130px; border-radius: 7px;
+    overflow: hidden; position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card img { object-fit: cover; }
+
+  /* Style A : Actuel */
+  .style-a {
+    background: #f5f0e1;
+    border: 1.5px solid #b8a88a;
+    box-shadow: 1px 2px 6px rgba(0,0,0,0.35);
+  }
+  .style-a img { width: 76px; height: 116px; border-radius: 3px; }
+
+  /* Style B : Bordure dorée épaisse */
+  .style-b {
+    background: linear-gradient(135deg, #f7f2e4, #ede5d0);
+    border: 2.5px solid #c9a84e;
+    box-shadow: 0 0 0 1px #a08630, 1px 3px 8px rgba(0,0,0,0.45);
+  }
+  .style-b img { width: 72px; height: 112px; border-radius: 3px; }
+
+  /* Style C : Double bordure luxe */
+  .style-c {
+    background: #f5f0e1;
+    border: 2px solid #c9a84e;
+    box-shadow: inset 0 0 0 3px #f5f0e1, inset 0 0 0 4.5px #c9a84e, 2px 3px 10px rgba(0,0,0,0.5);
+  }
+  .style-c img { width: 70px; height: 108px; border-radius: 2px; }
+
+  /* Style D : Ombre premium, bord fin */
+  .style-d {
+    background: #fffdf5;
+    border: 1px solid #c0b08a;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15), 0 6px 16px rgba(0,0,0,0.25);
+    border-radius: 8px;
+  }
+  .style-d img { width: 74px; height: 114px; border-radius: 4px; }
+
+  /* --- Dos de carte --- */
+  .card-back {
+    width: 90px; height: 130px; border-radius: 7px;
+    overflow: hidden; position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .back-a {
+    background: #8b1a1a; border: 1.5px solid #5a0f0f;
+    box-shadow: 1px 2px 6px rgba(0,0,0,0.4);
+  }
+  .back-a .inner { margin: 4px; border: 1.5px solid #c8a84e; border-radius: 5px; flex: 1; display: flex; align-items: center; justify-content: center; }
+  .back-a .inner2 { margin: 3px; border: 1px solid #c8a84e; border-radius: 4px; background: #7a1818; flex: 1; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; padding: 4px; }
+  .back-a .diamond { color: #a03030; font-size: 11px; width: 33%; text-align: center; line-height: 1.3; }
+
+  .back-b {
+    background: linear-gradient(145deg, #9b2020, #6a1010); border: 2.5px solid #c8a84e;
+    box-shadow: 0 0 0 1px #8a6e20, 2px 3px 10px rgba(0,0,0,0.5);
+  }
+  .back-b .inner { margin: 5px; border: 2px solid #dbb855; border-radius: 5px; flex: 1; display: flex; align-items: center; justify-content: center; }
+  .back-b .inner2 { margin: 3px; border: 1px solid #dbb855; border-radius: 4px; background: linear-gradient(145deg, #7a1515, #5a0e0e); flex: 1; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; padding: 4px; }
+  .back-b .diamond { color: #c04040; font-size: 11px; width: 33%; text-align: center; line-height: 1.3; }
+
+  .back-c {
+    background: #1a2a5a; border: 2.5px solid #c8a84e;
+    box-shadow: 0 0 0 1px #8a6e20, 2px 3px 10px rgba(0,0,0,0.5);
+  }
+  .back-c .inner { margin: 5px; border: 2px solid #dbb855; border-radius: 5px; flex: 1; display: flex; align-items: center; justify-content: center; }
+  .back-c .inner2 { margin: 3px; border: 1px solid #dbb855; border-radius: 4px; background: linear-gradient(145deg, #152050, #0e1540); flex: 1; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; padding: 4px; }
+  .back-c .diamond { color: #3050a0; font-size: 11px; width: 33%; text-align: center; line-height: 1.3; }
+
+  /* --- Thèmes tapis --- */
+  .theme-preview {
+    width: 280px; height: 180px; border-radius: 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+    box-shadow: inset 0 2px 20px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.4);
+  }
+  .theme-label { font-size: 13px; margin-top: 8px; color: #bbb; }
+  .theme-row { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; padding: 16px 0; }
+
+  .theme-1 { background: #1a5c2a; }
+  .theme-2 { background: linear-gradient(135deg, #1a5c2a 0%, #0f3d1a 100%); }
+  .theme-3 { background: radial-gradient(ellipse at center, #2a7a3e 0%, #0f3d1a 70%); }
+  .theme-4 { background: radial-gradient(ellipse at center, #1e6e34 0%, #0a2e14 80%); border: 2px solid #c8a84e55; }
+
+  .mini-card {
+    width: 36px; height: 52px; border-radius: 4px; background: #f5f0e1;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 18px; margin: 0 2px;
+    border: 1px solid #c0b08a;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+  .mini-cards { display: flex; gap: 4px; }
+
+  .theme-score {
+    font-size: 13px; color: #ffffffcc; margin-top: 10px;
+    background: rgba(0,0,0,0.25); padding: 3px 12px; border-radius: 8px;
+  }
+
+  /* --- Couleurs boutons --- */
+  .btn-row { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; padding: 16px 0; }
+  .btn-sample {
+    padding: 10px 24px; border-radius: 10px; font-weight: 600; font-size: 15px;
+    border: none; cursor: pointer;
+  }
+  .btn-current { background: #d4a017; color: #1a1a1a; }
+  .btn-warm { background: linear-gradient(135deg, #e8b730, #c49515); color: #1a1a1a; box-shadow: 0 2px 8px rgba(212,160,23,0.4); }
+  .btn-elegant { background: linear-gradient(135deg, #c8a84e, #a08630); color: #fff; box-shadow: 0 2px 8px rgba(160,134,48,0.4); }
+  .btn-label { font-size: 11px; color: #999; text-align: center; margin-top: 4px; }
+
+  /* --- Panneau enchères --- */
+  .encheres-panel {
+    width: 260px; padding: 16px; border-radius: 14px;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .encheres-a { background: rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.1); }
+  .encheres-b { background: rgba(10,30,18,0.92); border: 1.5px solid #c8a84e55; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+  .encheres-c { background: linear-gradient(160deg, rgba(20,40,25,0.95), rgba(5,15,8,0.95)); border: 1.5px solid #c8a84e88; box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 20px rgba(0,0,0,0.5); }
+
+  .encheres-title { color: #d4a017; font-weight: 700; font-size: 15px; }
+  .encheres-btn {
+    padding: 8px 20px; border-radius: 8px; font-weight: 600; font-size: 14px;
+    border: none; cursor: pointer; width: 100%;
+  }
+  .encheres-prendre { background: #d4a017; color: #1a1a1a; }
+  .encheres-passer { background: rgba(255,255,255,0.12); color: #fff; }
+  .encheres-row { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; padding: 16px 0; }
+
+  /* Grisée */
+  .grayed { position: relative; }
+  .grayed::after {
+    content: ''; position: absolute; inset: 0; border-radius: inherit;
+    background: rgba(0,0,0,0.45);
+  }
+
+  .comparison-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 24px; max-width: 900px; margin: 0 auto;
+  }
+
+  .vote-btn {
+    display: block; margin: 8px auto 0; padding: 6px 16px; border-radius: 20px;
+    background: #d4a01733; border: 1px solid #d4a017; color: #d4a017;
+    font-size: 12px; cursor: pointer; transition: all 0.2s;
+  }
+  .vote-btn:hover { background: #d4a017; color: #111; }
+  .vote-btn.selected { background: #d4a017; color: #111; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<h1>Belote — Comparaison visuelle</h1>
+
+<!-- ===== SECTION 1 : STYLES DE CARTES (FACE) ===== -->
+<div class="section">
+  <h2>1. Style des cartes (face)</h2>
+  <h3>Clique sur ton style préféré</h3>
+  <div class="cards-row">
+
+    <div class="card-wrapper">
+      <div class="card style-a">
+        <img src="../apps/mobile/assets/cartes/queen_of_hearts.png">
+      </div>
+      <div class="card-label">A — Actuel</div>
+      <div class="card-label" style="color:#777; font-size:10px">Bordure beige fine</div>
+      <button class="vote-btn" onclick="vote(this, 'face')">Choisir</button>
+    </div>
+
+    <div class="card-wrapper">
+      <div class="card style-b">
+        <img src="../apps/mobile/assets/cartes/queen_of_hearts.png">
+      </div>
+      <div class="card-label">B — Dorée</div>
+      <div class="card-label" style="color:#777; font-size:10px">Bordure dorée épaisse + ombre</div>
+      <button class="vote-btn" onclick="vote(this, 'face')">Choisir</button>
+    </div>
+
+    <div class="card-wrapper">
+      <div class="card style-c">
+        <img src="../apps/mobile/assets/cartes/queen_of_hearts.png">
+      </div>
+      <div class="card-label">C — Double luxe</div>
+      <div class="card-label" style="color:#777; font-size:10px">Double bordure dorée + ombre forte</div>
+      <button class="vote-btn" onclick="vote(this, 'face')">Choisir</button>
+    </div>
+
+    <div class="card-wrapper">
+      <div class="card style-d">
+        <img src="../apps/mobile/assets/cartes/queen_of_hearts.png">
+      </div>
+      <div class="card-label">D — Premium</div>
+      <div class="card-label" style="color:#777; font-size:10px">Bord fin, ombre douce, coins arrondis</div>
+      <button class="vote-btn" onclick="vote(this, 'face')">Choisir</button>
+    </div>
+  </div>
+
+  <!-- Montrer avec d'autres cartes -->
+  <h3 style="margin-top: 20px;">Aperçu avec différentes cartes</h3>
+  <div class="cards-row" id="preview-face">
+    <div class="card style-b"><img src="../apps/mobile/assets/cartes/jack_of_spades.png"></div>
+    <div class="card style-b"><img src="../apps/mobile/assets/cartes/king_of_diamonds.png"></div>
+    <div class="card style-b"><img src="../apps/mobile/assets/cartes/ace_of_spades.png"></div>
+    <div class="card style-b"><img src="../apps/mobile/assets/cartes/7_of_hearts.png"></div>
+    <div class="card style-b"><img src="../apps/mobile/assets/cartes/10_of_clubs.png"></div>
+  </div>
+</div>
+
+<!-- ===== SECTION 2 : DOS DE CARTE ===== -->
+<div class="section">
+  <h2>2. Dos de carte</h2>
+  <h3>Clique sur ton style préféré</h3>
+  <div class="cards-row">
+
+    <div class="card-wrapper">
+      <div class="card-back back-a" style="display:flex; flex-direction:column;">
+        <div class="inner" style="display:flex; flex-direction:column; width:calc(100% - 8px);">
+          <div class="inner2" style="width:calc(100% - 6px);">
+            <span class="diamond">&#9830;</span><span class="diamond">&#9830;</span><span class="diamond">&#9830;</span>
+            <span class="diamond">&#9830;</span><span class="diamond">&#9830;</span><span class="diamond">&#9830;</span>
+            <span class="diamond">&#9830;</span><span class="diamond">&#9830;</span><span class="diamond">&#9830;</span>
+            <span class="diamond">&#9830;</span><span class="diamond">&#9830;</span><span class="diamond">&#9830;</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-label">A — Actuel (Rouge)</div>
+      <button class="vote-btn" onclick="vote(this, 'dos')">Choisir</button>
+    </div>
+
+    <div class="card-wrapper">
+      <div class="card-back back-b" style="display:flex; flex-direction:column;">
+        <div class="inner" style="display:flex; flex-direction:column; width:calc(100% - 10px);">
+          <div class="inner2" style="width:calc(100% - 6px);">
+            <span class="diamond">&#9830;</span><span class="diamond">&#9830;</span><span class="diamond">&#9830;</span>
+            <span class="diamond">&#9830;</span><span class="diamond">&#9830;</span><span class="diamond">&#9830;</span>
+            <span class="diamond">&#9830;</span><span class="diamond">&#9830;</span><span class="diamond">&#9830;</span>
+            <span class="diamond">&#9830;</span><span class="diamond">&#9830;</span><span class="diamond">&#9830;</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-label">B — Rouge dégradé + or</div>
+      <button class="vote-btn" onclick="vote(this, 'dos')">Choisir</button>
+    </div>
+
+    <div class="card-wrapper">
+      <div class="card-back back-c" style="display:flex; flex-direction:column;">
+        <div class="inner" style="display:flex; flex-direction:column; width:calc(100% - 10px);">
+          <div class="inner2" style="width:calc(100% - 6px);">
+            <span class="diamond">&#9830;</span><span class="diamond">&#9830;</span><span class="diamond">&#9830;</span>
+            <span class="diamond">&#9830;</span><span class="diamond">&#9830;</span><span class="diamond">&#9830;</span>
+            <span class="diamond">&#9830;</span><span class="diamond">&#9830;</span><span class="diamond">&#9830;</span>
+            <span class="diamond">&#9830;</span><span class="diamond">&#9830;</span><span class="diamond">&#9830;</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-label">C — Bleu royal + or</div>
+      <button class="vote-btn" onclick="vote(this, 'dos')">Choisir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION 3 : THÈME DU TAPIS ===== -->
+<div class="section">
+  <h2>3. Thème du tapis de jeu</h2>
+  <h3>Clique sur ton style préféré</h3>
+  <div class="theme-row">
+
+    <div class="card-wrapper">
+      <div class="theme-preview theme-1">
+        <div class="mini-cards">
+          <div class="mini-card">&#9829;</div>
+          <div class="mini-card">&#9824;</div>
+          <div class="mini-card">&#9830;</div>
+          <div class="mini-card">&#9827;</div>
+        </div>
+        <div class="theme-score">Équipe 1 : 82 — Équipe 2 : 45</div>
+      </div>
+      <div class="theme-label">A — Actuel (vert uni)</div>
+      <button class="vote-btn" onclick="vote(this, 'tapis')">Choisir</button>
+    </div>
+
+    <div class="card-wrapper">
+      <div class="theme-preview theme-2">
+        <div class="mini-cards">
+          <div class="mini-card">&#9829;</div>
+          <div class="mini-card">&#9824;</div>
+          <div class="mini-card">&#9830;</div>
+          <div class="mini-card">&#9827;</div>
+        </div>
+        <div class="theme-score">Équipe 1 : 82 — Équipe 2 : 45</div>
+      </div>
+      <div class="theme-label">B — Dégradé diagonal</div>
+      <button class="vote-btn" onclick="vote(this, 'tapis')">Choisir</button>
+    </div>
+
+    <div class="card-wrapper">
+      <div class="theme-preview theme-3">
+        <div class="mini-cards">
+          <div class="mini-card">&#9829;</div>
+          <div class="mini-card">&#9824;</div>
+          <div class="mini-card">&#9830;</div>
+          <div class="mini-card">&#9827;</div>
+        </div>
+        <div class="theme-score">Équipe 1 : 82 — Équipe 2 : 45</div>
+      </div>
+      <div class="theme-label">C — Radial lumineux</div>
+      <button class="vote-btn" onclick="vote(this, 'tapis')">Choisir</button>
+    </div>
+
+    <div class="card-wrapper">
+      <div class="theme-preview theme-4">
+        <div class="mini-cards">
+          <div class="mini-card">&#9829;</div>
+          <div class="mini-card">&#9824;</div>
+          <div class="mini-card">&#9830;</div>
+          <div class="mini-card">&#9827;</div>
+        </div>
+        <div class="theme-score">Équipe 1 : 82 — Équipe 2 : 45</div>
+      </div>
+      <div class="theme-label">D — Radial sombre + liseré or</div>
+      <button class="vote-btn" onclick="vote(this, 'tapis')">Choisir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION 4 : BOUTONS ===== -->
+<div class="section">
+  <h2>4. Style des boutons</h2>
+  <div class="btn-row">
+    <div class="card-wrapper">
+      <button class="btn-sample btn-current">Prendre</button>
+      <div class="btn-label">A — Actuel (plat)</div>
+      <button class="vote-btn" onclick="vote(this, 'bouton')">Choisir</button>
+    </div>
+    <div class="card-wrapper">
+      <button class="btn-sample btn-warm">Prendre</button>
+      <div class="btn-label">B — Dégradé chaud</div>
+      <button class="vote-btn" onclick="vote(this, 'bouton')">Choisir</button>
+    </div>
+    <div class="card-wrapper">
+      <button class="btn-sample btn-elegant">Prendre</button>
+      <div class="btn-label">C — Or élégant</div>
+      <button class="vote-btn" onclick="vote(this, 'bouton')">Choisir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION 5 : PANNEAU ENCHÈRES ===== -->
+<div class="section">
+  <h2>5. Panneau d'enchères</h2>
+  <div class="encheres-row">
+
+    <div class="card-wrapper">
+      <div class="encheres-panel encheres-a">
+        <div class="encheres-title">Enchères</div>
+        <div style="color:#fff; font-size: 24px;">&#9829;</div>
+        <button class="encheres-btn encheres-prendre">Prendre</button>
+        <button class="encheres-btn encheres-passer">Passer</button>
+      </div>
+      <div class="card-label">A — Actuel</div>
+      <button class="vote-btn" onclick="vote(this, 'encheres')">Choisir</button>
+    </div>
+
+    <div class="card-wrapper">
+      <div class="encheres-panel encheres-b">
+        <div class="encheres-title">Enchères</div>
+        <div style="color:#fff; font-size: 24px;">&#9829;</div>
+        <button class="encheres-btn encheres-prendre">Prendre</button>
+        <button class="encheres-btn encheres-passer">Passer</button>
+      </div>
+      <div class="card-label">B — Vert foncé + or subtil</div>
+      <button class="vote-btn" onclick="vote(this, 'encheres')">Choisir</button>
+    </div>
+
+    <div class="card-wrapper">
+      <div class="encheres-panel encheres-c">
+        <div class="encheres-title">Enchères</div>
+        <div style="color:#fff; font-size: 24px;">&#9829;</div>
+        <button class="encheres-btn encheres-prendre">Prendre</button>
+        <button class="encheres-btn encheres-passer">Passer</button>
+      </div>
+      <div class="card-label">C — Dégradé vert + or vif</div>
+      <button class="vote-btn" onclick="vote(this, 'encheres')">Choisir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION 6 : CARTE GRISÉE ===== -->
+<div class="section">
+  <h2>6. Carte non jouable (grisée)</h2>
+  <div class="cards-row">
+    <div class="card-wrapper">
+      <div class="card style-b grayed">
+        <img src="../apps/mobile/assets/cartes/7_of_clubs.png">
+      </div>
+      <div class="card-label">Overlay sombre 45%</div>
+    </div>
+    <div class="card-wrapper">
+      <div class="card style-b" style="filter: grayscale(80%) brightness(0.7);">
+        <img src="../apps/mobile/assets/cartes/7_of_clubs.png">
+      </div>
+      <div class="card-label">Désaturation + assombri</div>
+    </div>
+    <div class="card-wrapper">
+      <div class="card style-b" style="opacity: 0.45;">
+        <img src="../apps/mobile/assets/cartes/7_of_clubs.png">
+      </div>
+      <div class="card-label">Opacité réduite</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RÉSUMÉ DES CHOIX ===== -->
+<div class="section" style="text-align: center; padding: 32px 16px;">
+  <h2>Tes choix</h2>
+  <div id="summary" style="font-size: 16px; line-height: 2; color: #ccc;">
+    <em>Clique sur "Choisir" dans chaque section pour voir ton résumé ici</em>
+  </div>
+</div>
+
+<script>
+  const choices = {};
+  const labels = {
+    face: 'Style carte (face)',
+    dos: 'Dos de carte',
+    tapis: 'Tapis de jeu',
+    bouton: 'Boutons',
+    encheres: 'Panneau enchères',
+  };
+
+  function vote(btn, category) {
+    // Déselectionner les autres dans la même catégorie
+    const section = btn.closest('.section');
+    section.querySelectorAll('.vote-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+
+    // Enregistrer le choix
+    const label = btn.parentElement.querySelector('.card-label, .theme-label, .btn-label');
+    choices[category] = label ? label.textContent : '?';
+
+    // Mettre à jour la preview pour les cartes face
+    if (category === 'face') {
+      const style = btn.parentElement.querySelector('.card').className.replace('card ', '');
+      document.querySelectorAll('#preview-face .card').forEach(c => {
+        c.className = 'card ' + style;
+      });
+    }
+
+    updateSummary();
+  }
+
+  function updateSummary() {
+    const el = document.getElementById('summary');
+    const entries = Object.entries(choices);
+    if (entries.length === 0) {
+      el.innerHTML = '<em>Clique sur "Choisir" dans chaque section</em>';
+      return;
+    }
+    el.innerHTML = entries.map(([k, v]) => `<strong>${labels[k]}</strong> : ${v}`).join('<br>');
+  }
+</script>
+
+</body>
+</html>

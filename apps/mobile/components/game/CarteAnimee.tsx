@@ -8,7 +8,11 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { RATIO_ASPECT_CARTE, RATIO_LARGEUR_CARTE } from "../../constants/layout";
+import { ANIMATIONS, RATIO_ASPECT_CARTE, RATIO_LARGEUR_CARTE } from "../../constants/layout";
+import {
+  calculerPointArc,
+  interpolerBezierQuadratique,
+} from "../../hooks/distributionAtlas";
 import { CarteDos, CarteFace, CarteSkia } from "./Carte";
 
 export interface PositionCarte {
@@ -63,6 +67,11 @@ export function CarteAnimee({
 
   const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
   const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
+  const pointControle = calculerPointArc(
+    { x: depart.x, y: depart.y },
+    { x: arrivee.x, y: arrivee.y },
+    ANIMATIONS.distribution.arcDistribution.decalagePerpendiculaire,
+  );
 
   useEffect(() => {
     progres.value = withTiming(
@@ -80,15 +89,19 @@ export function CarteAnimee({
   // Style du conteneur (position + rotation Z + scale)
   const styleConteneur = useAnimatedStyle(() => {
     const t = progres.value;
-    const x = depart.x + (arrivee.x - depart.x) * t;
-    const y = depart.y + (arrivee.y - depart.y) * t;
+    const position = interpolerBezierQuadratique(
+      { x: depart.x, y: depart.y },
+      pointControle,
+      { x: arrivee.x, y: arrivee.y },
+      t,
+    );
     const rotation = depart.rotation + (arrivee.rotation - depart.rotation) * t;
     const echelle = depart.echelle + (arrivee.echelle - depart.echelle) * t;
 
     return {
       position: "absolute" as const,
-      left: x * largeurEcran - largeurCarte / 2,
-      top: y * hauteurEcran - hauteurCarte / 2,
+      left: position.x * largeurEcran - largeurCarte / 2,
+      top: position.y * hauteurEcran - hauteurCarte / 2,
       transform: [{ rotate: `${rotation}deg` }, { scale: echelle }],
       zIndex: 100,
     };

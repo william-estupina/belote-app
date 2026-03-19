@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import type { LayoutChangeEvent } from "react-native";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { COULEURS } from "../../constants/theme";
 import { useControleurJeu } from "../../hooks/useControleurJeu";
 import { useAppStore } from "../../stores/app-store";
 import { AvatarJoueur } from "./AvatarJoueur";
@@ -15,6 +16,7 @@ import { DialogueFinPartie } from "./DialogueFinPartie";
 import { MainAdversaire } from "./MainAdversaire";
 import { MainJoueur } from "./MainJoueur";
 import { PanneauEncheres } from "./PanneauEncheres";
+import { PaquetCentral } from "./PaquetCentral";
 import { PilePlis } from "./PilePlis";
 import { TableauScores } from "./TableauScores";
 import { ZoneCarteRetournee } from "./ZoneCarteRetournee";
@@ -187,6 +189,15 @@ export default function PlateauJeu() {
             />
           )}
 
+          {/* Paquet central empilé (visible pendant la distribution) */}
+          {etatJeu.phaseUI === "distribution" && (
+            <PaquetCentral
+              cartesRestantes={etatJeu.cartesRestantesPaquet}
+              largeurEcran={largeur}
+              hauteurEcran={hauteur}
+            />
+          )}
+
           {/* Couche d'animation (cartes en vol) */}
           <CoucheAnimation
             cartesEnVol={cartesEnVol}
@@ -248,7 +259,7 @@ export default function PlateauJeu() {
 const styles = StyleSheet.create({
   plateau: {
     flex: 1,
-    backgroundColor: "#1a5c2a",
+    backgroundColor: COULEURS.fondPrincipal,
   },
   bordure: {
     position: "absolute",
@@ -258,7 +269,7 @@ const styles = StyleSheet.create({
     bottom: 6,
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: "#145222",
+    borderColor: COULEURS.fondFonce,
   },
   indicateurs: {
     position: "absolute",
@@ -284,10 +295,15 @@ const styles = StyleSheet.create({
     zIndex: 40,
   },
   boutonJouer: {
-    backgroundColor: "#d4a017",
     paddingHorizontal: 48,
     paddingVertical: 16,
     borderRadius: 12,
+    backgroundColor: "#e8b730",
+    shadowColor: "rgba(212, 160, 23, 0.4)",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 6,
   },
   texteBoutonJouer: {
     color: "#1a1a1a",

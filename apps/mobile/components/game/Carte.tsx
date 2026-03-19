@@ -156,26 +156,26 @@ export function CarteDos({ largeur, hauteur }: { largeur: number; hauteur: numbe
 
 const dosStyles = StyleSheet.create({
   carte: {
-    backgroundColor: "#8b1a1a",
-    borderWidth: 1.5,
-    borderColor: "#5a0f0f",
+    backgroundColor: "#9b2020",
+    borderWidth: 2.5,
+    borderColor: "#c8a84e",
     shadowColor: "#000",
-    shadowOffset: { width: 1, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOffset: { width: 2, height: 3 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 6,
     overflow: "hidden",
   },
   cadreExterieur: {
     flex: 1,
-    borderWidth: 1.5,
-    borderColor: "#c8a84e",
+    borderWidth: 2,
+    borderColor: "#dbb855",
   },
   motifInterieur: {
     flex: 1,
-    backgroundColor: "#7a1818",
+    backgroundColor: "#6a1010",
     borderWidth: 1,
-    borderColor: "#c8a84e",
+    borderColor: "#dbb855",
     overflow: "hidden",
   },
   grilleMotif: {
@@ -188,7 +188,7 @@ const dosStyles = StyleSheet.create({
     padding: "4%",
   },
   motifLosange: {
-    color: "#a03030",
+    color: "#c04040",
     textAlign: "center",
     width: "33%",
   },
@@ -208,6 +208,10 @@ export function CarteFace({
   grisee?: boolean;
 }) {
   const imageCarte = IMAGES_CARTES[carte.rang][carte.couleur];
+  const marge = Math.round(largeur * 0.03);
+  const largeurImage = largeur - marge * 2;
+  const hauteurImage = hauteur - marge * 2;
+  const rayonImage = Math.max(RAYON_COIN - marge, 2);
 
   return (
     <View
@@ -217,15 +221,16 @@ export function CarteFace({
           width: largeur,
           height: hauteur,
           borderRadius: RAYON_COIN,
+          padding: marge,
         },
       ]}
     >
       <Image
         source={imageCarte}
         style={{
-          width: largeur,
-          height: hauteur,
-          borderRadius: RAYON_COIN,
+          width: largeurImage,
+          height: hauteurImage,
+          borderRadius: rayonImage,
         }}
         resizeMode="cover"
       />
@@ -238,6 +243,8 @@ const faceStyles = StyleSheet.create({
   conteneur: {
     overflow: "hidden",
     backgroundColor: "#f0e8d4",
+    borderWidth: 1.5,
+    borderColor: "#b8a88a",
     shadowColor: "#000",
     shadowOffset: { width: 1, height: 2 },
     shadowOpacity: 0.35,

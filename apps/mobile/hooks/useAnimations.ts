@@ -7,21 +7,14 @@ import {
   POSITIONS_MAINS,
   POSITIONS_PILES,
   POSITIONS_PLI,
-  POSITIONS_TAPIS,
   variationCartePli,
 } from "../constants/layout";
 
 const POSITIONS_JOUEUR: PositionJoueur[] = ["sud", "ouest", "nord", "est"];
 
-/** Génère un offset aléatoire dans [-max, +max] */
-function aleatoire(max: number): number {
-  return (Math.random() * 2 - 1) * max;
-}
-
 /**
  * Hook central de gestion des animations de cartes.
- * Gère les cartes en vol, les cartes sur le tapis,
- * et expose des fonctions pour déclencher chaque type d'animation.
+ * Gère les cartes en vol et expose des fonctions pour déclencher chaque type d'animation.
  */
 export function useAnimations() {
   const [cartesEnVol, setCartesEnVol] = useState<CarteEnVol[]>([]);
@@ -42,24 +35,22 @@ export function useAnimations() {
     setCartesEnVol((prev) => prev.filter((c) => c.id !== id));
   }, []);
 
-  // --- Phase 1 : Distribution sur le tapis ---
+  // --- Distribution directe vers la main (par paquets simultanés) ---
   const lancerDistribution = useCallback(
     (
       mains: Record<PositionJoueur, Carte[]>,
       options?: {
-        /** Appelé quand une carte atterrit sur le tapis */
-        onCarteArrivee?: (carteSurTapis: CarteSurTapis) => void;
-        /** Appelé quand un joueur a toutes ses cartes sur le tapis */
-        onJoueurComplet?: (position: PositionJoueur) => void;
+        /** Appelé quand un paquet de cartes arrive dans la main d'un joueur */
+        onPaquetArrive?: (position: PositionJoueur, cartes: Carte[]) => void;
         onTerminee?: () => void;
-        /** Cartes qui doivent être posées face visible (ex: carte retournée du preneur) */
+        /** Cartes qui doivent être envoyées face visible */
         cartesVisibles?: Carte[];
       },
     ) => {
       nettoyerTimeouts();
       const { distribution } = ANIMATIONS;
 
-      // Construire les paquets comme en vraie Belote
+      // Construire les paquets comme en vraie Belote (3 puis 2)
       const nbCartesParJoueur = Math.max(
         ...POSITIONS_JOUEUR.map((pos) => mains[pos].length),
       );
@@ -75,131 +66,101 @@ export function useAnimations() {
         cartesRestantes -= taille;
       }
 
-      // Compteur de cartes arrivées par joueur
-      const cartesArrivees: Record<PositionJoueur, number> = {
-        sud: 0,
-        ouest: 0,
-        nord: 0,
-        est: 0,
-      };
-      const cartesAttenduesTotales: Record<PositionJoueur, number> = {
-        sud: mains.sud.length,
-        ouest: mains.ouest.length,
-        nord: mains.nord.length,
-        est: mains.est.length,
-      };
-
-      // Séquence de vol
-      type CarteAvecDelai = {
-        carte: Carte;
-        position: PositionJoueur;
-        delai: number;
-        indexDansPaquet: number;
-        numPaquet: number;
-      };
-      const sequence: CarteAvecDelai[] = [];
-
       let temps = 0;
       let indexCarte = 0;
 
+      const { ecartX, ecartRotation } = distribution.eventailVol;
+
       for (let p = 0; p < taillesPaquets.length; p++) {
         const taillePaquet = taillesPaquets[p];
-        if (indexCarte > 0) {
-          temps += distribution.pauseEntreTours;
+
+        // Pause entre les rounds (ex: entre le paquet de 3 et le paquet de 2)
+        if (p > 0) {
+          temps += distribution.pauseEntreRounds;
         }
 
         for (const position of POSITIONS_JOUEUR) {
           const cartesJoueur = mains[position];
+          const posMain = POSITIONS_MAINS[position];
 
+          const cartesDuPaquet: Carte[] = [];
           for (let c = 0; c < taillePaquet && indexCarte + c < cartesJoueur.length; c++) {
-            sequence.push({
-              carte: cartesJoueur[indexCarte + c],
-              position,
-              delai: temps + c * distribution.delaiDansPaquet,
-              indexDansPaquet: c,
-              numPaquet: p + 1,
-            });
+            cartesDuPaquet.push(cartesJoueur[indexCarte + c]);
           }
 
+          if (cartesDuPaquet.length === 0) continue;
+
+          const delaiPaquet = temps;
+          const nbCartesPaquet = cartesDuPaquet.length;
+
+          // Direction de vol pour orienter l'éventail perpendiculairement
+          const dx = posMain.x - distribution.originX;
+          const dy = posMain.y - distribution.originY;
+          const angle = Math.atan2(dy, dx);
+          const perpX = -Math.sin(angle);
+          const perpY = Math.cos(angle);
+
+          for (let idx = 0; idx < cartesDuPaquet.length; idx++) {
+            const carte = cartesDuPaquet[idx];
+            // Toutes les cartes du paquet partent en même temps (pas de stagger)
+            const delaiCarte = delaiPaquet;
+
+            // Offset en éventail centré autour de 0
+            const centre = (nbCartesPaquet - 1) / 2;
+            const offsetIdx = idx - centre;
+
+            const timeout = setTimeout(() => {
+              compteurId.current += 1;
+              const id = `distrib-${compteurId.current}`;
+
+              const estVisible =
+                options?.cartesVisibles?.some(
+                  (cv) => cv.couleur === carte.couleur && cv.rang === carte.rang,
+                ) ?? false;
+
+              const vol: CarteEnVol = {
+                id,
+                carte,
+                depart: {
+                  // Éventail pleine taille au départ (facteur 1.0) → se referme à l'arrivée
+                  x: distribution.originX + offsetIdx * ecartX * perpX,
+                  y: distribution.originY + offsetIdx * ecartX * perpY,
+                  rotation: offsetIdx * ecartRotation,
+                  echelle: 0.5,
+                },
+                // Arrivée : toutes convergent vers le centre de la main (pas de spread résiduel)
+                arrivee: {
+                  x: posMain.x,
+                  y: posMain.y,
+                  rotation: 0,
+                  echelle: 1,
+                },
+                faceVisible: estVisible,
+                duree: distribution.dureeCarte,
+                easing: distribution.easingDistribution,
+              };
+
+              setCartesEnVol((prev) => [...prev, vol]);
+            }, delaiCarte);
+
+            timeoutsRef.current.push(timeout);
+          }
+
+          // Quand le paquet arrive dans la main (toutes les cartes partent simultanément)
+          const timeoutArrivee = setTimeout(() => {
+            options?.onPaquetArrive?.(position, cartesDuPaquet);
+          }, delaiPaquet + distribution.dureeCarte);
+
+          timeoutsRef.current.push(timeoutArrivee);
           temps += distribution.delaiEntreJoueurs;
         }
 
         indexCarte += taillePaquet;
       }
 
-      // Lancer chaque carte
-      for (const { carte, position, delai, numPaquet } of sequence) {
-        const posTapis = POSITIONS_TAPIS[position];
-        // Décalage pour distinguer paquet 1 et 2
-        const decalageXPaquet = numPaquet === 2 ? distribution.decalagePaquet2 : 0;
-        // Position finale aléatoire sur le tapis
-        const xFinal =
-          posTapis.x + decalageXPaquet + aleatoire(distribution.offsetAleatoireMax);
-        const yFinal = posTapis.y + aleatoire(distribution.offsetAleatoireMax);
-        const rotFinal = aleatoire(distribution.rotationAleatoireMax);
-
-        const estVisible =
-          options?.cartesVisibles?.some(
-            (cv) => cv.couleur === carte.couleur && cv.rang === carte.rang,
-          ) ?? false;
-
-        const timeout = setTimeout(() => {
-          compteurId.current += 1;
-          const id = `distrib-${compteurId.current}`;
-
-          const vol: CarteEnVol = {
-            id,
-            carte,
-            depart: {
-              x: distribution.originX,
-              y: distribution.originY,
-              rotation: 0,
-              echelle: 0.5,
-            },
-            arrivee: {
-              x: xFinal,
-              y: yFinal,
-              rotation: rotFinal,
-              echelle: 1,
-            },
-            faceVisible: estVisible,
-            duree: distribution.dureeCarte,
-          };
-
-          setCartesEnVol((prev) => [...prev, vol]);
-
-          // Quand la carte atterrit → créer CarteSurTapis
-          const timeoutArrivee = setTimeout(() => {
-            const cst: CarteSurTapis = {
-              id: `tapis-${id}`,
-              carte,
-              position,
-              x: xFinal,
-              y: yFinal,
-              rotation: rotFinal,
-              faceVisible: estVisible,
-              paquet: numPaquet as 1 | 2,
-            };
-            setCartesSurTapis((prev) => [...prev, cst]);
-            options?.onCarteArrivee?.(cst);
-
-            // Vérifier si le joueur a toutes ses cartes
-            cartesArrivees[position] += 1;
-            if (cartesArrivees[position] >= cartesAttenduesTotales[position]) {
-              options?.onJoueurComplet?.(position);
-            }
-          }, distribution.dureeCarte);
-
-          timeoutsRef.current.push(timeoutArrivee);
-        }, delai);
-
-        timeoutsRef.current.push(timeout);
-      }
-
       // Callback de fin après toutes les animations
       if (options?.onTerminee) {
-        const dernierDelai =
-          sequence.length > 0 ? sequence[sequence.length - 1].delai : 0;
+        const dernierDelai = Math.max(0, temps - distribution.delaiEntreJoueurs);
         const dureeTotale = dernierDelai + distribution.dureeCarte;
         const timeout = setTimeout(options.onTerminee, dureeTotale);
         timeoutsRef.current.push(timeout);
@@ -208,90 +169,17 @@ export function useAnimations() {
     [nettoyerTimeouts],
   );
 
-  // --- Phase 2 : Prise en main (flip + vol tapis → main) ---
-  const lancerPriseEnMain = useCallback(
-    (
-      position: PositionJoueur,
-      cartesATrouver: CarteSurTapis[],
-      positionsArrivee: { x: number; y: number }[],
-      options?: {
-        flipVers?: number; // 180 = révèle la face (sud), 0 ou absent = reste dos (bots)
-        onTerminee?: () => void;
-      },
-    ) => {
-      const { distribution } = ANIMATIONS;
-
-      for (let i = 0; i < cartesATrouver.length; i++) {
-        const cst = cartesATrouver[i];
-        const posArrivee = positionsArrivee[i] ?? POSITIONS_MAINS[position];
-        const delai = i * distribution.staggerPriseEnMain;
-        const doitFlip = options?.flipVers !== undefined;
-
-        const timeout = setTimeout(() => {
-          // Retirer du tapis
-          setCartesSurTapis((prev) => prev.filter((c) => c.id !== cst.id));
-
-          compteurId.current += 1;
-          const id = `prise-${compteurId.current}`;
-
-          const vol: CarteEnVol = {
-            id,
-            carte: cst.carte,
-            depart: {
-              x: cst.x,
-              y: cst.y,
-              rotation: cst.rotation,
-              echelle: 1.1, // soulèvement
-            },
-            arrivee: {
-              x: posArrivee.x,
-              y: posArrivee.y,
-              rotation: 0,
-              echelle: 1,
-            },
-            faceVisible: cst.faceVisible,
-            duree: distribution.dureePriseEnMain,
-            easing: "inout-cubic",
-            ...(doitFlip
-              ? {
-                  flipDe: cst.faceVisible ? 180 : 0,
-                  flipVers: options!.flipVers!,
-                }
-              : {}),
-          };
-
-          setCartesEnVol((prev) => [...prev, vol]);
-        }, delai);
-
-        timeoutsRef.current.push(timeout);
-      }
-
-      // Callback de fin
-      if (options?.onTerminee) {
-        const dureeTotale =
-          (cartesATrouver.length - 1) * distribution.staggerPriseEnMain +
-          distribution.dureePriseEnMain;
-        const timeout = setTimeout(options.onTerminee, dureeTotale);
-        timeoutsRef.current.push(timeout);
-      }
-    },
-    [],
-  );
-
-  // --- Slide de la carte retournée vers le tapis du preneur ---
+  // --- Slide de la carte retournée vers la main du preneur ---
   const glisserCarteRetournee = useCallback(
     (
       carte: Carte,
       xDepart: number,
       yDepart: number,
       preneur: PositionJoueur,
-      onTerminee?: (carteSurTapis: CarteSurTapis) => void,
+      onTerminee?: () => void,
     ) => {
       const { distribution } = ANIMATIONS;
-      const posTapis = POSITIONS_TAPIS[preneur];
-      const xArrivee = posTapis.x + aleatoire(distribution.offsetAleatoireMax);
-      const yArrivee = posTapis.y + aleatoire(distribution.offsetAleatoireMax);
-      const rotArrivee = aleatoire(distribution.rotationAleatoireMax);
+      const posMain = POSITIONS_MAINS[preneur];
 
       compteurId.current += 1;
       const id = `slide-retournee-${compteurId.current}`;
@@ -306,9 +194,9 @@ export function useAnimations() {
           echelle: 1,
         },
         arrivee: {
-          x: xArrivee,
-          y: yArrivee,
-          rotation: rotArrivee,
+          x: posMain.x,
+          y: posMain.y,
+          rotation: 0,
           echelle: 1,
         },
         faceVisible: true,
@@ -318,28 +206,15 @@ export function useAnimations() {
 
       setCartesEnVol((prev) => [...prev, vol]);
 
-      // Créer CarteSurTapis quand elle arrive et la passer au callback
-      const timeout = setTimeout(() => {
-        const cst: CarteSurTapis = {
-          id: `tapis-${id}`,
-          carte,
-          position: preneur,
-          x: xArrivee,
-          y: yArrivee,
-          rotation: rotArrivee,
-          faceVisible: true,
-          paquet: 1,
-        };
-        setCartesSurTapis((prev) => [...prev, cst]);
-        onTerminee?.(cst);
-      }, distribution.dureeSlideRetournee);
-
-      timeoutsRef.current.push(timeout);
+      if (onTerminee) {
+        const timeout = setTimeout(onTerminee, distribution.dureeSlideRetournee);
+        timeoutsRef.current.push(timeout);
+      }
     },
     [],
   );
 
-  // --- Jeu de carte (main → centre avec variation naturelle) --- (INCHANGÉ)
+  // --- Jeu de carte (main → centre avec variation naturelle) ---
   const lancerAnimationJeuCarte = useCallback(
     (
       carte: Carte,
@@ -386,7 +261,7 @@ export function useAnimations() {
     [],
   );
 
-  // --- Ramassage du pli (centre → pile de l'équipe gagnante) --- (INCHANGÉ)
+  // --- Ramassage du pli en 2 phases (convergence → glissement vers pile) ---
   const lancerAnimationRamassagePli = useCallback(
     (
       cartesPli: { joueur: PositionJoueur; carte: Carte }[],
@@ -398,56 +273,97 @@ export function useAnimations() {
       const equipe = indexGagnant % 2 === 0 ? "equipe1" : "equipe2";
       const posPile = POSITIONS_PILES[equipe];
       const rotationArrivee = equipe === "equipe2" ? 90 : 0;
+      const posGagnant = POSITIONS_PLI[gagnant];
 
-      const dureeRamassage = 500;
-      const delaiEntreCartes = 60;
+      // Phase 1 : convergence vers la position du gagnant (toutes les cartes simultanément)
+      const dureeConvergence = 180;
+      // Phase 2 : glissement groupé vers la pile de l'équipe
+      const dureeGlissement = 270;
+      // Petit délai entre les deux phases
+      const pauseEntrePhases = 50;
 
       const timeout = setTimeout(() => {
         onDebutRamassage?.();
 
+        // Phase 1 : toutes les cartes convergent vers le gagnant (simultané, pas de stagger)
         for (let i = 0; i < cartesPli.length; i++) {
           const { joueur, carte } = cartesPli[i];
+          compteurId.current += 1;
+          const id = `ramassage-p1-${compteurId.current}`;
+          const posDepart = POSITIONS_PLI[joueur];
+          const { decalageX, decalageY, rotation } = variationCartePli(
+            carte.couleur,
+            carte.rang,
+            joueur,
+          );
 
-          const timeoutCarte = setTimeout(() => {
+          const vol: CarteEnVol = {
+            id,
+            carte,
+            depart: {
+              x: posDepart.x + decalageX,
+              y: posDepart.y + decalageY,
+              rotation,
+              echelle: 0.9,
+            },
+            arrivee: {
+              x: posGagnant.x,
+              y: posGagnant.y,
+              rotation: 0,
+              echelle: 0.85,
+            },
+            faceVisible: true,
+            duree: dureeConvergence,
+            easing: "inout-cubic",
+          };
+
+          setCartesEnVol((prev) => [...prev, vol]);
+        }
+
+        // Phase 2 : après convergence, glissement groupé vers la pile
+        const delaiPhase2 = dureeConvergence + pauseEntrePhases;
+        const timeoutPhase2 = setTimeout(() => {
+          for (let i = 0; i < cartesPli.length; i++) {
+            const { carte } = cartesPli[i];
             compteurId.current += 1;
-            const id = `ramassage-${compteurId.current}`;
-            const posDepart = POSITIONS_PLI[joueur];
-            const { decalageX, decalageY, rotation } = variationCartePli(
-              carte.couleur,
-              carte.rang,
-              joueur,
-            );
+            const id = `ramassage-p2-${compteurId.current}`;
+
+            // Léger décalage en éventail pour simuler un paquet tenu en main
+            const centre = (cartesPli.length - 1) / 2;
+            const offsetIdx = i - centre;
+            const microDecalageX = offsetIdx * 0.004;
+            const microDecalageY = offsetIdx * 0.002;
 
             const vol: CarteEnVol = {
               id,
               carte,
               depart: {
-                x: posDepart.x + decalageX,
-                y: posDepart.y + decalageY,
-                rotation,
-                echelle: 0.9,
+                x: posGagnant.x + microDecalageX,
+                y: posGagnant.y + microDecalageY,
+                rotation: 0,
+                echelle: 0.85,
               },
               arrivee: {
                 x: posPile.x,
                 y: posPile.y,
                 rotation: rotationArrivee,
-                echelle: 0.4,
+                echelle: 0.6,
               },
               faceVisible: false,
-              duree: dureeRamassage,
+              duree: dureeGlissement,
+              easing: "inout-cubic",
             };
 
             setCartesEnVol((prev) => [...prev, vol]);
-          }, i * delaiEntreCartes);
+          }
 
-          timeoutsRef.current.push(timeoutCarte);
-        }
+          if (onTerminee) {
+            const timeoutFin = setTimeout(onTerminee, dureeGlissement);
+            timeoutsRef.current.push(timeoutFin);
+          }
+        }, delaiPhase2);
 
-        if (onTerminee) {
-          const dureeTotale = (cartesPli.length - 1) * delaiEntreCartes + dureeRamassage;
-          const timeoutFin = setTimeout(onTerminee, dureeTotale);
-          timeoutsRef.current.push(timeoutFin);
-        }
+        timeoutsRef.current.push(timeoutPhase2);
       }, ANIMATIONS.ramassagePli.delaiAvant);
 
       timeoutsRef.current.push(timeout);
@@ -467,7 +383,6 @@ export function useAnimations() {
     cartesSurTapis,
     surAnimationTerminee,
     lancerDistribution,
-    lancerPriseEnMain,
     glisserCarteRetournee,
     lancerAnimationJeuCarte,
     lancerAnimationRamassagePli,

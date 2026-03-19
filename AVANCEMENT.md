@@ -47,6 +47,13 @@
 - [x] Implémenter la stratégie d'enchères par niveau (tour 1 + tour 2)
 - [x] Implémenter le module de comptage de cartes (`comptage-cartes.ts` : suivi cartes jouées/restantes, cartes maîtresses)
 - [x] Tests unitaires (57 tests — enchères, jeu, comptage de cartes, dispatcher bot)
+- [x] **Recalibrage des 3 niveaux de difficulté** (branche `feature/recalibrage-bots-expert`) :
+  - [x] Enrichir `VueBotJeu` avec `positionPreneur` et `positionDonneur`
+  - [x] Suivi cartes avancé (`SuiviCartesAvance` : couleurs épuisées, coupes, défausses par joueur)
+  - [x] Remapper facile = ancien moyen (heuristiques + 12% erreur), moyen = ancien difficile (comptage)
+  - [x] Niveau expert enchères : seuils adaptatifs (position, écart score), garde anti-chute, détection belote/rebelote, auto-prend V+9
+  - [x] Niveau expert jeu : entame 5 priorités, surcoupe intelligente (>15 pts), préservation belote, charge partenaire
+  - [x] 79 tests bot-engine (vs 57 avant), couverture 79.5% statements, 84.8% branches
 
 ### Étape 5 : UI — Écrans et navigation ✅
 

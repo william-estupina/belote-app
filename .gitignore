@@ -37,3 +37,9 @@ coverage/
 # EAS (fichiers racine créés par eas build:configure, la vraie config est dans apps/mobile/)
 /app.json
 /eas.json
+
+# Superpowers brainstorm sessions
+.superpowers/
+
+# Git worktrees
+.worktrees/
