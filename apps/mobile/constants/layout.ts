@@ -74,8 +74,11 @@ export const ANIMATIONS = {
     dureeCarte: 400, // durée de vol par carte (ms)
     delaiEntreJoueurs: 250, // délai entre les paquets de chaque joueur (ms)
     pauseEntreRounds: 0, // pas de pause entre le paquet de 3 et le paquet de 2
-    easingDistribution: "inout-cubic" as const, // easing doux au départ et à l'arrivée
+    easingDistribution: "out-cubic" as const, // décélération naturelle à l'arrivée
     staggerIntraPaquet: 0, // toutes les cartes d'un même paquet partent en même temps
+    arcDistribution: {
+      decalagePerpendiculaire: 0.05, // 5% de la distance, perpendiculaire à l'axe de vol
+    },
     // Éventail en vol : spread des cartes dans un même paquet
     eventailVol: {
       ecartX: 0.03, // écart horizontal entre cartes adjacentes (fraction écran)
