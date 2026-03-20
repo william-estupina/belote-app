@@ -1,9 +1,13 @@
 import type { Carte, PositionJoueur } from "@belote/shared-types";
 import { View } from "react-native";
+import type { SharedValue } from "react-native-reanimated";
 
 import { RATIO_ASPECT_CARTE, RATIO_LARGEUR_CARTE } from "../../constants/layout";
+import type { CarteAtlas } from "../../hooks/useAnimationsDistribution";
+import type { AtlasCartes } from "../../hooks/useAtlasCartes";
 import { CarteDos, CarteFace } from "./Carte";
 import { CarteAnimee, type PositionCarte } from "./CarteAnimee";
+import { DistributionCanvas } from "./DistributionCanvas";
 
 export interface CarteEnVol {
   id: string;
@@ -37,6 +41,12 @@ interface PropsCoucheAnimation {
   largeurEcran: number;
   hauteurEcran: number;
   onAnimationTerminee: (id: string) => void;
+  atlas?: AtlasCartes;
+  cartesAtlasDistribution?: CarteAtlas[];
+  progressionsDistribution?: SharedValue<number>[];
+  donneesWorkletDistribution?: SharedValue<number[]>;
+  nbCartesActivesDistribution?: SharedValue<number>;
+  distributionEnCours?: boolean;
 }
 
 /**
@@ -49,8 +59,23 @@ export function CoucheAnimation({
   largeurEcran,
   hauteurEcran,
   onAnimationTerminee,
+  atlas,
+  cartesAtlasDistribution,
+  progressionsDistribution,
+  donneesWorkletDistribution,
+  nbCartesActivesDistribution,
+  distributionEnCours,
 }: PropsCoucheAnimation) {
-  if (cartesEnVol.length === 0 && cartesSurTapis.length === 0) return null;
+  const aDistributionAtlas =
+    atlas &&
+    cartesAtlasDistribution &&
+    progressionsDistribution &&
+    donneesWorkletDistribution &&
+    nbCartesActivesDistribution &&
+    distributionEnCours;
+
+  if (cartesEnVol.length === 0 && cartesSurTapis.length === 0 && !aDistributionAtlas)
+    return null;
 
   const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
   const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
@@ -86,6 +111,19 @@ export function CoucheAnimation({
           )}
         </View>
       ))}
+
+      {/* Distribution via Skia Atlas (single draw call) */}
+      {aDistributionAtlas && (
+        <DistributionCanvas
+          atlas={atlas}
+          cartesAtlas={cartesAtlasDistribution}
+          progressions={progressionsDistribution}
+          donneesWorklet={donneesWorkletDistribution}
+          nbCartesActives={nbCartesActivesDistribution}
+          largeurEcran={largeurEcran}
+          hauteurEcran={hauteurEcran}
+        />
+      )}
 
       {/* Cartes en vol (animées, z-index supérieur) */}
       {cartesEnVol.map((vol) => (

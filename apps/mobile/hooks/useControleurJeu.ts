@@ -16,6 +16,8 @@ import { createActor } from "xstate";
 
 import { ANIMATIONS } from "../constants/layout";
 import { useAnimations } from "./useAnimations";
+import { useAnimationsDistribution } from "./useAnimationsDistribution";
+import { useAtlasCartes } from "./useAtlasCartes";
 import { useDelaiBot } from "./useDelaiBot";
 
 // --- Types exposés ---
@@ -225,6 +227,8 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
 
   // Animations
   const animations = useAnimations();
+  const atlas = useAtlasCartes();
+  const animDistribution = useAnimationsDistribution(atlas);
   const { attendreDelaiBot, annulerDelai } = useDelaiBot();
 
   // Drapeaux pour éviter les boucles et courses
@@ -551,7 +555,7 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
 
       let cartesRecues = 0;
 
-      animations.lancerDistribution(mainsRecord, {
+      animDistribution.lancerDistribution(mainsRecord, {
         cartesVisibles: mainsRecord.sud,
         onPaquetArrive: (position, cartes) => {
           if (estDemonte.current) return;
@@ -582,7 +586,7 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
         },
       });
     },
-    [animations, lancerPhase3],
+    [animDistribution, lancerPhase3],
   );
 
   // --- Lancer l'animation de ramassage du pli ---
@@ -1048,7 +1052,7 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
             ? [carteRetournee, ...cartesVisiblesSud]
             : [...cartesVisiblesSud];
 
-        animations.lancerDistribution(
+        animDistribution.lancerDistribution(
           estPreneurPremier
             ? {
                 ...mainsRecord,
@@ -1079,7 +1083,7 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
         lancerDistribRestante();
       }
     },
-    [animations, lancerPhase3Restante],
+    [animations, animDistribution, lancerPhase3Restante],
   );
 
   // Mettre à jour la ref pour que prendre/annoncer puissent appeler cette fonction
@@ -1091,6 +1095,13 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
     cartesEnVol: animations.cartesEnVol,
     cartesSurTapis: animations.cartesSurTapis,
     surAnimationTerminee: animations.surAnimationTerminee,
+    // Distribution Atlas
+    atlas,
+    cartesAtlasDistribution: animDistribution.cartesAtlas,
+    progressionsDistribution: animDistribution.progressions,
+    donneesWorkletDistribution: animDistribution.donneesWorklet,
+    nbCartesActivesDistribution: animDistribution.nbCartesActives,
+    distributionEnCours: animDistribution.enCours,
     // Actions
     demarrerPartie,
     jouerCarte,

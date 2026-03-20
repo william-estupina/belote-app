@@ -33,6 +33,12 @@ export default function PlateauJeu() {
     cartesEnVol,
     cartesSurTapis,
     surAnimationTerminee,
+    atlas,
+    cartesAtlasDistribution,
+    progressionsDistribution,
+    donneesWorkletDistribution,
+    nbCartesActivesDistribution,
+    distributionEnCours,
     demarrerPartie,
     jouerCarte,
     prendre,
@@ -205,6 +211,12 @@ export default function PlateauJeu() {
             largeurEcran={largeur}
             hauteurEcran={hauteur}
             onAnimationTerminee={surAnimationTerminee}
+            atlas={atlas}
+            cartesAtlasDistribution={cartesAtlasDistribution}
+            progressionsDistribution={progressionsDistribution}
+            donneesWorkletDistribution={donneesWorkletDistribution}
+            nbCartesActivesDistribution={nbCartesActivesDistribution}
+            distributionEnCours={distributionEnCours}
           />
 
           {/* Panneau d'enchères (quand c'est au joueur humain de décider) */}
