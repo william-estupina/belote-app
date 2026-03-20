@@ -56,6 +56,7 @@ export function calculerPointArc(
   arrivee: PointNormalise,
   decalagePerpendiculaire: number,
 ): PointNormalise {
+  "worklet";
   const dx = arrivee.x - depart.x;
   const dy = arrivee.y - depart.y;
   const distance = Math.hypot(dx, dy);
@@ -84,16 +85,11 @@ export function interpolerBezierQuadratique(
   arrivee: PointNormalise,
   t: number,
 ): PointNormalise {
+  "worklet";
   const inverse = 1 - t;
 
   return {
-    x:
-      inverse * inverse * depart.x +
-      2 * inverse * t * controle.x +
-      t * t * arrivee.x,
-    y:
-      inverse * inverse * depart.y +
-      2 * inverse * t * controle.y +
-      t * t * arrivee.y,
+    x: inverse * inverse * depart.x + 2 * inverse * t * controle.x + t * t * arrivee.x,
+    y: inverse * inverse * depart.y + 2 * inverse * t * controle.y + t * t * arrivee.y,
   };
 }
