@@ -1,16 +1,15 @@
 import type { Carte, PositionJoueur } from "@belote/shared-types";
 import { POSITIONS_JOUEUR } from "@belote/shared-types";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Easing,
   makeMutable,
-  runOnJS,
   type SharedValue,
   withDelay,
   withTiming,
 } from "react-native-reanimated";
 
-import { ANIMATIONS, POSITIONS_MAINS } from "../constants/layout";
+import { ANIMATIONS } from "../constants/layout";
 import {
   calculerPointArc,
   calculerRectoSource,
@@ -18,6 +17,8 @@ import {
   type PointNormalise,
   type RectSource,
 } from "./distributionAtlas";
+import { obtenirCibleDistributionAtlas } from "./distributionLayoutAtlas";
+import { planifierCallbacksDistribution } from "./planCallbacksDistribution";
 import type { AtlasCartes } from "./useAtlasCartes";
 
 // --- Types ---
@@ -91,6 +92,17 @@ export function useAnimationsDistribution(
   // Nombre de cartes actives
   const nbCartesActivesRef = useRef<SharedValue<number>>(makeMutable(0));
   const nbCartesActives = nbCartesActivesRef.current;
+  const timeoutsCallbacksRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // Appel en attente si atlas pas encore chargé
+  const appelEnAttenteRef = useRef<{
+    mains: Record<PositionJoueur, Carte[]>;
+    options?: {
+      onPaquetArrive?: (position: PositionJoueur, cartes: Carte[]) => void;
+      onTerminee?: () => void;
+      cartesVisibles?: Carte[];
+    };
+  } | null>(null);
 
   const lancerDistribution = useCallback(
     (
@@ -101,10 +113,18 @@ export function useAnimationsDistribution(
         cartesVisibles?: Carte[];
       },
     ) => {
+      for (const timeout of timeoutsCallbacksRef.current) {
+        clearTimeout(timeout);
+      }
+      timeoutsCallbacksRef.current = [];
+
       const { distribution } = ANIMATIONS;
       const { largeurCellule, hauteurCellule } = atlas;
-
-      if (!atlas.image || largeurCellule === 0) return;
+      if (!atlas.image || largeurCellule === 0) {
+        appelEnAttenteRef.current = { mains, options };
+        return;
+      }
+      appelEnAttenteRef.current = null;
 
       // Construire les paquets (3 puis 2)
       const nbCartesParJoueur = Math.max(
@@ -146,7 +166,8 @@ export function useAnimationsDistribution(
 
         for (const position of POSITIONS_JOUEUR) {
           const cartesJoueur = mains[position];
-          const posMain = POSITIONS_MAINS[position];
+          const cibleDistribution = obtenirCibleDistributionAtlas(position);
+          const posMain = cibleDistribution.arrivee;
 
           const cartesDuPaquet: Carte[] = [];
           for (let c = 0; c < taillePaquet && indexCarte + c < cartesJoueur.length; c++) {
@@ -190,9 +211,9 @@ export function useAnimationsDistribution(
               : calculerVersoSource(largeurCellule, hauteurCellule);
 
             const rotDepart = offsetIdx * ecartRotation;
-            const rotArrivee = 0;
+            const rotArrivee = cibleDistribution.rotationArrivee;
             const echDepart = 0.5;
-            const echArrivee = 1;
+            const echArrivee = cibleDistribution.echelleArrivee;
 
             nouvCartesAtlas.push({
               carte,
@@ -249,47 +270,72 @@ export function useAnimationsDistribution(
       donneesWorklet.value = donneesComplet;
       nbCartesActives.value = nouvCartesAtlas.length;
 
-      // Réinitialiser les progressions
+      // Réinitialiser les progressions hors ecran:
+      // -1 = en attente, [0..1] = en vol, 2 = deja livree
       for (let i = 0; i < MAX_CARTES; i++) {
-        progressions[i].value = 0;
+        progressions[i].value = -1;
       }
 
+      const planCallbacks = planifierCallbacksDistribution({
+        paquets: paquetsCallback,
+        delaisCartes,
+      });
+
+      if (options?.onPaquetArrive) {
+        for (const evenement of planCallbacks.evenementsPaquets) {
+          const timeout = setTimeout(() => {
+            options.onPaquetArrive?.(evenement.position, evenement.cartes);
+          }, evenement.delaiMs);
+          timeoutsCallbacksRef.current.push(timeout);
+        }
+      }
+
+      const timeoutFin = setTimeout(() => {
+        options?.onTerminee?.();
+        setEnCours(false);
+      }, planCallbacks.delaiFinDistributionMs);
+      timeoutsCallbacksRef.current.push(timeoutFin);
+
       // Lancer les animations withDelay + withTiming
-      let compteurTermines = 0;
       const totalCartes = nouvCartesAtlas.length;
 
       for (let i = 0; i < totalCartes; i++) {
         const { delai, duree } = delaisCartes[i];
+        const progression = progressions[i];
 
-        // Chercher si cette carte est la dernière d'un paquet (pour onPaquetArrive)
-        const paquet = paquetsCallback.find((p) => p.indexDerniereCarteAtlas === i);
-
-        progressions[i].value = withDelay(
+        progression.value = withDelay(
           delai,
           withTiming(1, { duration: duree, easing: EASING_OUT_CUBIC }, (termine) => {
             "worklet";
-            if (!termine) return;
-
-            compteurTermines++;
-
-            // Callback onPaquetArrive via runOnJS
-            if (paquet && options?.onPaquetArrive) {
-              runOnJS(options.onPaquetArrive)(paquet.position, paquet.cartes);
+            if (!termine) {
+              return;
             }
 
-            // Callback onTerminee quand toutes les cartes sont arrivées
-            if (compteurTermines >= totalCartes) {
-              if (options?.onTerminee) {
-                runOnJS(options.onTerminee)();
-              }
-              runOnJS(setEnCours)(false);
-            }
+            progression.value = 2;
           }),
         );
       }
     },
     [atlas, progressions, donneesWorklet, nbCartesActives],
   );
+
+  // Rejouer l'appel en attente quand l'atlas devient disponible
+  useEffect(() => {
+    const enAttente = appelEnAttenteRef.current;
+    if (atlas.image && enAttente) {
+      appelEnAttenteRef.current = null;
+      lancerDistribution(enAttente.mains, enAttente.options);
+    }
+  }, [atlas.image, lancerDistribution]);
+
+  useEffect(() => {
+    return () => {
+      for (const timeout of timeoutsCallbacksRef.current) {
+        clearTimeout(timeout);
+      }
+      timeoutsCallbacksRef.current = [];
+    };
+  }, []);
 
   return {
     lancerDistribution,

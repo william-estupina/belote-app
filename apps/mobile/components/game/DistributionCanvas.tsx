@@ -65,6 +65,11 @@ export function DistributionCanvas({
     }
 
     const t = progressions[i].value;
+    if (t < 0 || t > 1) {
+      val.set(0, 0, -10000, -10000);
+      return;
+    }
+
     const offset = i * STRIDE;
 
     // Lire les données géométriques depuis le tableau plat

@@ -6,6 +6,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { COULEURS } from "../../constants/theme";
 import { useControleurJeu } from "../../hooks/useControleurJeu";
+import { doitAfficherUIEncheres } from "../../hooks/visibiliteEncheres";
 import { useAppStore } from "../../stores/app-store";
 import { AvatarJoueur } from "./AvatarJoueur";
 import { BulleBelote } from "./BulleBelote";
@@ -57,6 +58,10 @@ export default function PlateauJeu() {
   }, []);
 
   const { largeur, hauteur } = dimensions;
+  const afficherUIEncheres = doitAfficherUIEncheres(
+    etatJeu.phaseUI,
+    distributionEnCours ?? false,
+  );
 
   // Dernière action d'enchère par joueur (pour les badges sur les avatars)
   const derniereActionParJoueur = useMemo(() => {
@@ -187,7 +192,7 @@ export default function PlateauJeu() {
           />
 
           {/* Carte retournée visible pendant les enchères */}
-          {etatJeu.phaseUI === "encheres" && etatJeu.carteRetournee && (
+          {afficherUIEncheres && etatJeu.carteRetournee && (
             <ZoneCarteRetournee
               carte={etatJeu.carteRetournee}
               largeurEcran={largeur}
@@ -220,7 +225,7 @@ export default function PlateauJeu() {
           />
 
           {/* Panneau d'enchères (quand c'est au joueur humain de décider) */}
-          {etatJeu.phaseUI === "encheres" &&
+          {afficherUIEncheres &&
             etatJeu.estTourHumain &&
             etatJeu.phaseEncheres !== null && (
               <PanneauEncheres

@@ -78,6 +78,7 @@ function CarteEventailAnimee({
   onCarteJouee,
 }: PropsCarteEventail) {
   const estPremierRendu = useRef(true);
+  const estInteractive = interactionActive && jouable && !!onCarteJouee;
 
   // Position d'entrée : centre de la main (là où les cartes animées atterrissent)
   const centreMainX = largeurEcran * POSITIONS_MAINS.sud.x - largeurCarte / 2;
@@ -122,21 +123,13 @@ function CarteEventailAnimee({
 
   return (
     <Animated.View style={styleAnime}>
-      {interactionActive && jouable && onCarteJouee ? (
-        <Pressable
-          onPress={() => onCarteJouee(carte, { x: xProp, y: yProp })}
-          style={({ pressed }) => ({
-            transform: pressed ? [{ translateY: -8 }] : [],
-          })}
-        >
-          <CarteSkia
-            carte={carte}
-            largeur={largeurCarte}
-            hauteur={hauteurCarte}
-            faceVisible
-          />
-        </Pressable>
-      ) : (
+      <Pressable
+        disabled={!estInteractive}
+        onPress={() => onCarteJouee?.(carte, { x: xProp, y: yProp })}
+        style={({ pressed }) => ({
+          transform: pressed && estInteractive ? [{ translateY: -8 }] : [],
+        })}
+      >
         <CarteSkia
           carte={carte}
           largeur={largeurCarte}
@@ -144,7 +137,7 @@ function CarteEventailAnimee({
           faceVisible
           grisee={grisee}
         />
-      )}
+      </Pressable>
     </Animated.View>
   );
 }

@@ -88,6 +88,12 @@
   - Distribution restante gère la carte retournée du preneur (slide vers tapis + 2 cas preneur premier/non)
   - Types : `CarteSurTapis`, `CarteEnVol` enrichi (`flipDe`, `flipVers`, `easing`)
   - Composants : `CoucheAnimation` (rendu tapis + vol), `CarteAnimee` (flip 3D dual-layer), `useAnimations` (3 méthodes), `useControleurJeu` (orchestration)
+- [x] **Optimisation distribution via Skia Atlas** (branche `feature/distribution-atlas-skia`) :
+  - [x] Sprite sheet 8×5 (32 faces + 1 dos) générée via script `sharp` (`scripts/generer-sprite-sheet.ts`)
+  - [x] Hook `useAtlasCartes` : charge le sprite sheet via `useImage`, expose `rectSource`/`rectDos`
+  - [x] Hook `useAnimationsDistribution` : orchestration `withDelay`/`withTiming` natives Reanimated (UI thread), `SharedValue<number[]>` plat pour données worklet, pool `makeMutable` pour progressions
+  - [x] Composant `DistributionCanvas` : unique `<Canvas>` Skia avec `drawAtlas` + `useRSXformBuffer` (single draw call), trajectoires Bézier quadratiques, ease-out cubic
+  - [x] Intégration dans `CoucheAnimation`/`PlateauJeu`, retrait de `lancerDistribution` de `useAnimations`
 - [x] Tap pour jouer une carte (`MainJoueur` avec `Pressable` + feedback visuel au press)
 - [x] Griser les cartes non jouables (`CarteSkia` prop `grisee` + overlay semi-transparent)
 - [x] Animation de jeu de carte (main → centre) (`useAnimations.lancerAnimationJeuCarte` avec Reanimated)
