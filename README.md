@@ -152,11 +152,19 @@ pnpm syncpack:check
 ### Build mobile
 
 ```bash
+# Reproduire localement le bundling Android du build distant
+pnpm --filter @belote/mobile verifier:bundle:android
+pnpm mobile:verifier:bundle:android
+
 # Build Android (nécessite un compte Expo et EAS CLI)
 pnpm --filter @belote/mobile build:android
+pnpm --filter @belote/mobile build:android:apk
+pnpm mobile:build:android
+pnpm mobile:build:android:apk
 
 # Build iOS (nécessite macOS + Xcode)
 pnpm --filter @belote/mobile build:ios
+pnpm mobile:build:ios
 ```
 
 ## Lancer l'app sur mobile
@@ -199,9 +207,16 @@ npm install -g eas-cli
 # Se connecter à Expo
 eas login
 
-# Build de développement (génère un APK/IPA installable)
-eas build --profile development --platform android
-eas build --profile development --platform ios
+# Depuis la racine du monorepo, cibler explicitement l'app mobile
+pnpm --filter @belote/mobile verifier:bundle:android
+pnpm --filter @belote/mobile build:android:apk
+pnpm mobile:verifier:bundle:android
+pnpm mobile:build:android:apk
+
+# Ou, depuis apps/mobile
+cd apps/mobile
+npx expo export:embed --eager --platform android --dev false
+eas build --platform android --profile preview
 ```
 
 ## Lancer l'app sur le web

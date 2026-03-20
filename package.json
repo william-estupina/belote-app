@@ -5,6 +5,10 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
+    "mobile:verifier:bundle:android": "pnpm --filter @belote/mobile verifier:bundle:android",
+    "mobile:build:android": "pnpm --filter @belote/mobile build:android",
+    "mobile:build:android:apk": "pnpm --filter @belote/mobile build:android:apk",
+    "mobile:build:ios": "pnpm --filter @belote/mobile build:ios",
     "test": "turbo test",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
