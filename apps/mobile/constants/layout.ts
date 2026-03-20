@@ -54,10 +54,10 @@ export const EVENTAIL = {
 
 // --- Mains adversaires (éventail adapté par côté) ---
 export const ADVERSAIRE = {
-  ratioLargeurCarte: 0.055, // cartes adversaires plus visibles
+  ratioLargeurCarte: 0.05, // cartes adversaires legerement plus petites pour degager le plateau
   chevauchement: 0.65, // chevauchement modéré
-  margeNordY: -0.02, // déborde légèrement en haut
-  margeCoteX: -0.01, // déborde légèrement sur les côtés
+  margeNordY: -0.045, // rogne davantage la main du haut pour liberer le centre
+  margeCoteX: -0.025, // rogne davantage sur les cotes pour gagner de l'espace
   angleTotal: 20, // éventail discret
   decalageArc: 0.02, // arc léger
 } as const;

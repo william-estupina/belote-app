@@ -1,9 +1,7 @@
-// Avatar d'un joueur — affiche l'identité, le statut d'enchère et l'indicateur preneur/atout
+// Avatar d'un joueur — affiche l'identité, les bulles d'enchère et l'indicateur preneur/atout
 import type { ActionEnchere, Couleur, PositionJoueur } from "@belote/shared-types";
 import { useEffect, useRef } from "react";
 import { Animated, Easing, Platform, StyleSheet, Text, View } from "react-native";
-
-// --- Constantes visuelles ---
 
 const SYMBOLES_COULEUR: Record<Couleur, string> = {
   coeur: "\u2665",
@@ -13,17 +11,17 @@ const SYMBOLES_COULEUR: Record<Couleur, string> = {
 };
 
 const COULEURS_SYMBOLE: Record<Couleur, string> = {
-  coeur: "#ff4444",
-  carreau: "#ff4444",
-  pique: "#ffffff",
-  trefle: "#ffffff",
+  coeur: "#ffdad5",
+  carreau: "#ffdad5",
+  pique: "#f3f1eb",
+  trefle: "#f3f1eb",
 };
 
 const FONDS_ATOUT: Record<Couleur, string> = {
-  coeur: "rgba(180, 30, 30, 0.85)",
-  carreau: "rgba(180, 30, 30, 0.85)",
-  pique: "rgba(40, 40, 60, 0.85)",
-  trefle: "rgba(40, 40, 60, 0.85)",
+  coeur: "rgba(123, 34, 34, 0.94)",
+  carreau: "rgba(123, 34, 34, 0.94)",
+  pique: "rgba(28, 33, 45, 0.94)",
+  trefle: "rgba(28, 33, 45, 0.94)",
 };
 
 const NOMS_JOUEUR: Record<PositionJoueur, string> = {
@@ -33,32 +31,74 @@ const NOMS_JOUEUR: Record<PositionJoueur, string> = {
   est: "Est",
 };
 
-const COULEURS_AVATAR: Record<PositionJoueur, string> = {
-  sud: "#4A90D9",
-  nord: "#D94A4A",
-  ouest: "#D9964A",
-  est: "#8B4AD9",
-};
-
-const INITIALES: Record<PositionJoueur, string> = {
-  sud: "V",
-  nord: "N",
-  ouest: "O",
-  est: "E",
-};
-
-// Positions des avatars — sud : près des cartes ; ouest/est : devant le fan
 const POSITIONS_AVATAR: Record<PositionJoueur, { x: number; y: number }> = {
-  sud: { x: 0.24, y: 0.78 }, // collé au bord gauche du fan en bas
-  nord: { x: 0.65, y: 0.12 }, // à droite du fan horizontal en haut
-  ouest: { x: 0.11, y: 0.5 }, // devant le fan vertical (entre cartes et centre)
-  est: { x: 0.87, y: 0.5 }, // devant le fan vertical (entre cartes et centre)
+  sud: { x: 0.28, y: 0.74 },
+  nord: { x: 0.62, y: 0.17 },
+  ouest: { x: 0.095, y: 0.5 },
+  est: { x: 0.905, y: 0.5 },
+};
+
+interface ProfilAvatar {
+  fondHaut: string;
+  fondBas: string;
+  reflet: string;
+  cheveux: string;
+  peau: string;
+  vesteHaut: string;
+  vesteBas: string;
+  yeux: string;
+}
+
+const PROFILS_AVATAR: Record<PositionJoueur, ProfilAvatar> = {
+  sud: {
+    fondHaut: "#42699a",
+    fondBas: "#1a2d44",
+    reflet: "rgba(255,255,255,0.16)",
+    cheveux: "#25212d",
+    peau: "#f2bf98",
+    vesteHaut: "#d4a017",
+    vesteBas: "#89640c",
+    yeux: "#38231a",
+  },
+  nord: {
+    fondHaut: "#4e7a62",
+    fondBas: "#223b2f",
+    reflet: "rgba(255,255,255,0.18)",
+    cheveux: "#efe0b4",
+    peau: "#f2c39a",
+    vesteHaut: "#7f1d1d",
+    vesteBas: "#511313",
+    yeux: "#4a2d1f",
+  },
+  ouest: {
+    fondHaut: "#9a6a3a",
+    fondBas: "#543113",
+    reflet: "rgba(255,244,220,0.14)",
+    cheveux: "#6d3d1e",
+    peau: "#eab58d",
+    vesteHaut: "#2d4c3f",
+    vesteBas: "#18281f",
+    yeux: "#4a2b1a",
+  },
+  est: {
+    fondHaut: "#6f538a",
+    fondBas: "#342541",
+    reflet: "rgba(255,255,255,0.14)",
+    cheveux: "#d6d1dc",
+    peau: "#f0c7a6",
+    vesteHaut: "#7b2222",
+    vesteBas: "#471212",
+    yeux: "#40261a",
+  },
 };
 
 const estWeb = Platform.OS === "web";
-const TAILLE_AVATAR = estWeb ? 52 : 44;
-
-// --- Props ---
+const TAILLE_AVATAR = estWeb ? 68 : 58;
+const RAYON_AVATAR = estWeb ? 18 : 16;
+const LARGEUR_NOM = estWeb ? 96 : 88;
+const DECALAGE_NOM = estWeb ? 8 : 6;
+const LARGEUR_BULLE_MIN = estWeb ? 84 : 74;
+const TAILLE_QUEUE = estWeb ? 10 : 8;
 
 interface PropsAvatarJoueur {
   position: PositionJoueur;
@@ -71,7 +111,11 @@ interface PropsAvatarJoueur {
   phaseUI: string;
 }
 
-// --- Composant ---
+interface Badge {
+  texte: string;
+  fond: string;
+  couleurTexte: string;
+}
 
 export function AvatarJoueur({
   position,
@@ -85,13 +129,12 @@ export function AvatarJoueur({
 }: PropsAvatarJoueur) {
   const opacitePulse = useRef(new Animated.Value(1)).current;
 
-  // Animation de pulsation quand c'est le tour du joueur
   useEffect(() => {
     if (estActif) {
       const animation = Animated.loop(
         Animated.sequence([
           Animated.timing(opacitePulse, {
-            toValue: 0.4,
+            toValue: 0.52,
             duration: 700,
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
@@ -106,59 +149,112 @@ export function AvatarJoueur({
       );
       animation.start();
       return () => animation.stop();
-    } else {
-      opacitePulse.setValue(1);
     }
+
+    opacitePulse.setValue(1);
   }, [estActif, opacitePulse]);
 
-  // Ne pas afficher en phase inactif
   if (phaseUI === "inactif") return null;
 
   const coord = POSITIONS_AVATAR[position];
-  const left = coord.x * largeurEcran - TAILLE_AVATAR / 2;
-  const top = coord.y * hauteurEcran - TAILLE_AVATAR / 2;
-
-  // Déterminer le badge à afficher
+  const left = coord.x * largeurEcran;
+  const top = coord.y * hauteurEcran;
   const badge = determineBadge(phaseUI, actionEnchere, estPreneur, couleurAtout);
 
   return (
-    <View style={[styles.conteneur, { left, top }]} pointerEvents="none">
-      {/* Avatar circulaire avec pulsation si actif */}
-      <Animated.View
-        style={[
-          styles.avatar,
-          {
-            backgroundColor: COULEURS_AVATAR[position],
-            borderColor: estActif ? "#ffffff" : "rgba(255,255,255,0.3)",
-            borderWidth: estActif ? 2 : 1,
-          },
-          estActif && { opacity: opacitePulse },
-        ]}
-      >
-        <Text style={styles.initiale}>{INITIALES[position]}</Text>
-      </Animated.View>
+    <View
+      testID={`avatar-ancrage-${position}`}
+      style={[styles.pointAncrage, { left, top }]}
+      pointerEvents="none"
+    >
+      {badge ? <BulleAvatar position={position} badge={badge} /> : null}
 
-      {/* Nom du joueur */}
+      <AvatarPortrait
+        position={position}
+        estActif={estActif}
+        opacitePulse={opacitePulse}
+      />
+
       <Text style={styles.nom}>{NOMS_JOUEUR[position]}</Text>
-
-      {/* Badge contextuel (enchère ou preneur) */}
-      {badge && (
-        <View style={[styles.badge, { backgroundColor: badge.fond }]}>
-          <Text style={[styles.texteBadge, { color: badge.couleurTexte }]}>
-            {badge.texte}
-          </Text>
-        </View>
-      )}
     </View>
   );
 }
 
-// --- Logique du badge ---
+function AvatarPortrait({
+  position,
+  estActif,
+  opacitePulse,
+}: {
+  position: PositionJoueur;
+  estActif: boolean;
+  opacitePulse: Animated.Value;
+}) {
+  const profil = PROFILS_AVATAR[position];
 
-interface Badge {
-  texte: string;
-  fond: string;
-  couleurTexte: string;
+  return (
+    <Animated.View
+      testID={`avatar-joueur-${position}`}
+      style={[
+        styles.avatar,
+        {
+          backgroundColor: profil.fondBas,
+          borderColor: estActif ? "#f7e9b7" : "rgba(255,255,255,0.22)",
+          shadowColor: estActif ? "#f0d98e" : "rgba(0,0,0,0.38)",
+          opacity: opacitePulse,
+        },
+      ]}
+    >
+      <View style={[styles.reflet, { backgroundColor: profil.reflet }]} />
+      <View
+        style={[
+          styles.fondDegrade,
+          {
+            backgroundColor: profil.fondHaut,
+            opacity: 0.72,
+          },
+        ]}
+      />
+      <View style={[styles.cheveux, { backgroundColor: profil.cheveux }]} />
+      <View style={[styles.visage, { backgroundColor: profil.peau }]} />
+      <View style={[styles.yeux, { borderTopColor: profil.yeux }]} />
+      <View style={[styles.veste, { backgroundColor: profil.vesteHaut }]} />
+      <View style={[styles.vesteOmbre, { backgroundColor: profil.vesteBas }]} />
+      <View style={styles.cadreInterieur} />
+    </Animated.View>
+  );
+}
+
+function BulleAvatar({
+  position,
+  badge,
+}: {
+  position: PositionJoueur;
+  badge: Badge;
+}) {
+  const { conteneur, queue } = obtenirStylesBulle(position);
+
+  return (
+    <View style={[styles.conteneurBulle, conteneur]}>
+      <View
+        style={[
+          styles.queueBulle,
+          queue,
+          {
+            backgroundColor: badge.fond,
+            borderColor: "rgba(255,255,255,0.14)",
+          },
+        ]}
+      />
+      <View
+        testID={`avatar-bulle-${position}`}
+        style={[styles.bulle, { backgroundColor: badge.fond }]}
+      >
+        <Text style={[styles.texteBulle, { color: badge.couleurTexte }]}>
+          {badge.texte}
+        </Text>
+      </View>
+    </View>
+  );
 }
 
 function determineBadge(
@@ -167,31 +263,29 @@ function determineBadge(
   estPreneur: boolean,
   couleurAtout: Couleur | null,
 ): Badge | null {
-  // Pendant les enchères : afficher la dernière action du joueur
   if (phaseUI === "encheres" && actionEnchere) {
     switch (actionEnchere.type) {
       case "PASSER":
         return {
           texte: "Passe",
-          fond: "rgba(0,0,0,0.6)",
-          couleurTexte: "#aaaaaa",
+          fond: "rgba(0, 0, 0, 0.82)",
+          couleurTexte: "#efefef",
         };
       case "PRENDRE":
         return {
           texte: "Prend !",
-          fond: "rgba(212,160,23,0.9)",
-          couleurTexte: "#1a1a1a",
+          fond: "rgba(42, 28, 8, 0.94)",
+          couleurTexte: "#f0d06b",
         };
       case "ANNONCER":
         return {
           texte: `${SYMBOLES_COULEUR[actionEnchere.couleur]} !`,
-          fond: "rgba(212,160,23,0.9)",
-          couleurTexte: "#1a1a1a",
+          fond: "rgba(42, 28, 8, 0.94)",
+          couleurTexte: "#f0d06b",
         };
     }
   }
 
-  // Pendant le jeu : afficher l'indicateur preneur + atout
   if (
     (phaseUI === "jeu" || phaseUI === "finPli" || phaseUI === "distribution") &&
     estPreneur &&
@@ -207,47 +301,195 @@ function determineBadge(
   return null;
 }
 
-// --- Styles ---
+function obtenirStylesBulle(position: PositionJoueur): {
+  conteneur: Record<string, number | string>;
+  queue: Record<string, number | string | { rotate: string }[]>;
+} {
+  const hautBase = estWeb ? -18 : -16;
+  const droiteBase = estWeb ? 22 : 18;
+  const coteBase = estWeb ? -18 : -16;
+
+  switch (position) {
+    case "nord":
+      return {
+        conteneur: {
+          top: hautBase,
+          left: TAILLE_AVATAR / 2 - 4,
+        },
+        queue: {
+          left: -TAILLE_QUEUE / 2,
+          top: estWeb ? 16 : 14,
+          transform: [{ rotate: "135deg" }],
+        },
+      };
+    case "sud":
+      return {
+        conteneur: {
+          top: -TAILLE_AVATAR / 2 + 2,
+          left: TAILLE_AVATAR / 2 - 4,
+        },
+        queue: {
+          left: -TAILLE_QUEUE / 2,
+          top: estWeb ? 16 : 14,
+          transform: [{ rotate: "135deg" }],
+        },
+      };
+    case "ouest":
+      return {
+        conteneur: {
+          top: coteBase,
+          left: droiteBase,
+        },
+        queue: {
+          left: -TAILLE_QUEUE / 2,
+          top: estWeb ? 18 : 16,
+          transform: [{ rotate: "135deg" }],
+        },
+      };
+    case "est":
+      return {
+        conteneur: {
+          top: coteBase,
+          right: droiteBase,
+        },
+        queue: {
+          right: -TAILLE_QUEUE / 2,
+          top: estWeb ? 18 : 16,
+          transform: [{ rotate: "-45deg" }],
+        },
+      };
+  }
+}
 
 const styles = StyleSheet.create({
-  conteneur: {
+  pointAncrage: {
     position: "absolute",
-    alignItems: "center",
+    width: 0,
+    height: 0,
     zIndex: 12,
-    width: TAILLE_AVATAR + 24,
   },
   avatar: {
+    position: "absolute",
+    left: -TAILLE_AVATAR / 2,
+    top: -TAILLE_AVATAR / 2,
     width: TAILLE_AVATAR,
     height: TAILLE_AVATAR,
-    borderRadius: TAILLE_AVATAR / 2,
-    alignItems: "center",
-    justifyContent: "center",
+    borderRadius: RAYON_AVATAR,
+    borderWidth: 2,
+    overflow: "hidden",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 6,
   },
-  initiale: {
-    color: "#ffffff",
-    fontSize: estWeb ? 22 : 18,
-    fontWeight: "bold",
+  reflet: {
+    position: "absolute",
+    top: 6,
+    left: 8,
+    width: TAILLE_AVATAR * 0.42,
+    height: TAILLE_AVATAR * 0.22,
+    borderRadius: 999,
+    transform: [{ rotate: "-18deg" }],
+  },
+  fondDegrade: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: TAILLE_AVATAR * 0.56,
+  },
+  cheveux: {
+    position: "absolute",
+    left: TAILLE_AVATAR * 0.16,
+    top: TAILLE_AVATAR * 0.12,
+    width: TAILLE_AVATAR * 0.68,
+    height: TAILLE_AVATAR * 0.38,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+  },
+  visage: {
+    position: "absolute",
+    left: TAILLE_AVATAR * 0.27,
+    top: TAILLE_AVATAR * 0.3,
+    width: TAILLE_AVATAR * 0.46,
+    height: TAILLE_AVATAR * 0.36,
+    borderRadius: 14,
+  },
+  yeux: {
+    position: "absolute",
+    left: TAILLE_AVATAR * 0.36,
+    top: TAILLE_AVATAR * 0.47,
+    width: TAILLE_AVATAR * 0.2,
+    borderTopWidth: 2,
+  },
+  veste: {
+    position: "absolute",
+    left: TAILLE_AVATAR * 0.16,
+    right: TAILLE_AVATAR * 0.16,
+    bottom: -2,
+    height: TAILLE_AVATAR * 0.34,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+  },
+  vesteOmbre: {
+    position: "absolute",
+    left: TAILLE_AVATAR * 0.28,
+    right: TAILLE_AVATAR * 0.28,
+    bottom: 0,
+    height: TAILLE_AVATAR * 0.18,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  cadreInterieur: {
+    position: "absolute",
+    inset: 5,
+    borderRadius: RAYON_AVATAR - 4,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.16)",
   },
   nom: {
+    position: "absolute",
+    top: TAILLE_AVATAR / 2 + DECALAGE_NOM,
+    left: -LARGEUR_NOM / 2,
+    width: LARGEUR_NOM,
+    textAlign: "center",
     color: "#ffffff",
     fontSize: estWeb ? 12 : 10,
-    marginTop: 3,
+    fontWeight: "700",
     textShadowColor: "rgba(0,0,0,0.8)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
-  badge: {
-    marginTop: 3,
-    paddingHorizontal: estWeb ? 10 : 8,
-    paddingVertical: estWeb ? 4 : 3,
-    borderRadius: 10,
+  conteneurBulle: {
+    position: "absolute",
+    zIndex: 1,
+  },
+  bulle: {
+    minWidth: LARGEUR_BULLE_MIN,
+    paddingHorizontal: estWeb ? 14 : 11,
+    paddingVertical: estWeb ? 8 : 6,
+    borderRadius: 14,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    borderColor: "rgba(255,255,255,0.14)",
+    shadowColor: "rgba(0,0,0,0.34)",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  texteBadge: {
-    fontSize: estWeb ? 13 : 11,
-    fontWeight: "bold",
-    letterSpacing: 0.3,
+  texteBulle: {
+    fontSize: estWeb ? 14 : 12,
+    fontWeight: "800",
+    letterSpacing: 0.2,
+  },
+  queueBulle: {
+    position: "absolute",
+    width: TAILLE_QUEUE,
+    height: TAILLE_QUEUE,
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
   },
 });
