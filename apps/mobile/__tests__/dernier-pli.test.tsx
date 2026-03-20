@@ -20,16 +20,36 @@ describe("DernierPli", () => {
 
     expect(screen.getByText("Dernier pli")).toBeTruthy();
     expect(screen.getByText("24 pts")).toBeTruthy();
-    expect(screen.getByText("A ♠")).toBeTruthy();
-    expect(screen.getByText("9 ♦")).toBeTruthy();
-    expect(screen.getByText("V ♥")).toBeTruthy();
-    expect(screen.getByText("R ♣")).toBeTruthy();
+    expect(screen.getByText("A \u2660")).toBeTruthy();
+    expect(screen.getByText("9 \u2666")).toBeTruthy();
+    expect(screen.getByText("V \u2665")).toBeTruthy();
+    expect(screen.getByText("R \u2663")).toBeTruthy();
   });
 
-  it("met en avant la carte gagnante avec une pastille etoile", () => {
+  it("met en avant la carte gagnante avec un anneau lumineux et un ruban premiere place", () => {
     render(<DernierPli dernierPli={DERNIER_PLI} />);
 
-    expect(screen.getByText("★")).toBeTruthy();
+    expect(screen.getByTestId("anneau-gagnant-est")).toBeTruthy();
+    expect(screen.getByTestId("ruban-gagnant-est")).toBeTruthy();
+    expect(screen.getByText("1")).toBeTruthy();
+    expect(screen.getByTestId("jeton-dernier-pli-est").props.style).toEqual(
+      expect.arrayContaining([expect.objectContaining({ overflow: "visible" })]),
+    );
+  });
+
+  it("supprime le motif de fond des jetons tout en gardant le rouge plus contraste", () => {
+    render(<DernierPli dernierPli={DERNIER_PLI} />);
+
+    expect(screen.queryByTestId("motif-dernier-pli-nord")).toBeNull();
+    expect(screen.queryByTestId("motif-dernier-pli-ouest")).toBeNull();
+    expect(screen.queryByTestId("motif-dernier-pli-est")).toBeNull();
+    expect(screen.queryByTestId("motif-dernier-pli-sud")).toBeNull();
+    expect(screen.getByTestId("texte-dernier-pli-ouest").props.style).toEqual(
+      expect.arrayContaining([expect.objectContaining({ color: "#b63a3a" })]),
+    );
+    expect(screen.getByTestId("texte-dernier-pli-est").props.style).toEqual(
+      expect.arrayContaining([expect.objectContaining({ color: "#b63a3a" })]),
+    );
   });
 
   it("ne propose plus d'agrandissement ni d'action detail", () => {
@@ -37,6 +57,6 @@ describe("DernierPli", () => {
 
     expect(screen.queryByText("Appuyer pour agrandir")).toBeNull();
     expect(screen.queryByText("Appuyer pour fermer")).toBeNull();
-    expect(screen.queryByLabelText("Voir le dernier pli en détail")).toBeNull();
+    expect(screen.queryByLabelText("Voir le dernier pli en d\u00E9tail")).toBeNull();
   });
 });

@@ -8,10 +8,10 @@ interface PropsDernierPli {
 }
 
 const estWeb = Platform.OS === "web";
-const LARGEUR_JETON = estWeb ? 50 : 46;
-const HAUTEUR_JETON = estWeb ? 28 : 26;
-const TAILLE_ZONE = estWeb ? 136 : 124;
-const LARGEUR_CONTENEUR = estWeb ? 176 : 164;
+const LARGEUR_JETON = estWeb ? 58 : 54;
+const HAUTEUR_JETON = estWeb ? 34 : 32;
+const TAILLE_ZONE = estWeb ? 148 : 136;
+const LARGEUR_CONTENEUR = estWeb ? 188 : 176;
 
 const LIBELLES_RANG: Record<Rang, string> = {
   "7": "7",
@@ -32,10 +32,10 @@ const SYMBOLES_COULEUR: Record<Couleur, string> = {
 };
 
 const COULEURS_TEXTE_COULEUR: Record<Couleur, string> = {
-  coeur: "#d94b4b",
-  carreau: "#d94b4b",
-  pique: COULEURS.fondFonce,
-  trefle: COULEURS.fondFonce,
+  coeur: "#b63a3a",
+  carreau: "#b63a3a",
+  pique: "#1f2b33",
+  trefle: "#1f2b33",
 };
 
 function positionsCroix(): Record<PositionJoueur, { top: number; left: number }> {
@@ -81,13 +81,16 @@ export function DernierPli({ dernierPli }: PropsDernierPli) {
           return (
             <View
               key={`dernier-pli-${joueur}`}
+              testID={`jeton-dernier-pli-${joueur}`}
               style={[
                 styles.jeton,
                 { top: position.top, left: position.left },
                 estGagnant && styles.jetonGagnant,
               ]}
             >
+              {estGagnant && <View testID={`anneau-gagnant-${joueur}`} style={styles.anneauGagnant} />}
               <Text
+                testID={`texte-dernier-pli-${joueur}`}
                 style={[
                   styles.texteJeton,
                   { color: COULEURS_TEXTE_COULEUR[carte.couleur] },
@@ -96,8 +99,8 @@ export function DernierPli({ dernierPli }: PropsDernierPli) {
                 {formaterCarte(carte.rang, carte.couleur)}
               </Text>
               {estGagnant && (
-                <View style={styles.badgeGagnant}>
-                  <Text style={styles.texteBadgeGagnant}>{"\u2605"}</Text>
+                <View testID={`ruban-gagnant-${joueur}`} style={styles.rubanGagnant}>
+                  <Text style={styles.texteRubanGagnant}>1</Text>
                 </View>
               )}
             </View>
@@ -151,50 +154,73 @@ const styles = StyleSheet.create({
     width: LARGEUR_JETON,
     height: HAUTEUR_JETON,
     borderRadius: 999,
-    backgroundColor: COULEURS.surfaceCarte,
+    backgroundColor: "#fbf4e6",
     borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.12)",
+    borderColor: "rgba(44, 30, 18, 0.16)",
     alignItems: "center",
     justifyContent: "center",
     shadowColor: COULEURS.ombre,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.22,
-    shadowRadius: 2,
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
     elevation: 2,
+    overflow: "visible",
   },
   jetonGagnant: {
-    borderColor: COULEURS.accent,
+    borderColor: "#f3d36b",
     borderWidth: 2,
-    shadowColor: COULEURS.accent,
-    shadowOpacity: 0.32,
-    shadowRadius: 4,
+    shadowColor: "#f5cf63",
+    shadowOpacity: 0.38,
+    shadowRadius: 6,
     elevation: 4,
+    zIndex: 2,
+  },
+  anneauGagnant: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    bottom: -4,
+    left: -4,
+    borderRadius: 999,
+    borderWidth: 2,
+    borderColor: "rgba(245, 207, 99, 0.95)",
+    shadowColor: "#f5cf63",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.55,
+    shadowRadius: 6,
+    elevation: 6,
   },
   texteJeton: {
-    fontSize: estWeb ? 13 : 12,
+    fontSize: estWeb ? 15 : 14,
     fontWeight: "800",
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
+    paddingHorizontal: estWeb ? 6 : 5,
   },
-  badgeGagnant: {
+  rubanGagnant: {
     position: "absolute",
-    top: -8,
-    right: -8,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: "#ffd64a",
+    top: -7,
+    right: -2,
+    minWidth: 18,
+    height: 16,
+    paddingHorizontal: 4,
+    borderRadius: 6,
+    backgroundColor: "#e7b93b",
+    borderWidth: 1,
+    borderColor: "#fff1b0",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#ffd64a",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.45,
+    shadowColor: "#e7b93b",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
     shadowRadius: 3,
     elevation: 5,
+    transform: [{ rotate: "8deg" }],
+    zIndex: 3,
   },
-  texteBadgeGagnant: {
-    color: "#3b2c00",
-    fontSize: 11,
+  texteRubanGagnant: {
+    color: "#4a3200",
+    fontSize: 10,
     fontWeight: "900",
-    lineHeight: 12,
+    lineHeight: 11,
   },
 });
