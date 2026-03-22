@@ -1029,6 +1029,13 @@ export function useControleurJeu({
 
       const carteRetournee = contexte.carteRetournee;
 
+      // Nombre de cartes que sud a déjà en main quand la distribution restante démarre
+      // Cas particulier : si sud est preneur et la carte retournée lui est glissée
+      // séparément (!estPreneurPremier), il a 6 cartes au lieu de 5
+      const sudEstPreneur = indexPreneur === 0;
+      const nbCartesExistantesSud =
+        sudEstPreneur && !estPreneurPremier && carteRetournee ? 6 : 5;
+
       // Compter les cartes attendues
       let totalCartesAttendues = 0;
       for (const pos of POSITIONS_JOUEUR) {
@@ -1094,6 +1101,7 @@ export function useControleurJeu({
             : mainsRecord,
           {
             indexDonneur: contexte.indexDonneur,
+            nbCartesExistantesSud,
             cartesVisibles,
             onPaquetDepart: (position, cartes) => {
               if (position !== "sud" || estDemonte.current) return;

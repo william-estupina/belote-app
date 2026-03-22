@@ -57,6 +57,7 @@ export interface ResultatAnimationsDistribution {
     mains: Record<PositionJoueur, Carte[]>,
     options?: {
       indexDonneur?: number;
+      nbCartesExistantesSud?: number;
       onPaquetDepart?: (position: PositionJoueur, cartes: Carte[]) => void;
       onPaquetArrive?: (position: PositionJoueur, cartes: Carte[]) => void;
       onTerminee?: () => void;
@@ -109,6 +110,7 @@ export function useAnimationsDistribution(
     mains: Record<PositionJoueur, Carte[]>;
     options?: {
       indexDonneur?: number;
+      nbCartesExistantesSud?: number;
       onPaquetDepart?: (position: PositionJoueur, cartes: Carte[]) => void;
       onPaquetArrive?: (position: PositionJoueur, cartes: Carte[]) => void;
       onTerminee?: () => void;
@@ -121,6 +123,7 @@ export function useAnimationsDistribution(
       mains: Record<PositionJoueur, Carte[]>,
       options?: {
         indexDonneur?: number;
+        nbCartesExistantesSud?: number;
         onPaquetDepart?: (position: PositionJoueur, cartes: Carte[]) => void;
         onPaquetArrive?: (position: PositionJoueur, cartes: Carte[]) => void;
         onTerminee?: () => void;
@@ -170,6 +173,7 @@ export function useAnimationsDistribution(
       const { ecartX, ecartRotation } = distribution.eventailVol;
       const decalage = distribution.arcDistribution.decalagePerpendiculaire;
       const indexDonneur = options?.indexDonneur ?? 0;
+      const nbCartesExistantesSud = options?.nbCartesExistantesSud ?? 0;
       const ordreDistribution = obtenirOrdreDistribution(indexDonneur);
       const origineDistribution = obtenirOrigineDistribution(indexDonneur);
 
@@ -206,7 +210,7 @@ export function useAnimationsDistribution(
             position === "sud"
               ? calculerDispositionMainJoueur({
                   mode: "reception",
-                  nbCartes: indexCarte + nbCartesPaquet,
+                  nbCartes: nbCartesExistantesSud + indexCarte + nbCartesPaquet,
                   largeurEcran,
                   hauteurEcran,
                   largeurCarte,
@@ -232,7 +236,7 @@ export function useAnimationsDistribution(
             const depart: PointNormalise = { x: departX, y: departY };
             const dispositionCarteSud =
               position === "sud" && dispositionSud
-                ? dispositionSud.cartes[indexCarte + idx]
+                ? dispositionSud.cartes[nbCartesExistantesSud + indexCarte + idx]
                 : null;
             const arrivee: PointNormalise =
               position === "sud" && dispositionCarteSud
