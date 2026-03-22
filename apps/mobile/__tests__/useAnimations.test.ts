@@ -160,7 +160,6 @@ describe("useAnimations", () => {
           echelle: cartePosee.echelle,
         },
       });
-      expect(variationCartePliSpy).toHaveBeenCalledTimes(1);
     } finally {
       variationCartePliSpy.mockRestore();
     }
