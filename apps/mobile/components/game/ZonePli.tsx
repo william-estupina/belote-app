@@ -1,15 +1,12 @@
 import type { Carte, Couleur, PositionJoueur } from "@belote/shared-types";
-import { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import {
   POSITIONS_PLI,
   RATIO_ASPECT_CARTE,
   RATIO_LARGEUR_CARTE,
-  variationCartePli,
 } from "../../constants/layout";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
-import { CarteFaceAtlas } from "./Carte";
 
 interface CartePli {
   joueur: PositionJoueur;
@@ -39,29 +36,14 @@ const COULEUR_SYMBOLE: Record<Couleur, string> = {
   trefle: "#0a0a0a",
 };
 
-// Marge entre le cadre et les cartes les plus extérieures
+// Marge entre le cadre et les emplacements extrêmes du pli
 const MARGE_CADRE = 0.04;
 
-export function ZonePli({
-  cartes,
-  largeurEcran,
-  hauteurEcran,
-  couleurAtout,
-  afficherCadre = false,
-  atlas,
-}: PropsZonePli) {
+export function ZonePli(props: PropsZonePli) {
+  const { largeurEcran, hauteurEcran, couleurAtout, afficherCadre = false } = props;
   const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE * 0.9);
   const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
 
-  const variations = useMemo(
-    () =>
-      cartes.map(({ joueur, carte }) =>
-        variationCartePli(carte.couleur, carte.rang, joueur),
-      ),
-    [cartes],
-  );
-
-  // Dimensions du cadre central basées sur les positions extrêmes du pli
   const cadreTop =
     POSITIONS_PLI.nord.y * hauteurEcran - hauteurCarte / 2 - MARGE_CADRE * hauteurEcran;
   const cadreBottom =
@@ -88,7 +70,7 @@ export function ZonePli({
       }}
       pointerEvents="none"
     >
-      {/* Cadre décoratif (tapis) — visible pendant une partie */}
+      {/* Cadre décoratif du tapis central */}
       {afficherCadre && (
         <View
           style={[
@@ -101,7 +83,6 @@ export function ZonePli({
             },
           ]}
         >
-          {/* Coins atout (visibles uniquement quand un atout est défini) */}
           {couleurAtout && (
             <>
               <View style={[styles.coinAtout, styles.coinHautGauche]}>
@@ -128,36 +109,6 @@ export function ZonePli({
           )}
         </View>
       )}
-
-      {/* Cartes du pli */}
-      {cartes.map(({ joueur, carte }, index) => {
-        const pos = POSITIONS_PLI[joueur];
-        const { rotation, decalageX, decalageY } = variations[index];
-
-        return (
-          <View
-            key={`pli-${joueur}`}
-            style={{
-              position: "absolute",
-              left: (pos.x + decalageX) * largeurEcran - largeurCarte / 2,
-              top: (pos.y + decalageY) * hauteurEcran - hauteurCarte / 2,
-              transform: [{ rotate: `${rotation}deg` }],
-              shadowColor: "#000",
-              shadowOffset: { width: 1, height: 2 },
-              shadowOpacity: 0.4,
-              shadowRadius: 3,
-              elevation: 4,
-            }}
-          >
-            <CarteFaceAtlas
-              atlas={atlas}
-              carte={carte}
-              largeur={largeurCarte}
-              hauteur={hauteurCarte}
-            />
-          </View>
-        );
-      })}
     </View>
   );
 }
