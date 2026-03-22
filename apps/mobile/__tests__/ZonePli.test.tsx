@@ -28,7 +28,7 @@ const ATLAS_TEST = {
 const CARTE_TEST: Carte = { couleur: "pique", rang: "as" };
 
 describe("ZonePli", () => {
-  it("utilise l'atlas pour les cartes du pli quand il est disponible", () => {
+  it("ne rend plus les cartes du pli et conserve seulement le cadre decoratif", () => {
     const props = {
       cartes: [{ joueur: "est" as const, carte: CARTE_TEST }],
       largeurEcran: 1200,
@@ -38,8 +38,8 @@ describe("ZonePli", () => {
       atlas: ATLAS_TEST,
     } as unknown as ComponentProps<typeof ZonePli>;
 
-    const { getByTestId } = render(<ZonePli {...props} />);
+    const { queryByTestId } = render(<ZonePli {...props} />);
 
-    expect(getByTestId("carte-face-atlas")).toBeTruthy();
+    expect(queryByTestId("carte-face-atlas")).toBeNull();
   });
 });
