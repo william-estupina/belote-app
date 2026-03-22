@@ -12,7 +12,9 @@ describe("useAnimations", () => {
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
     jest.useRealTimers();
   });
 
@@ -87,34 +89,60 @@ describe("useAnimations", () => {
 
   it("utilise les cartes posees au pli comme point de depart du ramassage", () => {
     const { result } = renderHook(() => useAnimations());
+    const cartePoseeAuPli = {
+      id: "pli-est-as-pique",
+      joueur: "est" as const,
+      carte: CARTE_TEST,
+      x: 0.58,
+      y: 0.47,
+      rotation: 8,
+      echelle: 0.9,
+      faceVisible: true,
+    };
 
     act(() => {
       result.current.lancerAnimationJeuCarte(CARTE_TEST, "est");
       result.current.surAnimationTerminee("jeu-1");
     });
 
+    const obtenirEtatAnimation = () =>
+      result.current as typeof result.current & {
+        cartesPoseesAuPli: Array<{
+          id: string;
+          joueur: "est" | "nord" | "ouest" | "sud";
+          carte: Carte;
+          x: number;
+          y: number;
+          rotation: number;
+          echelle: number;
+          faceVisible: boolean;
+        }>;
+      };
+
+    expect(obtenirEtatAnimation().cartesPoseesAuPli).toEqual([cartePoseeAuPli]);
+
     act(() => {
       result.current.lancerAnimationRamassagePli(
-        [{ joueur: "est", carte: CARTE_TEST }],
+        [{ joueur: cartePoseeAuPli.joueur, carte: cartePoseeAuPli.carte }],
         "nord",
       );
       jest.advanceTimersByTime(ANIMATIONS.ramassagePli.delaiAvant);
     });
 
-    const obtenirEtatAnimation = () =>
-      result.current as typeof result.current & {
-        cartesPoseesAuPli: Array<{
-          joueur: "est" | "nord" | "ouest" | "sud";
-          carte: Carte;
-          faceVisible: boolean;
-        }>;
-      };
-
     expect(obtenirEtatAnimation().cartesPoseesAuPli).toEqual([]);
-    expect(
-      obtenirEtatAnimation().cartesEnVol.some((carte) =>
-        carte.id.startsWith("ramassage-p1-"),
-      ),
-    ).toBe(true);
+    const volRamassage = obtenirEtatAnimation().cartesEnVol.find((carte) =>
+      carte.id.startsWith("ramassage-p1-"),
+    );
+
+    expect(volRamassage).toMatchObject({
+      carte: CARTE_TEST,
+      faceVisible: true,
+      depart: {
+        x: cartePoseeAuPli.x,
+        y: cartePoseeAuPli.y,
+        rotation: cartePoseeAuPli.rotation,
+        echelle: cartePoseeAuPli.echelle,
+      },
+    });
   });
 });

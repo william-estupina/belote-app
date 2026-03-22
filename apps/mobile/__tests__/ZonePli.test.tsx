@@ -28,7 +28,7 @@ const ATLAS_TEST = {
 const CARTE_TEST: Carte = { couleur: "pique", rang: "as" };
 
 describe("ZonePli", () => {
-  it("ne rend plus les cartes du pli et conserve seulement le cadre decoratif", () => {
+  it("ne rend plus les cartes du pli", () => {
     const props = {
       cartes: [{ joueur: "est" as const, carte: CARTE_TEST }],
       largeurEcran: 1200,
