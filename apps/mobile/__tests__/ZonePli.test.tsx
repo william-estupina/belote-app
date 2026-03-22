@@ -38,8 +38,10 @@ describe("ZonePli", () => {
       atlas: ATLAS_TEST,
     } as unknown as ComponentProps<typeof ZonePli>;
 
-    const { queryByTestId } = render(<ZonePli {...props} />);
+    const rendu = render(<ZonePli {...props} />);
+    const { queryByTestId } = rendu;
 
+    expect(rendu.toJSON()).not.toBeNull();
     expect(queryByTestId("carte-face-atlas")).toBeNull();
   });
 });

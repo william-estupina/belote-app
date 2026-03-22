@@ -1,7 +1,7 @@
 import type { Carte } from "@belote/shared-types";
 import { act, renderHook } from "@testing-library/react-native";
 
-import { ANIMATIONS } from "../constants/layout";
+import * as layout from "../constants/layout";
 import { useAnimations } from "../hooks/useAnimations";
 
 const CARTE_TEST: Carte = { couleur: "pique", rang: "as" };
@@ -89,60 +89,81 @@ describe("useAnimations", () => {
 
   it("utilise les cartes posees au pli comme point de depart du ramassage", () => {
     const { result } = renderHook(() => useAnimations());
-    const cartePoseeAuPli = {
-      id: "pli-est-as-pique",
-      joueur: "est" as const,
-      carte: CARTE_TEST,
-      x: 0.58,
-      y: 0.47,
-      rotation: 8,
-      echelle: 0.9,
-      faceVisible: true,
-    };
+    const variationCartePliSpy = jest.spyOn(layout, "variationCartePli");
+    variationCartePliSpy
+      .mockReturnValueOnce({
+        rotation: 17,
+        decalageX: 0.031,
+        decalageY: -0.022,
+      })
+      .mockReturnValueOnce({
+        rotation: -4,
+        decalageX: -0.015,
+        decalageY: 0.01,
+      });
 
-    act(() => {
-      result.current.lancerAnimationJeuCarte(CARTE_TEST, "est");
-      result.current.surAnimationTerminee("jeu-1");
-    });
+    try {
+      act(() => {
+        result.current.lancerAnimationJeuCarte(CARTE_TEST, "est");
+      });
 
-    const obtenirEtatAnimation = () =>
-      result.current as typeof result.current & {
-        cartesPoseesAuPli: Array<{
-          id: string;
-          joueur: "est" | "nord" | "ouest" | "sud";
-          carte: Carte;
-          x: number;
-          y: number;
-          rotation: number;
-          echelle: number;
-          faceVisible: boolean;
-        }>;
-      };
+      const obtenirEtatAnimation = () =>
+        result.current as typeof result.current & {
+          cartesPoseesAuPli: Array<{
+            id: string;
+            joueur: "est" | "nord" | "ouest" | "sud";
+            carte: Carte;
+            x: number;
+            y: number;
+            rotation: number;
+            echelle: number;
+            faceVisible: boolean;
+          }>;
+        };
 
-    expect(obtenirEtatAnimation().cartesPoseesAuPli).toEqual([cartePoseeAuPli]);
+      expect(obtenirEtatAnimation().cartesPoseesAuPli).toEqual([
+        {
+          id: "pli-est-as-pique",
+          joueur: "est",
+          carte: CARTE_TEST,
+          x: 0.531,
+          y: 0.478,
+          rotation: 17,
+          echelle: 0.9,
+          faceVisible: true,
+        },
+      ]);
 
-    act(() => {
-      result.current.lancerAnimationRamassagePli(
-        [{ joueur: cartePoseeAuPli.joueur, carte: cartePoseeAuPli.carte }],
-        "nord",
+      act(() => {
+        result.current.surAnimationTerminee("jeu-1");
+      });
+
+      act(() => {
+        result.current.lancerAnimationRamassagePli(
+          [{ joueur: "est", carte: CARTE_TEST }],
+          "nord",
+        );
+        jest.advanceTimersByTime(layout.ANIMATIONS.ramassagePli.delaiAvant);
+      });
+
+      expect(obtenirEtatAnimation().cartesPoseesAuPli).toEqual([]);
+      const volRamassage = obtenirEtatAnimation().cartesEnVol.find((carte) =>
+        carte.id.startsWith("ramassage-p1-"),
       );
-      jest.advanceTimersByTime(ANIMATIONS.ramassagePli.delaiAvant);
-    });
 
-    expect(obtenirEtatAnimation().cartesPoseesAuPli).toEqual([]);
-    const volRamassage = obtenirEtatAnimation().cartesEnVol.find((carte) =>
-      carte.id.startsWith("ramassage-p1-"),
-    );
-
-    expect(volRamassage).toMatchObject({
-      carte: CARTE_TEST,
-      faceVisible: true,
-      depart: {
-        x: cartePoseeAuPli.x,
-        y: cartePoseeAuPli.y,
-        rotation: cartePoseeAuPli.rotation,
-        echelle: cartePoseeAuPli.echelle,
-      },
-    });
+      expect(volRamassage).toMatchObject({
+        carte: CARTE_TEST,
+        faceVisible: true,
+        depart: {
+          x: 0.531,
+          y: 0.478,
+          rotation: 17,
+          echelle: 0.9,
+        },
+      });
+      expect(variationCartePliSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      variationCartePliSpy.mockRestore();
+    }
   });
 });
