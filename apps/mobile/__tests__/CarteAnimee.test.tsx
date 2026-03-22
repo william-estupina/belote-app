@@ -37,9 +37,7 @@ jest.mock("../components/game/Carte", () => {
   const { View } = require("react-native") as typeof import("react-native");
 
   return {
-    CarteSkia: () => <View testID="carte-skia" />,
     CarteDos: () => <View testID="carte-dos" />,
-    CarteFace: () => <View testID="carte-face" />,
     CarteFaceAtlas: () => <View testID="carte-face-atlas" />,
   };
 });
@@ -93,7 +91,7 @@ describe("CarteAnimee", () => {
   });
 
   it("utilise l'atlas pour une carte face en vol quand il est disponible", () => {
-    const { getByTestId, queryByTestId } = render(
+    const { getByTestId } = render(
       <CarteAnimee
         carte={CARTE_TEST}
         depart={{ x: 0.2, y: 0.2, rotation: 0, echelle: 1 }}
@@ -107,6 +105,5 @@ describe("CarteAnimee", () => {
     );
 
     expect(getByTestId("carte-face-atlas")).toBeTruthy();
-    expect(queryByTestId("carte-skia")).toBeNull();
   });
 });

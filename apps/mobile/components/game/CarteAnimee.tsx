@@ -18,7 +18,7 @@ import {
   interpolerBezierQuadratique,
 } from "../../hooks/distributionAtlas";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
-import { CarteDos, CarteFace, CarteFaceAtlas, CarteSkia } from "./Carte";
+import { CarteDos, CarteFaceAtlas } from "./Carte";
 
 export interface PositionCarte {
   x: number;
@@ -35,7 +35,7 @@ interface PropsCarteAnimee {
   duree: number;
   largeurEcran: number;
   hauteurEcran: number;
-  atlas?: AtlasCartes;
+  atlas: AtlasCartes;
   onTerminee?: () => void;
   /** rotateY départ en degrés (0 = dos, 180 = face). Absent = pas de flip. */
   flipDe?: number;
@@ -151,7 +151,7 @@ export function CarteAnimee({
   if (!aFlip) {
     return (
       <Animated.View style={styleConteneur}>
-        {faceVisible && atlas ? (
+        {faceVisible ? (
           <CarteFaceAtlas
             atlas={atlas}
             carte={carte}
@@ -159,12 +159,7 @@ export function CarteAnimee({
             hauteur={hauteurCarte}
           />
         ) : (
-          <CarteSkia
-            carte={carte}
-            largeur={largeurCarte}
-            hauteur={hauteurCarte}
-            faceVisible={faceVisible}
-          />
+          <CarteDos largeur={largeurCarte} hauteur={hauteurCarte} />
         )}
       </Animated.View>
     );
@@ -206,7 +201,12 @@ export function CarteAnimee({
         <CarteDos largeur={largeurCarte} hauteur={hauteurCarte} />
       </Animated.View>
       <Animated.View style={styleFace}>
-        <CarteFace carte={carte} largeur={largeurCarte} hauteur={hauteurCarte} />
+        <CarteFaceAtlas
+          atlas={atlas}
+          carte={carte}
+          largeur={largeurCarte}
+          hauteur={hauteurCarte}
+        />
       </Animated.View>
     </Animated.View>
   );

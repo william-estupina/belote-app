@@ -26,7 +26,6 @@ import {
   obtenirOrdreDistribution,
   obtenirOrigineDistribution,
 } from "./distributionLayoutAtlas";
-import { planifierCallbacksDistribution } from "./planCallbacksDistribution";
 import type { AtlasCartes } from "./useAtlasCartes";
 
 // --- Types ---
@@ -326,39 +325,73 @@ export function useAnimationsDistribution(
       donneesWorklet.value = donneesComplet;
       nbCartesActives.value = nouvCartesAtlas.length;
 
-      // Réinitialiser les progressions hors ecran:
-      // -1 = en attente, [0..1] = en vol, 2 = deja livree
+      // Réinitialiser les progressions :
+      // -1 = en attente, [0..1] = en vol, 1 = arrivée (reste visible)
       for (let i = 0; i < MAX_CARTES; i++) {
         progressions[i].value = -1;
       }
 
-      const planCallbacks = planifierCallbacksDistribution({
-        paquets: paquetsCallback,
-        delaisCartes,
-      });
+      // Planifier les callbacks et masquer les cartes arrivées dans l'atlas.
+      // Stratégie anti-doublon / anti-clignotement :
+      // - Les cartes arrivées (t=1) restent visibles dans le canvas
+      // - Quand un NOUVEAU paquet "sud" part, on masque les cartes "sud"
+      //   du paquet précédent (MainJoueur les a déjà depuis plusieurs frames)
+      // - Pour le dernier paquet, le canvas et MainJoueur affichent les cartes
+      //   aux mêmes positions → superposition invisible jusqu'au démontage
+      let delaiFinDistributionMs = 0;
+      let indexDebutPaquet = 0;
+      const indicesSudArrivees: { debut: number; fin: number }[] = [];
 
-      if (options?.onPaquetDepart) {
-        for (const evenement of planCallbacks.evenementsDebutPaquets) {
+      for (const paquet of paquetsCallback) {
+        const indexFin = paquet.indexDerniereCarteAtlas;
+        const delaiCarte = delaisCartes[indexFin];
+
+        // Quand un nouveau paquet sud part, masquer les cartes sud
+        // précédemment arrivées dans le canvas (MainJoueur les a déjà)
+        if (paquet.position === "sud" && indicesSudArrivees.length > 0) {
+          const indicesToHide = [...indicesSudArrivees];
           const timeout = setTimeout(() => {
-            options.onPaquetDepart?.(evenement.position, evenement.cartes);
-          }, evenement.delaiMs);
+            for (const range of indicesToHide) {
+              for (let i = range.debut; i <= range.fin; i++) {
+                progressions[i].value = 2;
+              }
+            }
+            options?.onPaquetDepart?.(paquet.position, paquet.cartes);
+          }, paquet.delaiDepartMs);
+          timeoutsCallbacksRef.current.push(timeout);
+        } else if (options?.onPaquetDepart) {
+          const timeout = setTimeout(() => {
+            options.onPaquetDepart?.(paquet.position, paquet.cartes);
+          }, paquet.delaiDepartMs);
           timeoutsCallbacksRef.current.push(timeout);
         }
-      }
 
-      if (options?.onPaquetArrive) {
-        for (const evenement of planCallbacks.evenementsPaquets) {
+        if (delaiCarte) {
+          const delaiArriveeMs = delaiCarte.delai + delaiCarte.duree;
+          delaiFinDistributionMs = Math.max(delaiFinDistributionMs, delaiArriveeMs);
+          const debut = indexDebutPaquet;
+          const fin = indexFin;
+
+          if (paquet.position === "sud") {
+            indicesSudArrivees.push({ debut, fin });
+          }
+
           const timeout = setTimeout(() => {
-            options.onPaquetArrive?.(evenement.position, evenement.cartes);
-          }, evenement.delaiMs);
+            options?.onPaquetArrive?.(paquet.position, paquet.cartes);
+          }, delaiArriveeMs);
           timeoutsCallbacksRef.current.push(timeout);
         }
+
+        indexDebutPaquet = indexFin + 1;
       }
 
+      // Délai supplémentaire pour laisser React rendre les cartes statiques
+      // dans MainJoueur avant de démonter le DistributionCanvas
+      const DELAI_SECURITE_DEMONTAGE = 100;
       const timeoutFin = setTimeout(() => {
         options?.onTerminee?.();
         setEnCours(false);
-      }, planCallbacks.delaiFinDistributionMs);
+      }, delaiFinDistributionMs + DELAI_SECURITE_DEMONTAGE);
       timeoutsCallbacksRef.current.push(timeoutFin);
 
       // Lancer les animations withDelay + withTiming
@@ -370,14 +403,7 @@ export function useAnimationsDistribution(
 
         progression.value = withDelay(
           delai,
-          withTiming(1, { duration: duree, easing: EASING_OUT_CUBIC }, (termine) => {
-            "worklet";
-            if (!termine) {
-              return;
-            }
-
-            progression.value = 2;
-          }),
+          withTiming(1, { duration: duree, easing: EASING_OUT_CUBIC }),
         );
       }
     },

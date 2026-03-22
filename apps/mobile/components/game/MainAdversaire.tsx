@@ -2,10 +2,7 @@ import type { PositionJoueur } from "@belote/shared-types";
 import { View } from "react-native";
 
 import { ADVERSAIRE, RATIO_ASPECT_CARTE } from "../../constants/layout";
-import { CarteSkia } from "./Carte";
-
-// Carte factice pour le dos (le contenu n'est pas affiché)
-const CARTE_DOS = { rang: "7" as const, couleur: "pique" as const };
+import { CarteDos } from "./Carte";
 
 interface PropsMainAdversaire {
   nbCartes: number;
@@ -102,12 +99,7 @@ function EventailHorizontal({
               zIndex: index,
             }}
           >
-            <CarteSkia
-              carte={CARTE_DOS}
-              largeur={largeurCarte}
-              hauteur={hauteurCarte}
-              faceVisible={false}
-            />
+            <CarteDos largeur={largeurCarte} hauteur={hauteurCarte} />
           </View>
         );
       })}
@@ -188,12 +180,7 @@ function EventailVertical({
               zIndex: index,
             }}
           >
-            <CarteSkia
-              carte={CARTE_DOS}
-              largeur={largeurCarte}
-              hauteur={hauteurCarte}
-              faceVisible={false}
-            />
+            <CarteDos largeur={largeurCarte} hauteur={hauteurCarte} />
           </View>
         );
       })}

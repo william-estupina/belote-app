@@ -4,11 +4,7 @@ import { useMemo } from "react";
 import { Image, Platform, StyleSheet, Text, View } from "react-native";
 
 import { type AtlasCartes, SPRITE_SHEET_SOURCE } from "../../hooks/useAtlasCartes";
-import { IMAGES_CARTES } from "./cartesAssets";
 
-// Dimensions par défaut d'une carte (proportionnelles, redimensionnables via props)
-const LARGEUR_CARTE_DEFAUT = 70;
-const HAUTEUR_CARTE_DEFAUT = 100;
 const RAYON_COIN = 6;
 
 // Couleurs des symboles (utilisé par SymboleCouleur)
@@ -26,31 +22,6 @@ const SYMBOLES: Record<Couleur, string> = {
   pique: "\u2660",
   trefle: "\u2663",
 };
-
-interface PropsCarteSkia {
-  carte: Carte;
-  largeur?: number;
-  hauteur?: number;
-  faceVisible?: boolean;
-  grisee?: boolean;
-}
-
-/**
- * Carte rendue avec images PNG (faces) et React Native Views (dos)
- */
-export function CarteSkia({
-  carte,
-  largeur = LARGEUR_CARTE_DEFAUT,
-  hauteur = HAUTEUR_CARTE_DEFAUT,
-  faceVisible = true,
-  grisee = false,
-}: PropsCarteSkia) {
-  if (!faceVisible) {
-    return <CarteDos largeur={largeur} hauteur={hauteur} />;
-  }
-
-  return <CarteFace carte={carte} largeur={largeur} hauteur={hauteur} grisee={grisee} />;
-}
 
 // --- Dos de carte ---
 
@@ -146,51 +117,6 @@ const dosStyles = StyleSheet.create({
   },
 });
 
-// --- Face de carte (image PNG) ---
-
-export function CarteFace({
-  carte,
-  largeur,
-  hauteur,
-  grisee = false,
-}: {
-  carte: Carte;
-  largeur: number;
-  hauteur: number;
-  grisee?: boolean;
-}) {
-  const imageCarte = IMAGES_CARTES[carte.rang][carte.couleur];
-  const marge = Math.round(largeur * 0.03);
-  const largeurImage = largeur - marge * 2;
-  const hauteurImage = hauteur - marge * 2;
-  const rayonImage = Math.max(RAYON_COIN - marge, 2);
-
-  return (
-    <View
-      style={[
-        faceStyles.conteneur,
-        {
-          width: largeur,
-          height: hauteur,
-          borderRadius: RAYON_COIN,
-          padding: marge,
-        },
-      ]}
-    >
-      <Image
-        source={imageCarte}
-        style={{
-          width: largeurImage,
-          height: hauteurImage,
-          borderRadius: rayonImage,
-        }}
-        resizeMode="cover"
-      />
-      {grisee && <View style={[faceStyles.overlayGris, { borderRadius: RAYON_COIN }]} />}
-    </View>
-  );
-}
-
 export function CarteFaceAtlas({
   atlas,
   carte,
@@ -218,7 +144,19 @@ export function CarteFaceAtlas({
   });
 
   if (!image || largeurCellule === 0 || hauteurCellule === 0) {
-    return <CarteFace carte={carte} largeur={largeur} hauteur={hauteur} />;
+    return (
+      <View
+        style={[
+          faceAtlasStyles.conteneur,
+          {
+            width: largeur,
+            height: hauteur,
+            borderRadius: RAYON_COIN,
+            backgroundColor: "#f0e8d4",
+          },
+        ]}
+      />
+    );
   }
 
   if (Platform.OS === "web") {
@@ -272,28 +210,6 @@ export function CarteFaceAtlas({
     </View>
   );
 }
-
-const faceStyles = StyleSheet.create({
-  conteneur: {
-    overflow: "hidden",
-    backgroundColor: "#f0e8d4",
-    borderWidth: 1.5,
-    borderColor: "#b8a88a",
-    shadowColor: "#000",
-    shadowOffset: { width: 1, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  overlayGris: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.45)",
-  },
-});
 
 const faceAtlasStyles = StyleSheet.create({
   conteneur: {

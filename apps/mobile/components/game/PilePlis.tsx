@@ -7,7 +7,7 @@ import {
   RATIO_ASPECT_CARTE,
   RATIO_LARGEUR_CARTE,
 } from "../../constants/layout";
-import { CarteSkia } from "./Carte";
+import { CarteDos } from "./Carte";
 
 interface PropsPilePlis {
   equipe: IdEquipe;
@@ -22,9 +22,6 @@ const estWeb = Platform.OS === "web";
 const DECALAGE_PAR_PLI = estWeb ? 3 : 2;
 // Nombre max de cartes visibles dans la pile
 const MAX_CARTES_VISIBLES = 8;
-// Carte fictive pour le rendu dos
-const CARTE_FICTIVE = { couleur: "pique" as const, rang: "7" as const };
-
 export function PilePlis({ equipe, nbPlis, largeurEcran, hauteurEcran }: PropsPilePlis) {
   const pos = POSITIONS_PILES[equipe];
   const largeurCarte = largeurEcran * RATIO_LARGEUR_CARTE * 0.65;
@@ -87,12 +84,7 @@ export function PilePlis({ equipe, nbPlis, largeurEcran, hauteurEcran }: PropsPi
             transform: estTourne ? [{ rotate: "90deg" }] : [],
           }}
         >
-          <CarteSkia
-            carte={CARTE_FICTIVE}
-            largeur={largeurCarte}
-            hauteur={hauteurCarte}
-            faceVisible={false}
-          />
+          <CarteDos largeur={largeurCarte} hauteur={hauteurCarte} />
         </View>
       ))}
     </View>

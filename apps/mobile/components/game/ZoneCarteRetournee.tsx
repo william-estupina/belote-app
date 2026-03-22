@@ -17,7 +17,8 @@ import {
   RATIO_ASPECT_CARTE,
   RATIO_LARGEUR_CARTE,
 } from "../../constants/layout";
-import { CarteDos, CarteFace } from "./Carte";
+import type { AtlasCartes } from "../../hooks/useAtlasCartes";
+import { CarteDos, CarteFaceAtlas } from "./Carte";
 
 const DUREE_FLIP = 400; // durée de l'animation de retournement (ms)
 const DELAI_FLIP = 200; // petit délai avant le flip pour laisser le composant apparaître
@@ -26,12 +27,14 @@ interface PropsZoneCarteRetournee {
   carte: Carte;
   largeurEcran: number;
   hauteurEcran: number;
+  atlas: AtlasCartes;
 }
 
 export function ZoneCarteRetournee({
   carte,
   largeurEcran,
   hauteurEcran,
+  atlas,
 }: PropsZoneCarteRetournee) {
   // Carte plus petite que l'ancienne version
   const largeurCarte = largeurEcran * RATIO_LARGEUR_CARTE * 0.85;
@@ -107,7 +110,12 @@ export function ZoneCarteRetournee({
         </Animated.View>
         {/* Face (apparaît à 50%, finit à 0° rotation) */}
         <Animated.View style={[styles.carteFlipFace, styleFace]}>
-          <CarteFace carte={carte} largeur={largeurCarte} hauteur={hauteurCarte} />
+          <CarteFaceAtlas
+            atlas={atlas}
+            carte={carte}
+            largeur={largeurCarte}
+            hauteur={hauteurCarte}
+          />
         </Animated.View>
       </View>
     </View>

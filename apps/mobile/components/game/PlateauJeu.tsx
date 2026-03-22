@@ -190,7 +190,7 @@ export default function PlateauJeu() {
                 ? Math.max(etatJeu.mainJoueur.length, etatJeu.nbCartesAnticipeesJoueur)
                 : undefined
             }
-            atlas={distributionEnCours ? atlas : undefined}
+            atlas={atlas}
             cartesJouables={
               etatJeu.phaseUI === "jeu" && etatJeu.estTourHumain
                 ? etatJeu.cartesJouables
@@ -206,6 +206,7 @@ export default function PlateauJeu() {
               carte={etatJeu.carteRetournee}
               largeurEcran={largeur}
               hauteurEcran={hauteur}
+              atlas={atlas}
             />
           )}
 

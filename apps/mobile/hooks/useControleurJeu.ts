@@ -20,7 +20,6 @@ import { useAnimations } from "./useAnimations";
 import { useAnimationsDistribution } from "./useAnimationsDistribution";
 import { useAtlasCartes } from "./useAtlasCartes";
 import { useDelaiBot } from "./useDelaiBot";
-import { usePrechargementCartes } from "./usePrechargementCartes";
 
 // --- Types exposés ---
 
@@ -247,7 +246,6 @@ export function useControleurJeu({
     largeur: largeurEcran,
     hauteur: hauteurEcran,
   });
-  const { attendreCartesPretes } = usePrechargementCartes();
   const { attendreDelaiBot, annulerDelai } = useDelaiBot();
 
   // Drapeaux pour éviter les boucles et courses
@@ -457,9 +455,6 @@ export function useControleurJeu({
       const action = deciderBot(vueBot, difficulte);
 
       if (etatActuel === "jeu" && action.type === "JOUER_CARTE") {
-        await attendreCartesPretes();
-        if (estDemonte.current) return;
-
         // Retirer visuellement la carte de la main du bot immédiatement
         const positionBot = POSITIONS_JOUEUR[indexBot];
         if (positionBot !== "sud") {
@@ -510,7 +505,6 @@ export function useControleurJeu({
     }
   }, [
     attendreDelaiBot,
-    attendreCartesPretes,
     construireVueBot,
     difficulte,
     animations,
@@ -827,20 +821,6 @@ export function useControleurJeu({
       if (snap.value !== "jeu") return;
       if (snap.context.indexJoueurActif !== INDEX_HUMAIN) return;
 
-      // Bloquer une seconde interaction pendant l'attente éventuelle du préchargement.
-      setEtatJeu((prev) => ({
-        ...prev,
-        cartesJouables: [],
-        estTourHumain: false,
-      }));
-
-      await attendreCartesPretes();
-      if (estDemonte.current) return;
-
-      const snapApresAttente = acteur.getSnapshot();
-      if (snapApresAttente.value !== "jeu") return;
-      if (snapApresAttente.context.indexJoueurActif !== INDEX_HUMAIN) return;
-
       // Retirer la carte de la main visuellement juste avant l'animation.
       setEtatJeu((prev) => ({
         ...prev,
@@ -867,7 +847,7 @@ export function useControleurJeu({
         positionDepart,
       );
     },
-    [animations, attendreCartesPretes],
+    [animations],
   );
 
   /** Le joueur humain prend (enchères tour 1) */

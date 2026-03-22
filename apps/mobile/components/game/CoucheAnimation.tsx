@@ -24,7 +24,7 @@ interface PropsCoucheAnimation {
   largeurEcran: number;
   hauteurEcran: number;
   onAnimationTerminee: (id: string) => void;
-  atlas?: AtlasCartes;
+  atlas: AtlasCartes;
   cartesAtlasDistribution?: CarteAtlas[];
   progressionsDistribution?: SharedValue<number>[];
   donneesWorkletDistribution?: SharedValue<number[]>;

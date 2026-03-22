@@ -10,7 +10,6 @@ jest.mock("../components/game/Carte", () => {
   const { View } = require("react-native") as typeof import("react-native");
 
   return {
-    CarteSkia: () => <View testID="carte-skia" />,
     CarteFaceAtlas: () => <View testID="carte-face-atlas" />,
   };
 });
@@ -39,9 +38,8 @@ describe("ZonePli", () => {
       atlas: ATLAS_TEST,
     } as unknown as ComponentProps<typeof ZonePli>;
 
-    const { getByTestId, queryByTestId } = render(<ZonePli {...props} />);
+    const { getByTestId } = render(<ZonePli {...props} />);
 
     expect(getByTestId("carte-face-atlas")).toBeTruthy();
-    expect(queryByTestId("carte-skia")).toBeNull();
   });
 });

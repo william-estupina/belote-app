@@ -15,7 +15,7 @@ import {
   RATIO_LARGEUR_CARTE,
 } from "../../constants/layout";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
-import { CarteFaceAtlas, CarteSkia } from "./Carte";
+import { CarteFaceAtlas } from "./Carte";
 import {
   calculerDispositionMainJoueur,
   type ModeDispositionMainJoueur,
@@ -36,7 +36,7 @@ interface PropsMainJoueur {
   animerNouvellesCartes?: boolean;
   modeDisposition?: ModeDispositionMainJoueur;
   nbCartesDisposition?: number;
-  atlas?: AtlasCartes;
+  atlas: AtlasCartes;
   onCarteJouee?: (carte: Carte, position: PositionProportionnelle) => void;
 }
 
@@ -63,7 +63,7 @@ interface PropsCarteEventail {
   grisee: boolean;
   interactionActive: boolean;
   animerEntree: boolean;
-  atlas?: AtlasCartes;
+  atlas: AtlasCartes;
   xProp: number;
   yProp: number;
   zIndex: number;
@@ -166,22 +166,12 @@ function CarteEventailAnimee({
           transform: pressed && estInteractive ? [{ translateY: -8 }] : [],
         })}
       >
-        {atlas ? (
-          <CarteFaceAtlas
-            atlas={atlas}
-            carte={carte}
-            largeur={largeurCarte}
-            hauteur={hauteurCarte}
-          />
-        ) : (
-          <CarteSkia
-            carte={carte}
-            largeur={largeurCarte}
-            hauteur={hauteurCarte}
-            faceVisible
-            grisee={grisee}
-          />
-        )}
+        <CarteFaceAtlas
+          atlas={atlas}
+          carte={carte}
+          largeur={largeurCarte}
+          hauteur={hauteurCarte}
+        />
       </Pressable>
     </Animated.View>
   );

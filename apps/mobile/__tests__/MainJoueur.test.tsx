@@ -28,7 +28,7 @@ jest.mock("react-native-reanimated", () => {
 });
 
 jest.mock("../components/game/Carte", () => ({
-  CarteSkia: ({ carte }: { carte: Carte }) => {
+  CarteFaceAtlas: ({ carte }: { carte: Carte }) => {
     const React = require("react") as typeof import("react");
     const { View } = require("react-native") as typeof import("react-native");
     const id = `${carte.couleur}-${carte.rang}`;
@@ -52,6 +52,13 @@ const CARTES: Carte[] = [
 
 const QUATRE_CARTES: Carte[] = [...CARTES, { couleur: "carreau", rang: "10" }];
 
+const MOCK_ATLAS = {
+  image: null,
+  largeurCellule: 0,
+  hauteurCellule: 0,
+  rectSource: () => ({ x: 0, y: 0, width: 0, height: 0 }),
+} as unknown as import("../hooks/useAtlasCartes").AtlasCartes;
+
 describe("MainJoueur", () => {
   beforeEach(() => {
     mockMontagesCarte.length = 0;
@@ -67,6 +74,7 @@ describe("MainJoueur", () => {
         hauteurEcran={1000}
         cartesJouables={CARTES}
         interactionActive
+        atlas={MOCK_ATLAS}
         onCarteJouee={() => {}}
       />,
     );
@@ -81,6 +89,7 @@ describe("MainJoueur", () => {
         hauteurEcran={1000}
         cartesJouables={[]}
         interactionActive={false}
+        atlas={MOCK_ATLAS}
         onCarteJouee={() => {}}
       />,
     );
@@ -96,6 +105,7 @@ describe("MainJoueur", () => {
       hauteurEcran: 1000,
       cartesJouables: CARTES,
       interactionActive: false,
+      atlas: MOCK_ATLAS,
       onCarteJouee: () => {},
     };
 
