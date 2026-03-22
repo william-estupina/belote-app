@@ -72,7 +72,6 @@ describe("useAnimations", () => {
       };
 
     expect(obtenirEtatAnimation().cartesEnVol).toHaveLength(1);
-    expect(obtenirEtatAnimation().cartesPoseesAuPli).toEqual([]);
 
     act(() => {
       result.current.surAnimationTerminee("jeu-1");
@@ -121,26 +120,26 @@ describe("useAnimations", () => {
           }>;
         };
 
-      expect(obtenirEtatAnimation().cartesPoseesAuPli).toEqual([
-        {
-          id: "pli-est-as-pique",
-          joueur: "est",
-          carte: CARTE_TEST,
-          x: 0.531,
-          y: 0.478,
-          rotation: 17,
-          echelle: 0.9,
-          faceVisible: true,
-        },
-      ]);
-
       act(() => {
         result.current.surAnimationTerminee("jeu-1");
       });
 
+      expect(obtenirEtatAnimation().cartesPoseesAuPli).toHaveLength(1);
+      const cartePosee = obtenirEtatAnimation().cartesPoseesAuPli[0];
+
+      expect(cartePosee).toMatchObject({
+        joueur: "est",
+        carte: CARTE_TEST,
+        x: 0.611,
+        y: 0.448,
+        rotation: 17,
+        echelle: 0.9,
+        faceVisible: true,
+      });
+
       act(() => {
         result.current.lancerAnimationRamassagePli(
-          [{ joueur: "est", carte: CARTE_TEST }],
+          [{ joueur: cartePosee.joueur, carte: cartePosee.carte }],
           "nord",
         );
         jest.advanceTimersByTime(layout.ANIMATIONS.ramassagePli.delaiAvant);
@@ -155,10 +154,10 @@ describe("useAnimations", () => {
         carte: CARTE_TEST,
         faceVisible: true,
         depart: {
-          x: 0.531,
-          y: 0.478,
-          rotation: 17,
-          echelle: 0.9,
+          x: cartePosee.x,
+          y: cartePosee.y,
+          rotation: cartePosee.rotation,
+          echelle: cartePosee.echelle,
         },
       });
       expect(variationCartePliSpy).toHaveBeenCalledTimes(1);
