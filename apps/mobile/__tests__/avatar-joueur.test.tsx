@@ -132,7 +132,7 @@ describe("AvatarJoueur", () => {
     expect(styleAncrage.top).toBeCloseTo(119, 4);
   });
 
-  it("positionne l'avatar sud un peu plus haut et plus a droite sans toucher aux cartes", () => {
+  it("positionne l'avatar sud un peu plus haut pour degager le pseudo des cartes", () => {
     render(
       <AvatarJoueur
         position="sud"
@@ -151,6 +151,6 @@ describe("AvatarJoueur", () => {
     );
 
     expect(styleAncrage.left).toBe(280);
-    expect(styleAncrage.top).toBeCloseTo(518, 4);
+    expect(styleAncrage.top).toBeCloseTo(497, 4);
   });
 });

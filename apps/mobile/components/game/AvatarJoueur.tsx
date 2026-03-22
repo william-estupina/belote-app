@@ -32,7 +32,7 @@ const NOMS_JOUEUR: Record<PositionJoueur, string> = {
 };
 
 const POSITIONS_AVATAR: Record<PositionJoueur, { x: number; y: number }> = {
-  sud: { x: 0.28, y: 0.74 },
+  sud: { x: 0.28, y: 0.71 },
   nord: { x: 0.62, y: 0.17 },
   ouest: { x: 0.095, y: 0.5 },
   est: { x: 0.905, y: 0.5 },
@@ -224,13 +224,7 @@ function AvatarPortrait({
   );
 }
 
-function BulleAvatar({
-  position,
-  badge,
-}: {
-  position: PositionJoueur;
-  badge: Badge;
-}) {
+function BulleAvatar({ position, badge }: { position: PositionJoueur; badge: Badge }) {
   const { conteneur, queue } = obtenirStylesBulle(position);
 
   return (
