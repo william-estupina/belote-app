@@ -122,11 +122,13 @@ export function CarteFaceAtlas({
   carte,
   largeur,
   hauteur,
+  grisee = false,
 }: {
   atlas: AtlasCartes;
   carte: Carte;
   largeur: number;
   hauteur: number;
+  grisee?: boolean;
 }) {
   const { image, largeurCellule, hauteurCellule } = atlas;
   const sprite = atlas.rectSource(carte.couleur, carte.rang);
@@ -155,7 +157,11 @@ export function CarteFaceAtlas({
             backgroundColor: "#f0e8d4",
           },
         ]}
-      />
+      >
+        {grisee && (
+          <View style={[faceAtlasStyles.overlayGris, { borderRadius: RAYON_COIN }]} />
+        )}
+      </View>
     );
   }
 
@@ -190,6 +196,9 @@ export function CarteFaceAtlas({
           }}
           resizeMode="stretch"
         />
+        {grisee && (
+          <View style={[faceAtlasStyles.overlayGris, { borderRadius: RAYON_COIN }]} />
+        )}
       </View>
     );
   }
@@ -207,6 +216,9 @@ export function CarteFaceAtlas({
       <Canvas style={{ width: largeur, height: hauteur }} pointerEvents="none">
         <Atlas image={image} sprites={sprites} transforms={transformations} />
       </Canvas>
+      {grisee && (
+        <View style={[faceAtlasStyles.overlayGris, { borderRadius: RAYON_COIN }]} />
+      )}
     </View>
   );
 }
@@ -218,6 +230,15 @@ const faceAtlasStyles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 4,
     elevation: 5,
+    overflow: "hidden",
+  },
+  overlayGris: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.45)",
   },
 });
 

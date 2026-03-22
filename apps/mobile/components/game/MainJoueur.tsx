@@ -171,6 +171,7 @@ function CarteEventailAnimee({
           carte={carte}
           largeur={largeurCarte}
           hauteur={hauteurCarte}
+          grisee={grisee}
         />
       </Pressable>
     </Animated.View>

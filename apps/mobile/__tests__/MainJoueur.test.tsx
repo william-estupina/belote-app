@@ -7,6 +7,7 @@ import { MainJoueur } from "../components/game/MainJoueur";
 const mockMontagesCarte: string[] = [];
 const mockDemontagesCarte: string[] = [];
 const mockWithTiming = jest.fn((valeur: number) => valeur);
+const mockPropsCartesAtlas: Array<{ id: string; grisee?: boolean }> = [];
 
 jest.mock("react-native-reanimated", () => {
   const React = require("react") as typeof import("react");
@@ -28,10 +29,12 @@ jest.mock("react-native-reanimated", () => {
 });
 
 jest.mock("../components/game/Carte", () => ({
-  CarteFaceAtlas: ({ carte }: { carte: Carte }) => {
+  CarteFaceAtlas: ({ carte, grisee }: { carte: Carte; grisee?: boolean }) => {
     const React = require("react") as typeof import("react");
     const { View } = require("react-native") as typeof import("react-native");
     const id = `${carte.couleur}-${carte.rang}`;
+
+    mockPropsCartesAtlas.push({ id, grisee });
 
     React.useEffect(() => {
       mockMontagesCarte.push(id);
@@ -63,6 +66,7 @@ describe("MainJoueur", () => {
   beforeEach(() => {
     mockMontagesCarte.length = 0;
     mockDemontagesCarte.length = 0;
+    mockPropsCartesAtlas.length = 0;
     mockWithTiming.mockClear();
   });
 
@@ -122,5 +126,27 @@ describe("MainJoueur", () => {
     rerender(<MainJoueur {...propsDistribution} />);
 
     expect(mockWithTiming).toHaveBeenCalledTimes(9);
+  });
+
+  it("grise les cartes non jouables quand c est le tour humain", () => {
+    render(
+      <MainJoueur
+        cartes={CARTES}
+        largeurEcran={1400}
+        hauteurEcran={1000}
+        cartesJouables={[CARTES[0]]}
+        interactionActive
+        atlas={MOCK_ATLAS}
+        onCarteJouee={() => {}}
+      />,
+    );
+
+    expect(mockPropsCartesAtlas).toEqual(
+      expect.arrayContaining([
+        { id: "pique-as", grisee: false },
+        { id: "coeur-roi", grisee: true },
+        { id: "trefle-dame", grisee: true },
+      ]),
+    );
   });
 });
