@@ -13,11 +13,98 @@ import { planifierRamassagePli } from "./planRamassagePli";
 
 const POSITIONS_JOUEUR: PositionJoueur[] = ["sud", "ouest", "nord", "est"];
 
+interface CartePoseeAuPli {
+  id: string;
+  joueur: PositionJoueur;
+  carte: Carte;
+  x: number;
+  y: number;
+  rotation: number;
+  echelle: number;
+  faceVisible: boolean;
+}
+
+interface CarteEnVolAvecMeta extends CarteEnVol {
+  joueur?: PositionJoueur;
+}
+
+function arrondirPosition(valeur: number): number {
+  return Number(valeur.toFixed(3));
+}
+
 export function useAnimations() {
-  const [cartesEnVol, setCartesEnVol] = useState<CarteEnVol[]>([]);
+  const [cartesEnVol, setCartesEnVol] = useState<CarteEnVolAvecMeta[]>([]);
+  const [cartesPoseesAuPli, setCartesPoseesAuPli] = useState<CartePoseeAuPli[]>([]);
   const compteurId = useRef(0);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const callbacksFinJeuRef = useRef(new Map<string, () => void>());
+  const cartesEnVolRef = useRef<CarteEnVolAvecMeta[]>([]);
+  const cartesPoseesAuPliRef = useRef<CartePoseeAuPli[]>([]);
+
+  const remplacerCartesEnVol = useCallback(
+    (miseAJour: (precedent: CarteEnVolAvecMeta[]) => CarteEnVolAvecMeta[]) => {
+      setCartesEnVol((precedent) => {
+        const suivant = miseAJour(precedent);
+        cartesEnVolRef.current = suivant;
+        return suivant;
+      });
+    },
+    [],
+  );
+
+  const remplacerCartesPoseesAuPli = useCallback(
+    (miseAJour: (precedent: CartePoseeAuPli[]) => CartePoseeAuPli[]) => {
+      setCartesPoseesAuPli((precedent) => {
+        const suivant = miseAJour(precedent);
+        cartesPoseesAuPliRef.current = suivant;
+        return suivant;
+      });
+    },
+    [],
+  );
+
+  const creerCartePoseeAuPli = useCallback(
+    (id: string, joueur: PositionJoueur, carte: Carte): CartePoseeAuPli => {
+      const posArrivee = POSITIONS_PLI[joueur];
+      const { decalageX, decalageY, rotation } = variationCartePli(
+        carte.couleur,
+        carte.rang,
+        joueur,
+      );
+
+      return {
+        id,
+        joueur,
+        carte,
+        x: arrondirPosition(posArrivee.x + decalageX),
+        y: arrondirPosition(posArrivee.y + decalageY),
+        rotation,
+        echelle: 0.9,
+        faceVisible: true,
+      };
+    },
+    [],
+  );
+
+  const creerCartePoseeAuPliDepuisVol = useCallback(
+    (carteEnVol: CarteEnVolAvecMeta): CartePoseeAuPli | null => {
+      if (!carteEnVol.joueur) {
+        return null;
+      }
+
+      return {
+        id: carteEnVol.id,
+        joueur: carteEnVol.joueur,
+        carte: carteEnVol.carte,
+        x: arrondirPosition(carteEnVol.arrivee.x),
+        y: arrondirPosition(carteEnVol.arrivee.y),
+        rotation: carteEnVol.arrivee.rotation,
+        echelle: carteEnVol.arrivee.echelle,
+        faceVisible: carteEnVol.faceVisible,
+      };
+    },
+    [],
+  );
 
   const nettoyerTimeouts = useCallback(() => {
     for (const timeout of timeoutsRef.current) {
@@ -26,15 +113,33 @@ export function useAnimations() {
     timeoutsRef.current = [];
   }, []);
 
-  const surAnimationTerminee = useCallback((id: string) => {
-    setCartesEnVol((prev) => prev.filter((carte) => carte.id !== id));
+  const surAnimationTerminee = useCallback(
+    (id: string) => {
+      const carteTerminee = cartesEnVolRef.current.find((carte) => carte.id === id);
 
-    const callbackFin = callbacksFinJeuRef.current.get(id);
-    if (callbackFin) {
-      callbacksFinJeuRef.current.delete(id);
-      callbackFin();
-    }
-  }, []);
+      remplacerCartesEnVol((precedent) => precedent.filter((carte) => carte.id !== id));
+
+      if (carteTerminee && id.startsWith("jeu-") && carteTerminee.joueur) {
+        const cartePosee =
+          creerCartePoseeAuPliDepuisVol(carteTerminee) ??
+          creerCartePoseeAuPli(id, carteTerminee.joueur, carteTerminee.carte);
+
+        remplacerCartesPoseesAuPli((precedent) => [...precedent, cartePosee]);
+      }
+
+      const callbackFin = callbacksFinJeuRef.current.get(id);
+      if (callbackFin) {
+        callbacksFinJeuRef.current.delete(id);
+        callbackFin();
+      }
+    },
+    [
+      creerCartePoseeAuPli,
+      creerCartePoseeAuPliDepuisVol,
+      remplacerCartesEnVol,
+      remplacerCartesPoseesAuPli,
+    ],
+  );
 
   const glisserCarteRetournee = useCallback(
     (
@@ -50,7 +155,7 @@ export function useAnimations() {
       compteurId.current += 1;
       const id = `slide-retournee-${compteurId.current}`;
 
-      const vol: CarteEnVol = {
+      const vol: CarteEnVolAvecMeta = {
         id,
         carte,
         depart: {
@@ -70,7 +175,7 @@ export function useAnimations() {
         easing: "inout-cubic",
       };
 
-      setCartesEnVol((prev) => [...prev, vol]);
+      remplacerCartesEnVol((precedent) => [...precedent, vol]);
 
       if (onTerminee) {
         const timeout = setTimeout(onTerminee, distribution.dureeSlideRetournee);
@@ -97,9 +202,10 @@ export function useAnimations() {
         joueur,
       );
 
-      const vol: CarteEnVol = {
+      const vol: CarteEnVolAvecMeta = {
         id,
         carte,
+        joueur,
         depart: {
           x: posDepart.x,
           y: posDepart.y,
@@ -116,13 +222,13 @@ export function useAnimations() {
         duree: ANIMATIONS.jeuCarte.duree,
       };
 
-      setCartesEnVol((prev) => [...prev, vol]);
+      remplacerCartesEnVol((precedent) => [...precedent, vol]);
 
       if (onTerminee) {
         callbacksFinJeuRef.current.set(id, onTerminee);
       }
     },
-    [],
+    [remplacerCartesEnVol],
   );
 
   const lancerAnimationRamassagePli = useCallback(
@@ -138,6 +244,9 @@ export function useAnimations() {
       const rotationArrivee = equipe === "equipe2" ? 90 : 0;
       const posGagnant = POSITIONS_PLI[gagnant];
       const { dureeConvergence, dureeGlissement, delaiPhase2 } = planifierRamassagePli();
+      const cartesPoseesPourRamassage = cartesPoseesAuPliRef.current;
+
+      remplacerCartesPoseesAuPli(() => []);
 
       const timeout = setTimeout(() => {
         onDebutRamassage?.();
@@ -146,21 +255,21 @@ export function useAnimations() {
           const { joueur, carte } = cartesPli[i];
           compteurId.current += 1;
           const id = `ramassage-p1-${compteurId.current}`;
-          const posDepart = POSITIONS_PLI[joueur];
-          const { decalageX, decalageY, rotation } = variationCartePli(
-            carte.couleur,
-            carte.rang,
-            joueur,
+          const cartePosee = cartesPoseesPourRamassage.find(
+            (carteCourante) =>
+              carteCourante.joueur === joueur &&
+              carteCourante.carte.couleur === carte.couleur &&
+              carteCourante.carte.rang === carte.rang,
           );
 
-          const vol: CarteEnVol = {
+          const vol: CarteEnVolAvecMeta = {
             id,
             carte,
             depart: {
-              x: posDepart.x + decalageX,
-              y: posDepart.y + decalageY,
-              rotation,
-              echelle: 0.9,
+              x: cartePosee?.x ?? POSITIONS_PLI[joueur].x,
+              y: cartePosee?.y ?? POSITIONS_PLI[joueur].y,
+              rotation: cartePosee?.rotation ?? 0,
+              echelle: cartePosee?.echelle ?? 0.9,
             },
             arrivee: {
               x: posGagnant.x,
@@ -173,7 +282,7 @@ export function useAnimations() {
             easing: "inout-cubic",
           };
 
-          setCartesEnVol((prev) => [...prev, vol]);
+          remplacerCartesEnVol((precedent) => [...precedent, vol]);
         }
 
         const timeoutPhase2 = setTimeout(() => {
@@ -187,7 +296,7 @@ export function useAnimations() {
             const microDecalageX = offsetIdx * 0.004;
             const microDecalageY = offsetIdx * 0.002;
 
-            const vol: CarteEnVol = {
+            const vol: CarteEnVolAvecMeta = {
               id,
               carte,
               depart: {
@@ -207,7 +316,7 @@ export function useAnimations() {
               easing: "inout-cubic",
             };
 
-            setCartesEnVol((prev) => [...prev, vol]);
+            remplacerCartesEnVol((precedent) => [...precedent, vol]);
           }
 
           if (onTerminee) {
@@ -221,17 +330,19 @@ export function useAnimations() {
 
       timeoutsRef.current.push(timeout);
     },
-    [],
+    [remplacerCartesEnVol, remplacerCartesPoseesAuPli],
   );
 
   const annulerAnimations = useCallback(() => {
     nettoyerTimeouts();
     callbacksFinJeuRef.current.clear();
-    setCartesEnVol([]);
-  }, [nettoyerTimeouts]);
+    remplacerCartesEnVol(() => []);
+    remplacerCartesPoseesAuPli(() => []);
+  }, [nettoyerTimeouts, remplacerCartesEnVol, remplacerCartesPoseesAuPli]);
 
   return {
     cartesEnVol,
+    cartesPoseesAuPli,
     surAnimationTerminee,
     glisserCarteRetournee,
     lancerAnimationJeuCarte,
