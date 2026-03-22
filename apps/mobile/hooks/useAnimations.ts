@@ -246,9 +246,8 @@ export function useAnimations() {
       const { dureeConvergence, dureeGlissement, delaiPhase2 } = planifierRamassagePli();
       const cartesPoseesPourRamassage = cartesPoseesAuPliRef.current;
 
-      remplacerCartesPoseesAuPli(() => []);
-
       const timeout = setTimeout(() => {
+        remplacerCartesPoseesAuPli(() => []);
         onDebutRamassage?.();
 
         for (let i = 0; i < cartesPli.length; i += 1) {

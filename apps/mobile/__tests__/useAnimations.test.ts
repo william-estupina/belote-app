@@ -142,7 +142,13 @@ describe("useAnimations", () => {
           [{ joueur: cartePosee.joueur, carte: cartePosee.carte }],
           "nord",
         );
-        jest.advanceTimersByTime(layout.ANIMATIONS.ramassagePli.delaiAvant);
+        jest.advanceTimersByTime(layout.ANIMATIONS.ramassagePli.delaiAvant - 1);
+      });
+
+      expect(obtenirEtatAnimation().cartesPoseesAuPli).toHaveLength(1);
+
+      act(() => {
+        jest.advanceTimersByTime(1);
       });
 
       expect(obtenirEtatAnimation().cartesPoseesAuPli).toEqual([]);
