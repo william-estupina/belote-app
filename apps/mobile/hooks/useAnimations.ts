@@ -255,6 +255,12 @@ export function useAnimations() {
           const { joueur, carte } = cartesPli[i];
           compteurId.current += 1;
           const id = `ramassage-p1-${compteurId.current}`;
+          const posDepart = POSITIONS_PLI[joueur];
+          const { decalageX, decalageY, rotation } = variationCartePli(
+            carte.couleur,
+            carte.rang,
+            joueur,
+          );
           const cartePosee = cartesPoseesPourRamassage.find(
             (carteCourante) =>
               carteCourante.joueur === joueur &&
@@ -266,9 +272,9 @@ export function useAnimations() {
             id,
             carte,
             depart: {
-              x: cartePosee?.x ?? POSITIONS_PLI[joueur].x,
-              y: cartePosee?.y ?? POSITIONS_PLI[joueur].y,
-              rotation: cartePosee?.rotation ?? 0,
+              x: cartePosee?.x ?? posDepart.x + decalageX,
+              y: cartePosee?.y ?? posDepart.y + decalageY,
+              rotation: cartePosee?.rotation ?? rotation,
               echelle: cartePosee?.echelle ?? 0.9,
             },
             arrivee: {
