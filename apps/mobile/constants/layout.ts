@@ -84,9 +84,9 @@ export const ANIMATIONS = {
       ecartX: 0.03, // écart horizontal entre cartes adjacentes (fraction écran)
       ecartRotation: 10, // écart de rotation entre cartes adjacentes (degrés)
     },
-    dureeReorganisationMain: 700, // durée du placement/tri visuel dans la main du joueur (ms)
+    dureeReorganisationMain: 350, // durée du placement/tri visuel dans la main du joueur (ms)
     // Tri après distribution
-    pauseAvantTri: 1600, // pause avant animation de tri (ms)
+    pauseAvantTri: 250, // pause avant animation de tri (ms)
     // Distribution restante — slide carte retournée
     dureeSlideRetournee: 600, // durée du slide vers main preneur (ms)
     // Origine (centre du tapis)

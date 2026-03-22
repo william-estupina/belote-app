@@ -6,7 +6,9 @@ import { MainJoueur } from "../components/game/MainJoueur";
 
 const mockMontagesCarte: string[] = [];
 const mockDemontagesCarte: string[] = [];
-const mockWithTiming = jest.fn((valeur: number) => valeur);
+const mockWithTiming = jest.fn(
+  (valeur: number, config?: { duration?: number; easing?: unknown }) => valeur,
+);
 const mockPropsCartesAtlas: Array<{ id: string; grisee?: boolean }> = [];
 
 jest.mock("react-native-reanimated", () => {
@@ -24,7 +26,8 @@ jest.mock("react-native-reanimated", () => {
     },
     useSharedValue: (valeur: number) => ({ value: valeur }),
     useAnimatedStyle: (calculStyle: () => unknown) => calculStyle(),
-    withTiming: (valeur: number) => mockWithTiming(valeur),
+    withTiming: (valeur: number, config?: { duration?: number; easing?: unknown }) =>
+      mockWithTiming(valeur, config),
   };
 });
 
@@ -147,6 +150,25 @@ describe("MainJoueur", () => {
         { id: "coeur-roi", grisee: true },
         { id: "trefle-dame", grisee: true },
       ]),
+    );
+  });
+
+  it("reorganise la main en 350 ms pour accelerer le tri visuel", () => {
+    render(
+      <MainJoueur
+        cartes={CARTES}
+        largeurEcran={1400}
+        hauteurEcran={1000}
+        cartesJouables={CARTES}
+        interactionActive={false}
+        atlas={MOCK_ATLAS}
+        onCarteJouee={() => {}}
+      />,
+    );
+
+    expect(mockWithTiming).toHaveBeenCalledWith(
+      expect.any(Number),
+      expect.objectContaining({ duration: 350 }),
     );
   });
 });
