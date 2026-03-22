@@ -13,7 +13,7 @@ import { planifierRamassagePli } from "./planRamassagePli";
 
 const POSITIONS_JOUEUR: PositionJoueur[] = ["sud", "ouest", "nord", "est"];
 
-interface CartePoseeAuPli {
+export interface CartePoseeAuPli {
   id: string;
   joueur: PositionJoueur;
   carte: Carte;
@@ -24,12 +24,63 @@ interface CartePoseeAuPli {
   faceVisible: boolean;
 }
 
+export interface CarteDuPli {
+  joueur: PositionJoueur;
+  carte: Carte;
+}
+
 interface CarteEnVolAvecMeta extends CarteEnVol {
   joueur?: PositionJoueur;
 }
 
 function arrondirPosition(valeur: number): number {
   return Number(valeur.toFixed(3));
+}
+
+function estMemeCarte(carteA: Carte, carteB: Carte): boolean {
+  return carteA.couleur === carteB.couleur && carteA.rang === carteB.rang;
+}
+
+export function construireCartePoseeAuPli(
+  id: string,
+  joueur: PositionJoueur,
+  carte: Carte,
+): CartePoseeAuPli {
+  const posArrivee = POSITIONS_PLI[joueur];
+  const { decalageX, decalageY, rotation } = variationCartePli(
+    carte.couleur,
+    carte.rang,
+    joueur,
+  );
+
+  return {
+    id,
+    joueur,
+    carte,
+    x: arrondirPosition(posArrivee.x + decalageX),
+    y: arrondirPosition(posArrivee.y + decalageY),
+    rotation,
+    echelle: 0.9,
+    faceVisible: true,
+  };
+}
+
+export function construireCartesPoseesAuPliDepuisPli(
+  pli: CarteDuPli[],
+  cartesEnVol: ReadonlyArray<Pick<CarteEnVol, "carte">>,
+): CartePoseeAuPli[] {
+  return pli
+    .filter(
+      ({ carte }) =>
+        !cartesEnVol.some((carteEnVol) => estMemeCarte(carteEnVol.carte, carte)),
+    )
+    .map(({ joueur, carte }) =>
+      construireCartePoseeAuPli(
+        `pli-${joueur}-${carte.couleur}-${carte.rang}`,
+        joueur,
+        carte,
+      ),
+    );
 }
 
 export function useAnimations() {
@@ -65,23 +116,7 @@ export function useAnimations() {
 
   const creerCartePoseeAuPli = useCallback(
     (id: string, joueur: PositionJoueur, carte: Carte): CartePoseeAuPli => {
-      const posArrivee = POSITIONS_PLI[joueur];
-      const { decalageX, decalageY, rotation } = variationCartePli(
-        carte.couleur,
-        carte.rang,
-        joueur,
-      );
-
-      return {
-        id,
-        joueur,
-        carte,
-        x: arrondirPosition(posArrivee.x + decalageX),
-        y: arrondirPosition(posArrivee.y + decalageY),
-        rotation,
-        echelle: 0.9,
-        faceVisible: true,
-      };
+      return construireCartePoseeAuPli(id, joueur, carte);
     },
     [],
   );
@@ -338,6 +373,15 @@ export function useAnimations() {
     [remplacerCartesEnVol, remplacerCartesPoseesAuPli],
   );
 
+  const remplacerCartesPoseesAuPliDepuisPli = useCallback(
+    (pli: CarteDuPli[]) => {
+      remplacerCartesPoseesAuPli(() =>
+        construireCartesPoseesAuPliDepuisPli(pli, cartesEnVolRef.current),
+      );
+    },
+    [remplacerCartesPoseesAuPli],
+  );
+
   const annulerAnimations = useCallback(() => {
     nettoyerTimeouts();
     callbacksFinJeuRef.current.clear();
@@ -352,6 +396,7 @@ export function useAnimations() {
     glisserCarteRetournee,
     lancerAnimationJeuCarte,
     lancerAnimationRamassagePli,
+    remplacerCartesPoseesAuPliDepuisPli,
     annulerAnimations,
   };
 }
