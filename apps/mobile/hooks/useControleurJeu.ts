@@ -15,6 +15,7 @@ import type { Actor } from "xstate";
 import { createActor } from "xstate";
 
 import { ANIMATIONS } from "../constants/layout";
+import { appliquerEtatVerrouillePendantFinPli } from "./etatFinPliVisuel";
 import { ajouterCarteAuPliVisuel } from "./etatPliVisuel";
 import { useAnimations } from "./useAnimations";
 import { useAnimationsDistribution } from "./useAnimationsDistribution";
@@ -717,23 +718,13 @@ export function useControleurJeu({
         // Préserver le nombre de plis des piles pour ne pas les afficher
         // avant que l'animation de ramassage n'arrive
         const dernierPli = contexte.historiquePlis[contexte.historiquePlis.length - 1];
-        setEtatJeu((prev) => ({
-          ...prev,
-          ...nouvelEtat,
-          pliEnCours: dernierPli.cartes,
-          plisEquipe1: prev.plisEquipe1,
-          plisEquipe2: prev.plisEquipe2,
-        }));
+        setEtatJeu((prev) =>
+          appliquerEtatVerrouillePendantFinPli(prev, nouvelEtat, dernierPli.cartes),
+        );
       } else if (animationPliEnCours.current) {
         // Pendant le ramassage du pli, préserver les cartes visuelles au centre
         // et ne pas mettre à jour les piles avant la fin de l'animation
-        setEtatJeu((prev) => ({
-          ...prev,
-          ...nouvelEtat,
-          pliEnCours: prev.pliEnCours,
-          plisEquipe1: prev.plisEquipe1,
-          plisEquipe2: prev.plisEquipe2,
-        }));
+        setEtatJeu((prev) => appliquerEtatVerrouillePendantFinPli(prev, nouvelEtat));
       } else {
         setEtatJeu((prev) => ({ ...prev, ...nouvelEtat }));
       }

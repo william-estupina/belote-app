@@ -1,5 +1,6 @@
 import type { Carte } from "@belote/shared-types";
 
+import { appliquerEtatVerrouillePendantFinPli } from "../hooks/etatFinPliVisuel";
 import { ajouterCarteAuPliVisuel } from "../hooks/etatPliVisuel";
 import type { EtatJeu } from "../hooks/useControleurJeu";
 
@@ -49,5 +50,72 @@ describe("ajouterCarteAuPliVisuel", () => {
     const suivant = ajouterCarteAuPliVisuel(avecCarte, "est", CARTE_TEST);
 
     expect(suivant.pliEnCours).toEqual([{ joueur: "est", carte: CARTE_TEST }]);
+  });
+});
+
+describe("appliquerEtatVerrouillePendantFinPli", () => {
+  it("bloque le tour humain pendant l'animation du pli gagne", () => {
+    const precedent = {
+      ...creerEtat(),
+      phaseUI: "jeu" as const,
+      pliEnCours: [{ joueur: "sud" as const, carte: CARTE_TEST }],
+      estTourHumain: false,
+      cartesJouables: [],
+      plisEquipe1: 2,
+      plisEquipe2: 1,
+    };
+    const nouvelEtat = {
+      ...precedent,
+      phaseUI: "jeu" as const,
+      estTourHumain: true,
+      cartesJouables: [CARTE_TEST],
+      joueurActif: "sud" as const,
+      plisEquipe1: 3,
+    };
+
+    const resultat = appliquerEtatVerrouillePendantFinPli(precedent, nouvelEtat);
+
+    expect(resultat.phaseUI).toBe("finPli");
+    expect(resultat.estTourHumain).toBe(false);
+    expect(resultat.cartesJouables).toEqual([]);
+    expect(resultat.pliEnCours).toEqual(precedent.pliEnCours);
+    expect(resultat.plisEquipe1).toBe(2);
+    expect(resultat.plisEquipe2).toBe(1);
+  });
+
+  it("affiche le pli complet mais garde la main humaine verrouillee quand un nouveau pli est detecte", () => {
+    const precedent = {
+      ...creerEtat(),
+      phaseUI: "jeu" as const,
+      estTourHumain: false,
+      cartesJouables: [],
+      plisEquipe1: 2,
+      plisEquipe2: 1,
+    };
+    const nouvelEtat = {
+      ...precedent,
+      phaseUI: "jeu" as const,
+      estTourHumain: true,
+      cartesJouables: [CARTE_TEST],
+      joueurActif: "sud" as const,
+      plisEquipe1: 3,
+    };
+    const pliVisible = [
+      { joueur: "ouest" as const, carte: { couleur: "coeur", rang: "10" } as Carte },
+      { joueur: "sud" as const, carte: CARTE_TEST },
+    ];
+
+    const resultat = appliquerEtatVerrouillePendantFinPli(
+      precedent,
+      nouvelEtat,
+      pliVisible,
+    );
+
+    expect(resultat.phaseUI).toBe("finPli");
+    expect(resultat.estTourHumain).toBe(false);
+    expect(resultat.cartesJouables).toEqual([]);
+    expect(resultat.pliEnCours).toEqual(pliVisible);
+    expect(resultat.plisEquipe1).toBe(2);
+    expect(resultat.plisEquipe2).toBe(1);
   });
 });
