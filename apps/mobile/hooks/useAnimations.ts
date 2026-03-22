@@ -29,8 +29,40 @@ export interface CarteDuPli {
   carte: Carte;
 }
 
+interface CarteEnVolPourResynchronisation {
+  carte: Carte;
+  joueur?: PositionJoueur;
+}
+
 interface CarteEnVolAvecMeta extends CarteEnVol {
   joueur?: PositionJoueur;
+}
+
+interface ResultatUseAnimations {
+  cartesEnVol: CarteEnVol[];
+  cartesPoseesAuPli: CartePoseeAuPli[];
+  surAnimationTerminee: (id: string) => void;
+  glisserCarteRetournee: (
+    carte: Carte,
+    xDepart: number,
+    yDepart: number,
+    preneur: PositionJoueur,
+    onTerminee?: () => void,
+  ) => void;
+  lancerAnimationJeuCarte: (
+    carte: Carte,
+    joueur: PositionJoueur,
+    onTerminee?: () => void,
+    positionDepartCustom?: { x: number; y: number },
+  ) => void;
+  lancerAnimationRamassagePli: (
+    cartesPli: CarteDuPli[],
+    gagnant: PositionJoueur,
+    onTerminee?: () => void,
+    onDebutRamassage?: () => void,
+  ) => void;
+  remplacerCartesPoseesAuPliDepuisPli: (pli: CarteDuPli[]) => void;
+  annulerAnimations: () => void;
 }
 
 function arrondirPosition(valeur: number): number {
@@ -67,7 +99,7 @@ export function construireCartePoseeAuPli(
 
 export function construireCartesPoseesAuPliDepuisPli(
   pli: CarteDuPli[],
-  cartesEnVol: ReadonlyArray<Pick<CarteEnVol, "carte">>,
+  cartesEnVol: ReadonlyArray<CarteEnVolPourResynchronisation>,
 ): CartePoseeAuPli[] {
   return pli
     .filter(
@@ -83,7 +115,7 @@ export function construireCartesPoseesAuPliDepuisPli(
     );
 }
 
-export function useAnimations() {
+export function useAnimations(): ResultatUseAnimations {
   const [cartesEnVol, setCartesEnVol] = useState<CarteEnVolAvecMeta[]>([]);
   const [cartesPoseesAuPli, setCartesPoseesAuPli] = useState<CartePoseeAuPli[]>([]);
   const compteurId = useRef(0);
