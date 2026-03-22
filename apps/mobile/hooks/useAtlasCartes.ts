@@ -15,7 +15,7 @@ import { resoudreSourceAssetAtlas } from "./sourceAssetAtlas";
 // Sur web, Metro/Expo peut retourner un module ES (`default`) ou un objet asset (`uri`).
 
 const SPRITE_SHEET_RAW = require("../assets/sprites/sprite-sheet.png");
-const SPRITE_SHEET_SOURCE = resoudreSourceAssetAtlas({
+export const SPRITE_SHEET_SOURCE = resoudreSourceAssetAtlas({
   os: Platform.OS,
   source: SPRITE_SHEET_RAW,
 });

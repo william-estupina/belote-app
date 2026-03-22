@@ -9,6 +9,7 @@ export interface PaquetDistributionProgramme {
   indexDerniereCarteAtlas: number;
   position: PositionJoueur;
   cartes: Carte[];
+  delaiDepartMs: number;
 }
 
 export interface EvenementPaquetDistribution {
@@ -18,6 +19,7 @@ export interface EvenementPaquetDistribution {
 }
 
 export interface PlanCallbacksDistribution {
+  evenementsDebutPaquets: EvenementPaquetDistribution[];
   evenementsPaquets: EvenementPaquetDistribution[];
   delaiFinDistributionMs: number;
 }
@@ -29,6 +31,7 @@ export function planifierCallbacksDistribution({
   paquets: PaquetDistributionProgramme[];
   delaisCartes: DelaiCarteDistribution[];
 }): PlanCallbacksDistribution {
+  const evenementsDebutPaquets: EvenementPaquetDistribution[] = [];
   const evenementsPaquets: EvenementPaquetDistribution[] = [];
   let delaiFinDistributionMs = 0;
 
@@ -37,6 +40,12 @@ export function planifierCallbacksDistribution({
     if (!delaiCarte) {
       continue;
     }
+
+    evenementsDebutPaquets.push({
+      delaiMs: paquet.delaiDepartMs,
+      position: paquet.position,
+      cartes: paquet.cartes,
+    });
 
     const delaiMs = delaiCarte.delai + delaiCarte.duree;
     evenementsPaquets.push({
@@ -48,6 +57,7 @@ export function planifierCallbacksDistribution({
   }
 
   return {
+    evenementsDebutPaquets,
     evenementsPaquets,
     delaiFinDistributionMs,
   };

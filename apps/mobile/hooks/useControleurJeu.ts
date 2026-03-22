@@ -15,6 +15,7 @@ import type { Actor } from "xstate";
 import { createActor } from "xstate";
 
 import { ANIMATIONS } from "../constants/layout";
+import { ajouterCarteAuPliVisuel } from "./etatPliVisuel";
 import { useAnimations } from "./useAnimations";
 import { useAnimationsDistribution } from "./useAnimationsDistribution";
 import { useAtlasCartes } from "./useAtlasCartes";
@@ -77,11 +78,17 @@ export interface EtatJeu {
   annonceBelote: { joueur: PositionJoueur; type: "belote" | "rebelote" } | null;
   /** Nombre de cartes restantes dans le paquet central (pour l'animation) */
   cartesRestantesPaquet: number;
+  /** Index du donneur courant */
+  indexDonneur: number;
+  /** Nombre de cartes vise pendant la distribution pour la main du joueur */
+  nbCartesAnticipeesJoueur: number;
 }
 
 interface OptionsControleur {
   difficulte: Difficulte;
   scoreObjectif: number;
+  largeurEcran: number;
+  hauteurEcran: number;
 }
 
 // --- Constantes ---
@@ -191,7 +198,12 @@ function trierMainAvecAtout(cartes: Carte[], couleurAtout: Couleur): Carte[] {
 
 // --- Hook principal ---
 
-export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleur) {
+export function useControleurJeu({
+  difficulte,
+  scoreObjectif,
+  largeurEcran,
+  hauteurEcran,
+}: OptionsControleur) {
   // Acteur XState
   const acteurRef = useRef<Actor<typeof machineBelote> | null>(null);
 
@@ -221,6 +233,8 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
     plisEquipe2: 0,
     annonceBelote: null,
     cartesRestantesPaquet: 0,
+    indexDonneur: 1,
+    nbCartesAnticipeesJoueur: 0,
   });
 
   // Timer pour effacer la bulle belote/rebelote
@@ -229,7 +243,10 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
   // Animations
   const animations = useAnimations();
   const atlas = useAtlasCartes();
-  const animDistribution = useAnimationsDistribution(atlas);
+  const animDistribution = useAnimationsDistribution(atlas, {
+    largeur: largeurEcran,
+    hauteur: hauteurEcran,
+  });
   const { attendreCartesPretes } = usePrechargementCartes();
   const { attendreDelaiBot, annulerDelai } = useDelaiBot();
 
@@ -322,6 +339,8 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
         plisEquipe1: contexte.plisEquipe1,
         plisEquipe2: contexte.plisEquipe2,
         annonceBelote: contexte.annonceBelote,
+        indexDonneur: contexte.indexDonneur,
+        nbCartesAnticipeesJoueur: contexte.mains[INDEX_HUMAIN].length,
       };
     },
     [],
@@ -461,6 +480,11 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
               resolve();
               return;
             }
+
+            setEtatJeu((prev) =>
+              ajouterCarteAuPliVisuel(prev, positionBot, action.carte),
+            );
+
             // Envoyer l'événement après l'animation
             acteur.send(actionBotVersEvenement(action));
             resolve();
@@ -519,6 +543,7 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
             ouest: ctx.mains[1].length,
           },
           cartesRestantesPaquet: 0,
+          nbCartesAnticipeesJoueur: ctx.mains[INDEX_HUMAIN].length,
         }));
 
         const estPhaseEncheres = etat === "encheres1" || etat === "encheres2";
@@ -557,12 +582,25 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
         nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
         pliEnCours: [],
         cartesRestantesPaquet: totalCartesAttendues,
+        nbCartesAnticipeesJoueur: 0,
       }));
 
       let cartesRecues = 0;
 
       animDistribution.lancerDistribution(mainsRecord, {
+        indexDonneur: contexte.indexDonneur,
         cartesVisibles: mainsRecord.sud,
+        onPaquetDepart: (position, cartes) => {
+          if (position !== "sud" || estDemonte.current) return;
+
+          setEtatJeu((prev) => ({
+            ...prev,
+            nbCartesAnticipeesJoueur: Math.max(
+              prev.nbCartesAnticipeesJoueur,
+              prev.mainJoueur.length + cartes.length,
+            ),
+          }));
+        },
         onPaquetArrive: (position, cartes) => {
           if (estDemonte.current) return;
 
@@ -677,6 +715,7 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
           nbCartesAdversaires: prev.nbCartesAdversaires,
           carteRetournee: prev.carteRetournee,
           phaseEncheres: prev.phaseEncheres,
+          nbCartesAnticipeesJoueur: prev.nbCartesAnticipeesJoueur,
         }));
       } else if (nouveauPliDetecte) {
         // Nouveau pli complété — afficher les 4 cartes depuis l'historique
@@ -820,10 +859,7 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
           if (estDemonte.current) return;
 
           // Ajouter la carte au pli visuellement
-          setEtatJeu((prev) => ({
-            ...prev,
-            pliEnCours: [...prev.pliEnCours, { joueur: "sud" as PositionJoueur, carte }],
-          }));
+          setEtatJeu((prev) => ajouterCarteAuPliVisuel(prev, "sud", carte));
 
           // Envoyer l'événement à la machine
           acteur.send({ type: "JOUER_CARTE", carte });
@@ -951,6 +987,8 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
       plisEquipe2: 0,
       annonceBelote: null,
       cartesRestantesPaquet: 0,
+      indexDonneur: 1,
+      nbCartesAnticipeesJoueur: 0,
     }));
   }, []);
 
@@ -980,6 +1018,7 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
             ouest: ctx.mains[1].length,
           },
           cartesRestantesPaquet: 0,
+          nbCartesAnticipeesJoueur: ctx.mains[INDEX_HUMAIN].length,
         }));
 
         setTimeout(() => jouerBotSiNecessaire(), 50);
@@ -1033,6 +1072,7 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
         phaseUI: "distribution",
         carteRetournee: null,
         cartesRestantesPaquet: totalCartesAttendues,
+        nbCartesAnticipeesJoueur: prev.mainJoueur.length,
       }));
 
       let cartesRecues = 0;
@@ -1082,7 +1122,19 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
               }
             : mainsRecord,
           {
+            indexDonneur: contexte.indexDonneur,
             cartesVisibles,
+            onPaquetDepart: (position, cartes) => {
+              if (position !== "sud" || estDemonte.current) return;
+
+              setEtatJeu((prev) => ({
+                ...prev,
+                nbCartesAnticipeesJoueur: Math.max(
+                  prev.nbCartesAnticipeesJoueur,
+                  prev.mainJoueur.length + cartes.length,
+                ),
+              }));
+            },
             onPaquetArrive: gererPaquetArrive,
           },
         );
@@ -1113,7 +1165,6 @@ export function useControleurJeu({ difficulte, scoreObjectif }: OptionsControleu
     etatJeu,
     // Animations
     cartesEnVol: animations.cartesEnVol,
-    cartesSurTapis: animations.cartesSurTapis,
     surAnimationTerminee: animations.surAnimationTerminee,
     // Distribution Atlas
     atlas,

@@ -28,11 +28,11 @@ const estWeb = Platform.OS === "web";
 export default function PlateauJeu() {
   const [dimensions, setDimensions] = useState({ largeur: 0, hauteur: 0 });
   const { preferences } = useAppStore();
+  const { largeur, hauteur } = dimensions;
 
   const {
     etatJeu,
     cartesEnVol,
-    cartesSurTapis,
     surAnimationTerminee,
     atlas,
     cartesAtlasDistribution,
@@ -50,14 +50,14 @@ export default function PlateauJeu() {
   } = useControleurJeu({
     difficulte: preferences.difficulte,
     scoreObjectif: preferences.scoreObjectif,
+    largeurEcran: largeur,
+    hauteurEcran: hauteur,
   });
 
   const surLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
     setDimensions({ largeur: width, hauteur: height });
   }, []);
-
-  const { largeur, hauteur } = dimensions;
   const afficherUIEncheres = doitAfficherUIEncheres(
     etatJeu.phaseUI,
     distributionEnCours ?? false,
@@ -137,6 +137,7 @@ export default function PlateauJeu() {
             hauteurEcran={hauteur}
             couleurAtout={etatJeu.couleurAtout}
             afficherCadre={etatJeu.phaseUI !== "inactif"}
+            atlas={atlas}
           />
 
           {/* Scores */}
@@ -182,6 +183,14 @@ export default function PlateauJeu() {
             cartes={etatJeu.mainJoueur}
             largeurEcran={largeur}
             hauteurEcran={hauteur}
+            animerNouvellesCartes={!distributionEnCours}
+            modeDisposition={distributionEnCours ? "reception" : "eventail"}
+            nbCartesDisposition={
+              distributionEnCours
+                ? Math.max(etatJeu.mainJoueur.length, etatJeu.nbCartesAnticipeesJoueur)
+                : undefined
+            }
+            atlas={distributionEnCours ? atlas : undefined}
             cartesJouables={
               etatJeu.phaseUI === "jeu" && etatJeu.estTourHumain
                 ? etatJeu.cartesJouables
@@ -206,13 +215,13 @@ export default function PlateauJeu() {
               cartesRestantes={etatJeu.cartesRestantesPaquet}
               largeurEcran={largeur}
               hauteurEcran={hauteur}
+              indexDonneur={etatJeu.indexDonneur}
             />
           )}
 
           {/* Couche d'animation (cartes en vol) */}
           <CoucheAnimation
             cartesEnVol={cartesEnVol}
-            cartesSurTapis={cartesSurTapis}
             largeurEcran={largeur}
             hauteurEcran={hauteur}
             onAnimationTerminee={surAnimationTerminee}

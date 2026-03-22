@@ -1,6 +1,9 @@
 import type { Carte, Couleur } from "@belote/shared-types";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Atlas, Canvas, rect, useRSXformBuffer } from "@shopify/react-native-skia";
+import { useMemo } from "react";
+import { Image, Platform, StyleSheet, Text, View } from "react-native";
 
+import { type AtlasCartes, SPRITE_SHEET_SOURCE } from "../../hooks/useAtlasCartes";
 import { IMAGES_CARTES } from "./cartesAssets";
 
 // Dimensions par défaut d'une carte (proportionnelles, redimensionnables via props)
@@ -188,6 +191,88 @@ export function CarteFace({
   );
 }
 
+export function CarteFaceAtlas({
+  atlas,
+  carte,
+  largeur,
+  hauteur,
+}: {
+  atlas: AtlasCartes;
+  carte: Carte;
+  largeur: number;
+  hauteur: number;
+}) {
+  const { image, largeurCellule, hauteurCellule } = atlas;
+  const sprite = atlas.rectSource(carte.couleur, carte.rang);
+  const sprites = useMemo(
+    () => [rect(sprite.x, sprite.y, sprite.width, sprite.height)],
+    [sprite.height, sprite.width, sprite.x, sprite.y],
+  );
+  const echelle =
+    largeurCellule > 0 && hauteurCellule > 0
+      ? Math.min(largeur / largeurCellule, hauteur / hauteurCellule)
+      : 1;
+  const transformations = useRSXformBuffer(1, (valeur) => {
+    "worklet";
+    valeur.set(echelle, 0, 0, 0);
+  });
+
+  if (!image || largeurCellule === 0 || hauteurCellule === 0) {
+    return <CarteFace carte={carte} largeur={largeur} hauteur={hauteur} />;
+  }
+
+  if (Platform.OS === "web") {
+    const sourceSprite =
+      typeof SPRITE_SHEET_SOURCE === "string"
+        ? { uri: SPRITE_SHEET_SOURCE }
+        : SPRITE_SHEET_SOURCE;
+
+    return (
+      <View
+        style={[
+          faceAtlasStyles.conteneur,
+          {
+            width: largeur,
+            height: hauteur,
+            overflow: "hidden",
+            borderRadius: RAYON_COIN,
+          },
+        ]}
+      >
+        <Image
+          source={sourceSprite}
+          style={{
+            position: "absolute",
+            width: image.width() * echelle,
+            height: image.height() * echelle,
+            transform: [
+              { translateX: -sprite.x * echelle },
+              { translateY: -sprite.y * echelle },
+            ],
+          }}
+          resizeMode="stretch"
+        />
+      </View>
+    );
+  }
+
+  return (
+    <View
+      style={[
+        faceAtlasStyles.conteneur,
+        {
+          width: largeur,
+          height: hauteur,
+        },
+      ]}
+    >
+      <Canvas style={{ width: largeur, height: hauteur }} pointerEvents="none">
+        <Atlas image={image} sprites={sprites} transforms={transformations} />
+      </Canvas>
+    </View>
+  );
+}
+
 const faceStyles = StyleSheet.create({
   conteneur: {
     overflow: "hidden",
@@ -207,6 +292,16 @@ const faceStyles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: "rgba(0, 0, 0, 0.45)",
+  },
+});
+
+const faceAtlasStyles = StyleSheet.create({
+  conteneur: {
+    shadowColor: "#000",
+    shadowOffset: { width: 1, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 4,
+    elevation: 5,
   },
 });
 

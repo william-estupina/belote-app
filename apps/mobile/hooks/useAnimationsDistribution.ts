@@ -9,7 +9,11 @@ import {
   withTiming,
 } from "react-native-reanimated";
 
-import { ANIMATIONS } from "../constants/layout";
+import {
+  calculerDispositionMainJoueur,
+  calculerPointAncrageCarteMainJoueurNormalisee,
+} from "../components/game/mainJoueurDisposition";
+import { ANIMATIONS, RATIO_ASPECT_CARTE, RATIO_LARGEUR_CARTE } from "../constants/layout";
 import {
   calculerPointArc,
   calculerRectoSource,
@@ -17,7 +21,11 @@ import {
   type PointNormalise,
   type RectSource,
 } from "./distributionAtlas";
-import { obtenirCibleDistributionAtlas } from "./distributionLayoutAtlas";
+import {
+  obtenirCibleDistributionAtlas,
+  obtenirOrdreDistribution,
+  obtenirOrigineDistribution,
+} from "./distributionLayoutAtlas";
 import { planifierCallbacksDistribution } from "./planCallbacksDistribution";
 import type { AtlasCartes } from "./useAtlasCartes";
 
@@ -49,6 +57,8 @@ export interface ResultatAnimationsDistribution {
   lancerDistribution: (
     mains: Record<PositionJoueur, Carte[]>,
     options?: {
+      indexDonneur?: number;
+      onPaquetDepart?: (position: PositionJoueur, cartes: Carte[]) => void;
       onPaquetArrive?: (position: PositionJoueur, cartes: Carte[]) => void;
       onTerminee?: () => void;
       cartesVisibles?: Carte[];
@@ -73,6 +83,7 @@ const EASING_OUT_CUBIC = Easing.out(Easing.cubic);
  */
 export function useAnimationsDistribution(
   atlas: AtlasCartes,
+  dimensionsEcran: { largeur: number; hauteur: number },
 ): ResultatAnimationsDistribution {
   const [cartesAtlas, setCartesAtlas] = useState<CarteAtlas[]>([]);
   const [enCours, setEnCours] = useState(false);
@@ -98,6 +109,8 @@ export function useAnimationsDistribution(
   const appelEnAttenteRef = useRef<{
     mains: Record<PositionJoueur, Carte[]>;
     options?: {
+      indexDonneur?: number;
+      onPaquetDepart?: (position: PositionJoueur, cartes: Carte[]) => void;
       onPaquetArrive?: (position: PositionJoueur, cartes: Carte[]) => void;
       onTerminee?: () => void;
       cartesVisibles?: Carte[];
@@ -108,6 +121,8 @@ export function useAnimationsDistribution(
     (
       mains: Record<PositionJoueur, Carte[]>,
       options?: {
+        indexDonneur?: number;
+        onPaquetDepart?: (position: PositionJoueur, cartes: Carte[]) => void;
         onPaquetArrive?: (position: PositionJoueur, cartes: Carte[]) => void;
         onTerminee?: () => void;
         cartesVisibles?: Carte[];
@@ -120,7 +135,13 @@ export function useAnimationsDistribution(
 
       const { distribution } = ANIMATIONS;
       const { largeurCellule, hauteurCellule } = atlas;
-      if (!atlas.image || largeurCellule === 0) {
+      const { largeur: largeurEcran, hauteur: hauteurEcran } = dimensionsEcran;
+      if (
+        !atlas.image ||
+        largeurCellule === 0 ||
+        largeurEcran === 0 ||
+        hauteurEcran === 0
+      ) {
         appelEnAttenteRef.current = { mains, options };
         return;
       }
@@ -149,12 +170,16 @@ export function useAnimationsDistribution(
 
       const { ecartX, ecartRotation } = distribution.eventailVol;
       const decalage = distribution.arcDistribution.decalagePerpendiculaire;
+      const indexDonneur = options?.indexDonneur ?? 0;
+      const ordreDistribution = obtenirOrdreDistribution(indexDonneur);
+      const origineDistribution = obtenirOrigineDistribution(indexDonneur);
 
       // Tracker les paquets pour les callbacks onPaquetArrive
       const paquetsCallback: {
         indexDerniereCarteAtlas: number;
         position: PositionJoueur;
         cartes: Carte[];
+        delaiDepartMs: number;
       }[] = [];
 
       // Stocker delai et duree pour chaque carte Atlas
@@ -164,10 +189,9 @@ export function useAnimationsDistribution(
         const taillePaquet = taillesPaquets[p];
         if (p > 0) temps += distribution.pauseEntreRounds;
 
-        for (const position of POSITIONS_JOUEUR) {
+        for (const position of ordreDistribution) {
           const cartesJoueur = mains[position];
           const cibleDistribution = obtenirCibleDistributionAtlas(position);
-          const posMain = cibleDistribution.arrivee;
 
           const cartesDuPaquet: Carte[] = [];
           for (let c = 0; c < taillePaquet && indexCarte + c < cartesJoueur.length; c++) {
@@ -177,10 +201,24 @@ export function useAnimationsDistribution(
 
           const delaiPaquet = temps;
           const nbCartesPaquet = cartesDuPaquet.length;
+          const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
+          const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
+          const dispositionSud =
+            position === "sud"
+              ? calculerDispositionMainJoueur({
+                  mode: "reception",
+                  nbCartes: indexCarte + nbCartesPaquet,
+                  largeurEcran,
+                  hauteurEcran,
+                  largeurCarte,
+                  hauteurCarte,
+                })
+              : null;
+          const posMain = cibleDistribution.arrivee;
 
           // Direction de vol pour éventail perpendiculaire
-          const dx = posMain.x - distribution.originX;
-          const dy = posMain.y - distribution.originY;
+          const dx = posMain.x - origineDistribution.x;
+          const dy = posMain.y - origineDistribution.y;
           const angle = Math.atan2(dy, dx);
           const perpX = -Math.sin(angle);
           const perpY = Math.cos(angle);
@@ -190,10 +228,24 @@ export function useAnimationsDistribution(
             const centre = (nbCartesPaquet - 1) / 2;
             const offsetIdx = idx - centre;
 
-            const departX = distribution.originX + offsetIdx * ecartX * perpX;
-            const departY = distribution.originY + offsetIdx * ecartX * perpY;
+            const departX = origineDistribution.x + offsetIdx * ecartX * perpX;
+            const departY = origineDistribution.y + offsetIdx * ecartX * perpY;
             const depart: PointNormalise = { x: departX, y: departY };
-            const arrivee: PointNormalise = { x: posMain.x, y: posMain.y };
+            const dispositionCarteSud =
+              position === "sud" && dispositionSud
+                ? dispositionSud.cartes[indexCarte + idx]
+                : null;
+            const arrivee: PointNormalise =
+              position === "sud" && dispositionCarteSud
+                ? calculerPointAncrageCarteMainJoueurNormalisee({
+                    x: dispositionCarteSud.x,
+                    decalageY: dispositionCarteSud.decalageY,
+                    largeurEcran,
+                    hauteurEcran,
+                    largeurCarte,
+                    hauteurCarte,
+                  })
+                : { x: posMain.x, y: posMain.y };
             const controle = calculerPointArc(depart, arrivee, decalage);
 
             const estVisible =
@@ -211,7 +263,10 @@ export function useAnimationsDistribution(
               : calculerVersoSource(largeurCellule, hauteurCellule);
 
             const rotDepart = offsetIdx * ecartRotation;
-            const rotArrivee = cibleDistribution.rotationArrivee;
+            const rotArrivee =
+              position === "sud" && dispositionCarteSud
+                ? dispositionCarteSud.angle
+                : cibleDistribution.rotationArrivee;
             const echDepart = 0.5;
             const echArrivee = cibleDistribution.echelleArrivee;
 
@@ -250,6 +305,7 @@ export function useAnimationsDistribution(
             indexDerniereCarteAtlas: nouvCartesAtlas.length - 1,
             position,
             cartes: [...cartesDuPaquet],
+            delaiDepartMs: delaiPaquet,
           });
 
           temps += distribution.delaiEntreJoueurs;
@@ -280,6 +336,15 @@ export function useAnimationsDistribution(
         paquets: paquetsCallback,
         delaisCartes,
       });
+
+      if (options?.onPaquetDepart) {
+        for (const evenement of planCallbacks.evenementsDebutPaquets) {
+          const timeout = setTimeout(() => {
+            options.onPaquetDepart?.(evenement.position, evenement.cartes);
+          }, evenement.delaiMs);
+          timeoutsCallbacksRef.current.push(timeout);
+        }
+      }
 
       if (options?.onPaquetArrive) {
         for (const evenement of planCallbacks.evenementsPaquets) {
@@ -316,7 +381,7 @@ export function useAnimationsDistribution(
         );
       }
     },
-    [atlas, progressions, donneesWorklet, nbCartesActives],
+    [atlas, dimensionsEcran, progressions, donneesWorklet, nbCartesActives],
   );
 
   // Rejouer l'appel en attente quand l'atlas devient disponible

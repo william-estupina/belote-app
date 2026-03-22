@@ -50,8 +50,9 @@ export function DistributionCanvas({
 
   // Facteur d'échelle sprite sheet → écran (uniforme car on garde le ratio)
   const scaleBase = atlas.largeurCellule > 0 ? largeurCarte / atlas.largeurCellule : 1;
-  const pivotX = atlas.largeurCellule / 2;
-  const pivotY = atlas.hauteurCellule / 2;
+  const pivotXCentre = atlas.largeurCellule / 2;
+  const pivotYCentre = atlas.hauteurCellule / 2;
+  const pivotYSud = atlas.hauteurCellule;
 
   // RSXform buffer — recalculé à chaque frame par Skia worklet
   const transforms = useRSXformBuffer(nbCartes, (val, i) => {
@@ -99,6 +100,9 @@ export function DistributionCanvas({
     const rotRad = (rotation * Math.PI) / 180;
     const cos = Math.cos(rotRad) * echelle * scaleBase;
     const sin = Math.sin(rotRad) * echelle * scaleBase;
+    const estJoueurSud = cartesAtlas[i]?.joueur === "sud";
+    const pivotX = pivotXCentre;
+    const pivotY = estJoueurSud ? pivotYSud : pivotYCentre;
 
     // RSXform(scos, ssin, tx, ty)
     const pixelX = pos.x * largeurEcran;

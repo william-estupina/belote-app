@@ -1,42 +1,36 @@
 import { memo } from "react";
 import { StyleSheet, View } from "react-native";
 
-import {
-  ANIMATIONS,
-  RATIO_ASPECT_CARTE,
-  RATIO_LARGEUR_CARTE,
-} from "../../constants/layout";
+import { RATIO_ASPECT_CARTE, RATIO_LARGEUR_CARTE } from "../../constants/layout";
+import { obtenirOrigineDistribution } from "../../hooks/distributionLayoutAtlas";
 import { CarteDos } from "./Carte";
 
 interface PropsPaquetCentral {
   cartesRestantes: number;
   largeurEcran: number;
   hauteurEcran: number;
+  indexDonneur: number;
 }
 
 /**
- * Paquet de dos de cartes empilées au centre du tapis.
+ * Paquet de dos de cartes empilees proche du donneur courant.
  * Visible uniquement pendant la distribution, diminue visuellement
- * au fur et à mesure que les cartes sont distribuées.
+ * au fur et a mesure que les cartes sont distribuees.
  */
 export const PaquetCentral = memo(function PaquetCentral({
   cartesRestantes,
   largeurEcran,
   hauteurEcran,
+  indexDonneur,
 }: PropsPaquetCentral) {
   if (cartesRestantes <= 0) return null;
 
   const nbCouches = Math.min(5, Math.ceil(cartesRestantes / 6));
-  // Même facteur 0.85 que ZoneCarteRetournee pour une transition cohérente
   const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE * 0.85);
   const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
-
-  // Position alignée sur le paquet de ZoneCarteRetournee
-  // Le paquet est la partie gauche d'un ensemble (paquet + espacement + carte retournée)
-  const espacement = 6;
-  const largeurTotale = largeurCarte * 2 + espacement;
-  const centreX = largeurEcran * 0.5 - largeurTotale / 2;
-  const centreY = hauteurEcran * ANIMATIONS.distribution.originY - hauteurCarte / 2;
+  const origineDistribution = obtenirOrigineDistribution(indexDonneur);
+  const centreX = largeurEcran * origineDistribution.x - largeurCarte / 2;
+  const centreY = hauteurEcran * origineDistribution.y - hauteurCarte / 2;
 
   return (
     <View

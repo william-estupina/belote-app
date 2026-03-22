@@ -1,5 +1,5 @@
 import type { Carte } from "@belote/shared-types";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Animated, {
   Easing,
   runOnJS,
@@ -8,12 +8,17 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { ANIMATIONS, RATIO_ASPECT_CARTE, RATIO_LARGEUR_CARTE } from "../../constants/layout";
+import {
+  ANIMATIONS,
+  RATIO_ASPECT_CARTE,
+  RATIO_LARGEUR_CARTE,
+} from "../../constants/layout";
 import {
   calculerPointArc,
   interpolerBezierQuadratique,
 } from "../../hooks/distributionAtlas";
-import { CarteDos, CarteFace, CarteSkia } from "./Carte";
+import type { AtlasCartes } from "../../hooks/useAtlasCartes";
+import { CarteDos, CarteFace, CarteFaceAtlas, CarteSkia } from "./Carte";
 
 export interface PositionCarte {
   x: number;
@@ -30,6 +35,7 @@ interface PropsCarteAnimee {
   duree: number;
   largeurEcran: number;
   hauteurEcran: number;
+  atlas?: AtlasCartes;
   onTerminee?: () => void;
   /** rotateY départ en degrés (0 = dos, 180 = face). Absent = pas de flip. */
   flipDe?: number;
@@ -57,6 +63,7 @@ export function CarteAnimee({
   duree,
   largeurEcran,
   hauteurEcran,
+  atlas,
   onTerminee,
   flipDe,
   flipVers,
@@ -64,6 +71,8 @@ export function CarteAnimee({
 }: PropsCarteAnimee) {
   const progres = useSharedValue(0);
   const aFlip = flipDe !== undefined && flipVers !== undefined;
+  const animationFrameFinRef = useRef<number | null>(null);
+  const timeoutFinRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
   const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
@@ -74,13 +83,44 @@ export function CarteAnimee({
   );
 
   useEffect(() => {
+    return () => {
+      if (animationFrameFinRef.current !== null) {
+        globalThis.cancelAnimationFrame?.(animationFrameFinRef.current);
+        animationFrameFinRef.current = null;
+      }
+
+      if (timeoutFinRef.current !== null) {
+        clearTimeout(timeoutFinRef.current);
+        timeoutFinRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const planifierFinAnimation = () => {
+      if (!onTerminee) return;
+
+      if (typeof globalThis.requestAnimationFrame === "function") {
+        animationFrameFinRef.current = globalThis.requestAnimationFrame(() => {
+          animationFrameFinRef.current = null;
+          onTerminee();
+        });
+        return;
+      }
+
+      timeoutFinRef.current = setTimeout(() => {
+        timeoutFinRef.current = null;
+        onTerminee();
+      }, 0);
+    };
+
     progres.value = withTiming(
       1,
       { duration: duree, easing: EASINGS[easing] },
       (termine) => {
         "worklet";
         if (termine && onTerminee) {
-          runOnJS(onTerminee)();
+          runOnJS(planifierFinAnimation)();
         }
       },
     );
@@ -111,12 +151,21 @@ export function CarteAnimee({
   if (!aFlip) {
     return (
       <Animated.View style={styleConteneur}>
-        <CarteSkia
-          carte={carte}
-          largeur={largeurCarte}
-          hauteur={hauteurCarte}
-          faceVisible={faceVisible}
-        />
+        {faceVisible && atlas ? (
+          <CarteFaceAtlas
+            atlas={atlas}
+            carte={carte}
+            largeur={largeurCarte}
+            hauteur={hauteurCarte}
+          />
+        ) : (
+          <CarteSkia
+            carte={carte}
+            largeur={largeurCarte}
+            hauteur={hauteurCarte}
+            faceVisible={faceVisible}
+          />
+        )}
       </Animated.View>
     );
   }

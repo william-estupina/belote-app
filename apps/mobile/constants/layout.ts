@@ -71,8 +71,8 @@ export const INDICATEURS = {
 export const ANIMATIONS = {
   // Distribution : vol centre → main (par paquets simultanés, 3 puis 2)
   distribution: {
-    dureeCarte: 400, // durée de vol par carte (ms)
-    delaiEntreJoueurs: 250, // délai entre les paquets de chaque joueur (ms)
+    dureeCarte: 800, // durée de vol par carte (ms)
+    delaiEntreJoueurs: 500, // délai entre les paquets de chaque joueur (ms)
     pauseEntreRounds: 0, // pas de pause entre le paquet de 3 et le paquet de 2
     easingDistribution: "out-cubic" as const, // décélération naturelle à l'arrivée
     staggerIntraPaquet: 0, // toutes les cartes d'un même paquet partent en même temps
@@ -84,10 +84,11 @@ export const ANIMATIONS = {
       ecartX: 0.03, // écart horizontal entre cartes adjacentes (fraction écran)
       ecartRotation: 10, // écart de rotation entre cartes adjacentes (degrés)
     },
+    dureeReorganisationMain: 700, // durée du placement/tri visuel dans la main du joueur (ms)
     // Tri après distribution
-    pauseAvantTri: 400, // pause avant animation de tri (ms)
+    pauseAvantTri: 1600, // pause avant animation de tri (ms)
     // Distribution restante — slide carte retournée
-    dureeSlideRetournee: 300, // durée du slide vers main preneur (ms)
+    dureeSlideRetournee: 600, // durée du slide vers main preneur (ms)
     // Origine (centre du tapis)
     originX: 0.5,
     originY: 0.45,

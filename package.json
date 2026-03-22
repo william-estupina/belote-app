@@ -32,6 +32,6 @@
     "lint-staged": "^15",
     "prettier": "^3",
     "syncpack": "^13",
-    "turbo": "^2"
+    "turbo": "^2.8.20"
   }
 }

@@ -1,7 +1,7 @@
 import type { Carte, PositionJoueur } from "@belote/shared-types";
 import { useCallback, useRef, useState } from "react";
 
-import type { CarteEnVol, CarteSurTapis } from "../components/game/CoucheAnimation";
+import type { CarteEnVol } from "../components/game/CoucheAnimation";
 import {
   ANIMATIONS,
   POSITIONS_MAINS,
@@ -9,33 +9,33 @@ import {
   POSITIONS_PLI,
   variationCartePli,
 } from "../constants/layout";
+import { planifierRamassagePli } from "./planRamassagePli";
 
 const POSITIONS_JOUEUR: PositionJoueur[] = ["sud", "ouest", "nord", "est"];
 
-/**
- * Hook central de gestion des animations de cartes.
- * Gère les cartes en vol et expose des fonctions pour déclencher chaque type d'animation.
- */
 export function useAnimations() {
   const [cartesEnVol, setCartesEnVol] = useState<CarteEnVol[]>([]);
-  const [cartesSurTapis, setCartesSurTapis] = useState<CarteSurTapis[]>([]);
   const compteurId = useRef(0);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const callbacksFinJeuRef = useRef(new Map<string, () => void>());
 
-  // Nettoyage des timeouts
   const nettoyerTimeouts = useCallback(() => {
-    for (const t of timeoutsRef.current) {
-      clearTimeout(t);
+    for (const timeout of timeoutsRef.current) {
+      clearTimeout(timeout);
     }
     timeoutsRef.current = [];
   }, []);
 
-  // Retirer une carte en vol terminée
   const surAnimationTerminee = useCallback((id: string) => {
-    setCartesEnVol((prev) => prev.filter((c) => c.id !== id));
+    setCartesEnVol((prev) => prev.filter((carte) => carte.id !== id));
+
+    const callbackFin = callbacksFinJeuRef.current.get(id);
+    if (callbackFin) {
+      callbacksFinJeuRef.current.delete(id);
+      callbackFin();
+    }
   }, []);
 
-  // --- Slide de la carte retournée vers la main du preneur ---
   const glisserCarteRetournee = useCallback(
     (
       carte: Carte,
@@ -80,7 +80,6 @@ export function useAnimations() {
     [],
   );
 
-  // --- Jeu de carte (main → centre avec variation naturelle) ---
   const lancerAnimationJeuCarte = useCallback(
     (
       carte: Carte,
@@ -120,14 +119,12 @@ export function useAnimations() {
       setCartesEnVol((prev) => [...prev, vol]);
 
       if (onTerminee) {
-        const timeout = setTimeout(onTerminee, ANIMATIONS.jeuCarte.duree);
-        timeoutsRef.current.push(timeout);
+        callbacksFinJeuRef.current.set(id, onTerminee);
       }
     },
     [],
   );
 
-  // --- Ramassage du pli en 2 phases (convergence → glissement vers pile) ---
   const lancerAnimationRamassagePli = useCallback(
     (
       cartesPli: { joueur: PositionJoueur; carte: Carte }[],
@@ -140,19 +137,12 @@ export function useAnimations() {
       const posPile = POSITIONS_PILES[equipe];
       const rotationArrivee = equipe === "equipe2" ? 90 : 0;
       const posGagnant = POSITIONS_PLI[gagnant];
-
-      // Phase 1 : convergence vers la position du gagnant (toutes les cartes simultanément)
-      const dureeConvergence = 180;
-      // Phase 2 : glissement groupé vers la pile de l'équipe
-      const dureeGlissement = 270;
-      // Petit délai entre les deux phases
-      const pauseEntrePhases = 50;
+      const { dureeConvergence, dureeGlissement, delaiPhase2 } = planifierRamassagePli();
 
       const timeout = setTimeout(() => {
         onDebutRamassage?.();
 
-        // Phase 1 : toutes les cartes convergent vers le gagnant (simultané, pas de stagger)
-        for (let i = 0; i < cartesPli.length; i++) {
+        for (let i = 0; i < cartesPli.length; i += 1) {
           const { joueur, carte } = cartesPli[i];
           compteurId.current += 1;
           const id = `ramassage-p1-${compteurId.current}`;
@@ -186,15 +176,12 @@ export function useAnimations() {
           setCartesEnVol((prev) => [...prev, vol]);
         }
 
-        // Phase 2 : après convergence, glissement groupé vers la pile
-        const delaiPhase2 = dureeConvergence + pauseEntrePhases;
         const timeoutPhase2 = setTimeout(() => {
-          for (let i = 0; i < cartesPli.length; i++) {
+          for (let i = 0; i < cartesPli.length; i += 1) {
             const { carte } = cartesPli[i];
             compteurId.current += 1;
             const id = `ramassage-p2-${compteurId.current}`;
 
-            // Léger décalage en éventail pour simuler un paquet tenu en main
             const centre = (cartesPli.length - 1) / 2;
             const offsetIdx = i - centre;
             const microDecalageX = offsetIdx * 0.004;
@@ -237,16 +224,14 @@ export function useAnimations() {
     [],
   );
 
-  // Tout annuler (ex: quitter la partie)
   const annulerAnimations = useCallback(() => {
     nettoyerTimeouts();
+    callbacksFinJeuRef.current.clear();
     setCartesEnVol([]);
-    setCartesSurTapis([]);
   }, [nettoyerTimeouts]);
 
   return {
     cartesEnVol,
-    cartesSurTapis,
     surAnimationTerminee,
     glisserCarteRetournee,
     lancerAnimationJeuCarte,

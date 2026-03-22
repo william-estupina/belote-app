@@ -8,7 +8,8 @@ import {
   RATIO_LARGEUR_CARTE,
   variationCartePli,
 } from "../../constants/layout";
-import { CarteSkia } from "./Carte";
+import type { AtlasCartes } from "../../hooks/useAtlasCartes";
+import { CarteFaceAtlas, CarteSkia } from "./Carte";
 
 interface CartePli {
   joueur: PositionJoueur;
@@ -21,6 +22,7 @@ interface PropsZonePli {
   hauteurEcran: number;
   couleurAtout: Couleur | null;
   afficherCadre?: boolean;
+  atlas?: AtlasCartes;
 }
 
 const SYMBOLES_COULEUR: Record<Couleur, string> = {
@@ -46,6 +48,7 @@ export function ZonePli({
   hauteurEcran,
   couleurAtout,
   afficherCadre = false,
+  atlas,
 }: PropsZonePli) {
   const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE * 0.9);
   const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
@@ -146,12 +149,21 @@ export function ZonePli({
               elevation: 4,
             }}
           >
-            <CarteSkia
-              carte={carte}
-              largeur={largeurCarte}
-              hauteur={hauteurCarte}
-              faceVisible
-            />
+            {atlas ? (
+              <CarteFaceAtlas
+                atlas={atlas}
+                carte={carte}
+                largeur={largeurCarte}
+                hauteur={hauteurCarte}
+              />
+            ) : (
+              <CarteSkia
+                carte={carte}
+                largeur={largeurCarte}
+                hauteur={hauteurCarte}
+                faceVisible
+              />
+            )}
           </View>
         );
       })}
