@@ -7,7 +7,7 @@
 - Named exports uniquement
 - Exception autorisee : routes Expo Router
 - Correction minimale, sure et testable
-- Apres chaque correction de bug, faire le commit directement sans attendre une demande explicite
+- Apres chaque correction de bug ou implementation de feature, faire le commit directement sans attendre une demande explicite
 - Si l'utilisateur fait ensuite des retours, ajuster avec un nouveau commit ou remplacer le commit precedent selon le besoin
 - Ne jamais melanger logique metier pure et UI
 - `game-logic` et `bot-engine` n'importent jamais React ou React Native
