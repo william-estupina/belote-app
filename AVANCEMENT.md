@@ -136,3 +136,7 @@ _Non commencée_
 ## Phase 3 — Belote coinchée (optionnelle) 🔲
 
 _Non commencée_
+
+## Mise a jour recente
+
+- Refactor du pli anime termine : CoucheAnimation est devenue l'unique rendu visuel des cartes du pli, ZonePli ne garde que le cadre, et la resynchronisation visuelle se fait depuis etatJeu.pliEnCours.
