@@ -529,6 +529,7 @@ export function useControleurJeu({
         const ctx = snap.context;
 
         animationDistribEnCours.current = false;
+        animDistribution.terminerDistribution();
 
         setEtatJeu((prev) => ({
           ...prev,
@@ -550,7 +551,7 @@ export function useControleurJeu({
 
       timeoutsControleurRef.current.push(timeout);
     },
-    [extraireEtatUI, jouerBotSiNecessaire],
+    [extraireEtatUI, jouerBotSiNecessaire, animDistribution],
   );
 
   // --- Lancer la distribution avec animation ---
@@ -980,6 +981,7 @@ export function useControleurJeu({
         const ctx = snap.context;
 
         animationDistribEnCours.current = false;
+        animDistribution.terminerDistribution();
 
         setEtatJeu((prev) => ({
           ...prev,
@@ -999,7 +1001,7 @@ export function useControleurJeu({
 
       timeoutsControleurRef.current.push(timeout);
     },
-    [extraireEtatUI, jouerBotSiNecessaire],
+    [extraireEtatUI, jouerBotSiNecessaire, animDistribution],
   );
 
   // --- Animation distribution restante (après enchères) ---

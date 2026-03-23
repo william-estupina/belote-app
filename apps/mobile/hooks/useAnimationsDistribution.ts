@@ -64,6 +64,8 @@ export interface ResultatAnimationsDistribution {
       cartesVisibles?: Carte[];
     },
   ) => void;
+  /** Signale la fin de la distribution (retire le canvas). À appeler après le tri. */
+  terminerDistribution: () => void;
   cartesAtlas: CarteAtlas[];
   /** SharedValues de progression (0→1) pour chaque carte, accessibles depuis worklet */
   progressions: SharedValue<number>[];
@@ -389,14 +391,17 @@ export function useAnimationsDistribution(
         indexDebutPaquet = indexFin + 1;
       }
 
-      // Délai supplémentaire pour laisser React rendre les cartes statiques
-      // dans MainJoueur avant de démonter le DistributionCanvas
-      const DELAI_SECURITE_DEMONTAGE = 100;
-      const timeoutFin = setTimeout(() => {
-        options?.onTerminee?.();
-        setEnCours(false);
-      }, delaiFinDistributionMs + DELAI_SECURITE_DEMONTAGE);
-      timeoutsCallbacksRef.current.push(timeoutFin);
+      // Callback de fin (toutes les animations terminées).
+      // Note : setEnCours(false) n'est PAS appelé ici — c'est le contrôleur
+      // qui appelle terminerDistribution() après le tri, pour éviter un
+      // re-layout intermédiaire avec les cartes non triées.
+      if (options?.onTerminee) {
+        const DELAI_SECURITE_DEMONTAGE = 100;
+        const timeoutFin = setTimeout(() => {
+          options.onTerminee?.();
+        }, delaiFinDistributionMs + DELAI_SECURITE_DEMONTAGE);
+        timeoutsCallbacksRef.current.push(timeoutFin);
+      }
 
       // Lancer les animations withDelay + withTiming
       const totalCartes = nouvCartesAtlas.length;
@@ -413,6 +418,10 @@ export function useAnimationsDistribution(
     },
     [atlas, dimensionsEcran, progressions, donneesWorklet, nbCartesActives],
   );
+
+  const terminerDistribution = useCallback(() => {
+    setEnCours(false);
+  }, []);
 
   // Rejouer l'appel en attente quand l'atlas devient disponible
   useEffect(() => {
@@ -434,6 +443,7 @@ export function useAnimationsDistribution(
 
   return {
     lancerDistribution,
+    terminerDistribution,
     cartesAtlas,
     progressions,
     donneesWorklet,

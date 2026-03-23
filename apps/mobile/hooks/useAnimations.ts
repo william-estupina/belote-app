@@ -120,6 +120,7 @@ export function useAnimations(): ResultatUseAnimations {
   const [cartesPoseesAuPli, setCartesPoseesAuPli] = useState<CartePoseeAuPli[]>([]);
   const compteurId = useRef(0);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const animationsFrameRetraitRef = useRef<number[]>([]);
   const callbacksFinJeuRef = useRef(new Map<string, () => void>());
   const cartesEnVolRef = useRef<CarteEnVolAvecMeta[]>([]);
   const cartesPoseesAuPliRef = useRef<CartePoseeAuPli[]>([]);
@@ -178,13 +179,16 @@ export function useAnimations(): ResultatUseAnimations {
       clearTimeout(timeout);
     }
     timeoutsRef.current = [];
+
+    for (const idAnimationFrame of animationsFrameRetraitRef.current) {
+      globalThis.cancelAnimationFrame?.(idAnimationFrame);
+    }
+    animationsFrameRetraitRef.current = [];
   }, []);
 
   const surAnimationTerminee = useCallback(
     (id: string) => {
       const carteTerminee = cartesEnVolRef.current.find((carte) => carte.id === id);
-
-      remplacerCartesEnVol((precedent) => precedent.filter((carte) => carte.id !== id));
 
       if (carteTerminee && id.startsWith("jeu-") && carteTerminee.joueur) {
         const cartePosee =
@@ -198,7 +202,33 @@ export function useAnimations(): ResultatUseAnimations {
       if (callbackFin) {
         callbacksFinJeuRef.current.delete(id);
         callbackFin();
+
+        if (typeof globalThis.requestAnimationFrame === "function") {
+          const idAnimationFrame = globalThis.requestAnimationFrame(() => {
+            animationsFrameRetraitRef.current = animationsFrameRetraitRef.current.filter(
+              (idCourant) => idCourant !== idAnimationFrame,
+            );
+            remplacerCartesEnVol((precedent) =>
+              precedent.filter((carte) => carte.id !== id),
+            );
+          });
+          animationsFrameRetraitRef.current.push(idAnimationFrame);
+          return;
+        }
+
+        const timeoutRetrait = setTimeout(() => {
+          timeoutsRef.current = timeoutsRef.current.filter(
+            (timeoutCourant) => timeoutCourant !== timeoutRetrait,
+          );
+          remplacerCartesEnVol((precedent) =>
+            precedent.filter((carte) => carte.id !== id),
+          );
+        }, 0);
+        timeoutsRef.current.push(timeoutRetrait);
+        return;
       }
+
+      remplacerCartesEnVol((precedent) => precedent.filter((carte) => carte.id !== id));
     },
     [
       creerCartePoseeAuPli,

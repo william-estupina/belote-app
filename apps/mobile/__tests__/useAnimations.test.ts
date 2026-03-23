@@ -7,8 +7,11 @@ import { useAnimations } from "../hooks/useAnimations";
 const CARTE_TEST: Carte = { couleur: "pique", rang: "as" };
 
 describe("useAnimations", () => {
+  let requestAnimationFrameOriginal: typeof global.requestAnimationFrame;
+
   beforeEach(() => {
     jest.useFakeTimers();
+    requestAnimationFrameOriginal = global.requestAnimationFrame;
   });
 
   afterEach(() => {
@@ -16,10 +19,18 @@ describe("useAnimations", () => {
       jest.runOnlyPendingTimers();
     });
     jest.useRealTimers();
+    global.requestAnimationFrame = requestAnimationFrameOriginal;
   });
 
-  it("n'appelle la fin d'une animation de jeu qu'apres le retrait de la carte en vol", () => {
+  it("garde la carte visible un frame de plus pendant la pose du pli", () => {
     const surFin = jest.fn();
+    const callbacksAnimationFrame: FrameRequestCallback[] = [];
+
+    global.requestAnimationFrame = jest.fn((callback: FrameRequestCallback) => {
+      callbacksAnimationFrame.push(callback);
+      return 1;
+    });
+
     const { result } = renderHook(() => useAnimations());
 
     act(() => {
@@ -37,6 +48,14 @@ describe("useAnimations", () => {
     });
 
     expect(surFin).toHaveBeenCalledTimes(1);
+    expect(result.current.cartesEnVol).toHaveLength(1);
+    expect(callbacksAnimationFrame).toHaveLength(1);
+
+    act(() => {
+      callbacksAnimationFrame[0](16);
+    });
+
+    expect(result.current.cartesEnVol).toHaveLength(0);
   });
 
   it("ne conserve pas de copie statique de la carte jouee sur le calque d'animation", () => {
