@@ -2,6 +2,7 @@ import type { Carte } from "@belote/shared-types";
 
 import { appliquerEtatVerrouillePendantFinPli } from "../hooks/etatFinPliVisuel";
 import { ajouterCarteAuPliVisuel } from "../hooks/etatPliVisuel";
+import { construireCartesPoseesAuPliDepuisPli } from "../hooks/useAnimations";
 import type { EtatJeu } from "../hooks/useControleurJeu";
 
 const CARTE_TEST: Carte = { couleur: "pique", rang: "as" };
@@ -50,6 +51,28 @@ describe("ajouterCarteAuPliVisuel", () => {
     const suivant = ajouterCarteAuPliVisuel(avecCarte, "est", CARTE_TEST);
 
     expect(suivant.pliEnCours).toEqual([{ joueur: "est", carte: CARTE_TEST }]);
+  });
+
+  it("conserve la verite metier du pli quand la couche animation filtre une carte encore en vol", () => {
+    const etatAvecCarte = ajouterCarteAuPliVisuel(creerEtat(), "est", CARTE_TEST);
+
+    const cartesPoseesPendantLeVol = construireCartesPoseesAuPliDepuisPli(
+      etatAvecCarte.pliEnCours,
+      [{ joueur: "est", carte: CARTE_TEST }],
+    );
+    const cartesPoseesApresLeVol = construireCartesPoseesAuPliDepuisPli(
+      etatAvecCarte.pliEnCours,
+      [],
+    );
+
+    expect(etatAvecCarte.pliEnCours).toEqual([{ joueur: "est", carte: CARTE_TEST }]);
+    expect(cartesPoseesPendantLeVol).toEqual([]);
+    expect(cartesPoseesApresLeVol).toHaveLength(1);
+    expect(cartesPoseesApresLeVol[0]).toMatchObject({
+      joueur: "est",
+      carte: CARTE_TEST,
+      faceVisible: true,
+    });
   });
 });
 

@@ -242,6 +242,8 @@ export function useControleurJeu({
 
   // Animations
   const animations = useAnimations();
+  const remplacerCartesPoseesAuPliDepuisPli =
+    animations.remplacerCartesPoseesAuPliDepuisPli;
   const atlas = useAtlasCartes();
   const animDistribution = useAnimationsDistribution(atlas, {
     largeur: largeurEcran,
@@ -1140,10 +1142,15 @@ export function useControleurJeu({
   // Mettre à jour la ref pour que prendre/annoncer puissent appeler cette fonction
   distribRestanteRef.current = lancerDistributionRestanteAnimee;
 
+  useEffect(() => {
+    remplacerCartesPoseesAuPliDepuisPli(etatJeu.pliEnCours);
+  }, [etatJeu.pliEnCours, remplacerCartesPoseesAuPliDepuisPli]);
+
   return {
     etatJeu,
     // Animations
     cartesEnVol: animations.cartesEnVol,
+    cartesPoseesAuPli: animations.cartesPoseesAuPli,
     surAnimationTerminee: animations.surAnimationTerminee,
     // Distribution Atlas
     atlas,
