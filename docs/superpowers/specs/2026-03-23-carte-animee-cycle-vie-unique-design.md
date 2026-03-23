@@ -22,6 +22,8 @@ Supporte un enchaînement de trajectoires :
 - Quand la carte atteint `progression=1`, elle ne se démonte plus. Elle reste rendue à sa position d'arrivée.
 - Expose la capacité de relancer une animation vers une nouvelle destination (phase ramassage) sans démonter le composant.
 - Concrètement : les props `depart`/`arrivee`/`duree`/`faceVisible`/`easing` deviennent réactives. Quand elles changent (nouveau segment de trajectoire), la shared value `progres` est réinitialisée à 0 et relancée vers 1.
+- La prop `segment` est ajoutée au tableau de dépendances du `useEffect` qui lance l'animation. Le changement de `segment` déclenche un re-render React, ce qui met à jour les valeurs JS capturées par les closures des `useAnimatedStyle` (`depart`, `arrivee`, `pointControle`). Le `useEffect` remet `progres.value = 0` puis relance `withTiming(1, ...)`.
+- Les shadows actuellement appliquées par le wrapper statique dans `CoucheAnimation` (shadowColor, shadowOffset, shadowOpacity, elevation) sont reportées sur le style du conteneur animé dans `CarteAnimee` pour les cartes gelées/au repos.
 
 ### `useAnimations.ts`
 
@@ -43,6 +45,14 @@ Au lieu de créer de nouvelles `CarteEnVol` "ramassage-p1-_" / "ramassage-p2-_",
 
 Pour que `CarteAnimee` détecte les changements de trajectoire, on ajoute un champ `segment: number` à `CarteEnVol` qui s'incrémente à chaque nouvelle trajectoire.
 
+**Callbacks par segment** : `surAnimationTerminee` continue de se déclencher à chaque `progression=1`. Le comportement change selon le contexte :
+
+- **Segment vol (jeu)** : appelle le callback métier (avancer XState), ne retire PAS la carte de `cartesEnVol`.
+- **Segment ramassage phase 1 (convergence)** : déclenche la phase 2 (mise à jour destination + segment++) sur les mêmes cartes.
+- **Segment ramassage phase 2 (glissement)** : retire la carte de `cartesEnVol` + appelle le callback de fin de ramassage.
+
+Le `callbacksFinJeuRef` est mis à jour à chaque changement de segment pour mapper l'ID de la carte au callback approprié pour le segment courant.
+
 ### `CoucheAnimation.tsx`
 
 - Supprime le rendu `cartesPoseesAuPli.map(...)` (lignes 100-125).
@@ -58,6 +68,8 @@ Pour que `CarteAnimee` détecte les changements de trajectoire, on ajoute un cha
 
 La fonction `remplacerCartesPoseesAuPliDepuisPli` servait à resynchroniser les cartes visuelles du pli depuis l'état XState. Son équivalent dans le nouveau design : recréer des `CarteEnVol` "jeu-\*" gelées (segment courant, progression=1) pour les cartes du pli qui ne sont pas déjà en vol.
 
+Les cartes créées par resynchronisation utilisent des **IDs déterministes** au format `pli-${joueur}-${couleur}-${rang}` (comme l'ancien `construireCartesPoseesAuPliDepuisPli`). La logique vérifie par identité de carte (couleur + rang) si une entrée existe déjà dans `cartesEnVol` avant d'en créer une nouvelle.
+
 ## Ce qui ne change pas
 
 - `CarteFaceAtlas` / `CarteDos` : inchangés
@@ -65,6 +77,7 @@ La fonction `remplacerCartesPoseesAuPliDepuisPli` servait à resynchroniser les 
 - Flux d'orchestration XState : inchangé
 - Distribution (`DistributionCanvas`) : inchangée
 - `planRamassagePli.ts` : les timings restent les mêmes
+- `annulerAnimations` : inchangé — il vide déjà `cartesEnVol`, ce qui couvre le nettoyage des cartes gelées
 
 ## Types modifiés
 
@@ -92,4 +105,5 @@ interface CarteEnVol {
 
 - `useAnimations.test.ts` : supprimer les tests liés à `cartesPoseesAuPli`, ajouter des tests pour le nouveau flux ramassage (mise à jour in-place des cartes)
 - `CoucheAnimation.test.tsx` : supprimer les tests liés au rendu des `cartesPoseesAuPli`
+- `useControleurJeuPli.test.ts` : supprimer/adapter les tests qui importent `construireCartesPoseesAuPliDepuisPli`, adapter le test de resynchronisation au nouveau mécanisme (cartes gelées dans `cartesEnVol`)
 - `ZonePli.test.tsx` : inchangé
