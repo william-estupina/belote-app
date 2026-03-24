@@ -18,8 +18,8 @@ const HAUTEUR_JETON = estWeb ? 34 : 32;
 const TAILLE_ZONE = estWeb ? 148 : 136;
 const LARGEUR_CONTENEUR = estWeb ? 188 : 176;
 const HAUTEUR_CONTENU = TAILLE_ZONE + (estWeb ? 24 : 22);
-const DECALAGE_ENTRANT = 4;
-const DECALAGE_SORTANT = -2;
+const DECALAGE_ENTRANT = 0;
+const DECALAGE_SORTANT = 0;
 
 interface EtatInitialTransitionDernierPli {
   opaciteEntrante: number;
@@ -100,12 +100,7 @@ export function calculerPositionMarqueurGagnant(joueur: PositionJoueur): {
   top: number;
   left: number;
 } {
-  const positionJeton = calculerPositionJeton(joueur);
-
-  return {
-    top: positionJeton.top + (HAUTEUR_CONTENU - TAILLE_ZONE),
-    left: positionJeton.left,
-  };
+  return calculerPositionJeton(joueur);
 }
 
 export function calculerEtatInitialTransitionDernierPli({
@@ -194,46 +189,48 @@ function OrnementGagnant({ prefixeTestId = "", joueur }: PropsOrnementGagnant) {
   );
 }
 
-function ContenuDernierPli({
+function EnteteDernierPli({ dernierPli }: { dernierPli: PliComplete }) {
+  return (
+    <View style={styles.enTete}>
+      <Text style={styles.titre}>Dernier pli</Text>
+      <Text style={styles.pointsBadge}>{dernierPli.points} pts</Text>
+    </View>
+  );
+}
+
+function PlateauDernierPli({
   dernierPli,
   prefixeTestId = "",
   afficherMarqueurGagnant = true,
 }: PropsContenuDernierPli) {
   return (
-    <>
-      <View style={styles.enTete}>
-        <Text style={styles.titre}>Dernier pli</Text>
-        <Text style={styles.pointsBadge}>{dernierPli.points} pts</Text>
-      </View>
+    <View style={styles.plateauCompact}>
+      {dernierPli.cartes.map(({ joueur, carte }) => {
+        const estGagnant = joueur === dernierPli.gagnant;
+        const position = POSITIONS[joueur];
 
-      <View style={[styles.plateauCompact, { width: TAILLE_ZONE, height: TAILLE_ZONE }]}>
-        {dernierPli.cartes.map(({ joueur, carte }) => {
-          const estGagnant = joueur === dernierPli.gagnant;
-          const position = POSITIONS[joueur];
-
-          return (
-            <View
-              key={`dernier-pli-${prefixeTestId}${joueur}`}
-              testID={`${prefixeTestId}jeton-dernier-pli-${joueur}`}
-              style={[styles.jeton, { top: position.top, left: position.left }]}
+        return (
+          <View
+            key={`dernier-pli-${prefixeTestId}${joueur}`}
+            testID={`${prefixeTestId}jeton-dernier-pli-${joueur}`}
+            style={[styles.jeton, { top: position.top, left: position.left }]}
+          >
+            {estGagnant && afficherMarqueurGagnant ? (
+              <OrnementGagnant prefixeTestId={prefixeTestId} joueur={joueur} />
+            ) : null}
+            <Text
+              testID={`${prefixeTestId}texte-dernier-pli-${joueur}`}
+              style={[
+                styles.texteJeton,
+                { color: COULEURS_TEXTE_COULEUR[carte.couleur] },
+              ]}
             >
-              {estGagnant && afficherMarqueurGagnant ? (
-                <OrnementGagnant prefixeTestId={prefixeTestId} joueur={joueur} />
-              ) : null}
-              <Text
-                testID={`${prefixeTestId}texte-dernier-pli-${joueur}`}
-                style={[
-                  styles.texteJeton,
-                  { color: COULEURS_TEXTE_COULEUR[carte.couleur] },
-                ]}
-              >
-                {formaterCarte(carte.rang, carte.couleur)}
-              </Text>
-            </View>
-          );
-        })}
-      </View>
-    </>
+              {formaterCarte(carte.rang, carte.couleur)}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
   );
 }
 
@@ -265,10 +262,10 @@ export function DernierPli({
   const translationSortante = useRef(
     new Animated.Value(etatInitialTransition.translationSortante),
   ).current;
-  const topMarqueurGagnant = useRef(
+  const translationMarqueurGagnantY = useRef(
     new Animated.Value(trajectoireMarqueurGagnant?.depart.top ?? 0),
   ).current;
-  const leftMarqueurGagnant = useRef(
+  const translationMarqueurGagnantX = useRef(
     new Animated.Value(trajectoireMarqueurGagnant?.depart.left ?? 0),
   ).current;
   const animationRef = useRef<Animated.CompositeAnimation | null>(null);
@@ -292,8 +289,8 @@ export function DernierPli({
     translationSortante.setValue(etatInitial.translationSortante);
 
     if (trajectoireMarqueurGagnant) {
-      topMarqueurGagnant.setValue(trajectoireMarqueurGagnant.depart.top);
-      leftMarqueurGagnant.setValue(trajectoireMarqueurGagnant.depart.left);
+      translationMarqueurGagnantY.setValue(trajectoireMarqueurGagnant.depart.top);
+      translationMarqueurGagnantX.setValue(trajectoireMarqueurGagnant.depart.left);
     }
 
     if (!transitionDernierPliActive || !precedentDernierPli) {
@@ -301,7 +298,7 @@ export function DernierPli({
     }
 
     const ciblesTransition = calculerCiblesTransitionDernierPli();
-    const easing = Easing.inOut(Easing.quad);
+    const easing = Easing.linear;
     const animation = Animated.parallel([
       Animated.timing(opaciteEntrante, {
         toValue: ciblesTransition.opaciteEntrante,
@@ -329,13 +326,13 @@ export function DernierPli({
       }),
       ...(trajectoireMarqueurGagnant
         ? [
-            Animated.timing(topMarqueurGagnant, {
+            Animated.timing(translationMarqueurGagnantY, {
               toValue: trajectoireMarqueurGagnant.arrivee.top,
               duration: dureeTransitionDernierPliMs,
               easing,
               useNativeDriver: false,
             }),
-            Animated.timing(leftMarqueurGagnant, {
+            Animated.timing(translationMarqueurGagnantX, {
               toValue: trajectoireMarqueurGagnant.arrivee.left,
               duration: dureeTransitionDernierPliMs,
               easing,
@@ -353,12 +350,12 @@ export function DernierPli({
     opaciteEntrante,
     opaciteSortante,
     precedentDernierPli,
-    topMarqueurGagnant,
+    translationMarqueurGagnantY,
     transitionDernierPliActive,
     trajectoireMarqueurGagnant,
     translationEntrante,
     translationSortante,
-    leftMarqueurGagnant,
+    translationMarqueurGagnantX,
   ]);
 
   return (
@@ -366,60 +363,99 @@ export function DernierPli({
       <View style={styles.zoneTransition}>
         {transitionDernierPliActive && precedentDernierPli ? (
           <>
-            <Animated.View
-              testID="couche-dernier-pli-sortante"
-              style={[
-                styles.couchePli,
-                {
-                  opacity: opaciteSortante,
-                  transform: [{ translateY: translationSortante }],
-                },
-              ]}
-            >
-              <ContenuDernierPli
-                dernierPli={precedentDernierPli}
-                afficherMarqueurGagnant={false}
-              />
-            </Animated.View>
-
-            <Animated.View
-              testID="couche-dernier-pli-entrante"
-              style={[
-                styles.couchePli,
-                styles.coucheSuperposee,
-                {
-                  opacity: opaciteEntrante,
-                  transform: [{ translateY: translationEntrante }],
-                },
-              ]}
-            >
-              <ContenuDernierPli
-                dernierPli={dernierPli}
-                prefixeTestId="entrant-"
-                afficherMarqueurGagnant={false}
-              />
-            </Animated.View>
-
-            {trajectoireMarqueurGagnant ? (
+            <View style={styles.zoneEnteteTransition}>
               <Animated.View
-                testID="marqueur-gagnant-transition"
-                pointerEvents="none"
+                testID="couche-dernier-pli-sortante"
                 style={[
-                  styles.marqueurGagnantTransition,
+                  styles.couchePli,
                   {
-                    top: topMarqueurGagnant,
-                    left: leftMarqueurGagnant,
+                    opacity: opaciteSortante,
+                    transform: [{ translateY: translationSortante }],
                   },
                 ]}
               >
-                <OrnementGagnant prefixeTestId="transition-" />
+                <EnteteDernierPli dernierPli={precedentDernierPli} />
               </Animated.View>
-            ) : null}
+
+              <Animated.View
+                testID="couche-dernier-pli-entrante"
+                style={[
+                  styles.couchePli,
+                  styles.coucheSuperposee,
+                  {
+                    opacity: opaciteEntrante,
+                    transform: [{ translateY: translationEntrante }],
+                  },
+                ]}
+              >
+                <EnteteDernierPli dernierPli={dernierPli} />
+              </Animated.View>
+            </View>
+
+            <View style={styles.zonePlateauTransition}>
+              <Animated.View
+                style={[
+                  styles.couchePlateau,
+                  {
+                    opacity: opaciteSortante,
+                    transform: [{ translateY: translationSortante }],
+                  },
+                ]}
+              >
+                <PlateauDernierPli
+                  dernierPli={precedentDernierPli}
+                  afficherMarqueurGagnant={false}
+                />
+              </Animated.View>
+
+              <Animated.View
+                style={[
+                  styles.couchePlateau,
+                  styles.coucheSuperposee,
+                  {
+                    opacity: opaciteEntrante,
+                    transform: [{ translateY: translationEntrante }],
+                  },
+                ]}
+              >
+                <PlateauDernierPli
+                  dernierPli={dernierPli}
+                  prefixeTestId="entrant-"
+                  afficherMarqueurGagnant={false}
+                />
+              </Animated.View>
+
+              {trajectoireMarqueurGagnant ? (
+                <Animated.View
+                  testID="marqueur-gagnant-transition"
+                  pointerEvents="none"
+                  style={[
+                    styles.marqueurGagnantTransition,
+                    {
+                      transform: [
+                        { translateX: translationMarqueurGagnantX },
+                        { translateY: translationMarqueurGagnantY },
+                      ],
+                    },
+                  ]}
+                >
+                  <OrnementGagnant prefixeTestId="transition-" />
+                </Animated.View>
+              ) : null}
+            </View>
           </>
         ) : (
-          <Animated.View testID="couche-dernier-pli-principale" style={styles.couchePli}>
-            <ContenuDernierPli dernierPli={dernierPli} />
-          </Animated.View>
+          <>
+            <EnteteDernierPli dernierPli={dernierPli} />
+            <View style={styles.zonePlateauTransition}>
+              <Animated.View
+                testID="couche-dernier-pli-principale"
+                style={styles.couchePli}
+              >
+                <PlateauDernierPli dernierPli={dernierPli} />
+              </Animated.View>
+            </View>
+          </>
         )}
       </View>
     </View>
@@ -446,10 +482,24 @@ const styles = StyleSheet.create({
   zoneTransition: {
     width: "100%",
     minHeight: HAUTEUR_CONTENU,
+    alignItems: "center",
+  },
+  zoneEnteteTransition: {
+    width: "100%",
+    minHeight: estWeb ? 20 : 18,
+    position: "relative",
+  },
+  zonePlateauTransition: {
+    width: TAILLE_ZONE,
+    height: TAILLE_ZONE,
     position: "relative",
   },
   couchePli: {
     width: "100%",
+  },
+  couchePlateau: {
+    width: TAILLE_ZONE,
+    height: TAILLE_ZONE,
   },
   coucheSuperposee: {
     position: "absolute",
@@ -478,6 +528,8 @@ const styles = StyleSheet.create({
   },
   plateauCompact: {
     position: "relative",
+    width: TAILLE_ZONE,
+    height: TAILLE_ZONE,
   },
   jeton: {
     position: "absolute",

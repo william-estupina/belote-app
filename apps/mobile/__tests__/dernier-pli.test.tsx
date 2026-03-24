@@ -140,7 +140,7 @@ describe("DernierPli", () => {
       }),
     ).toEqual({
       opaciteEntrante: 0,
-      translationEntrante: 4,
+      translationEntrante: 0,
       opaciteSortante: 1,
       translationSortante: 0,
     });
@@ -165,12 +165,12 @@ describe("DernierPli", () => {
       opaciteEntrante: 1,
       translationEntrante: 0,
       opaciteSortante: 0,
-      translationSortante: -2,
+      translationSortante: 0,
     });
   });
 
   it("anime un marqueur gagnant unique entre l ancien et le nouveau vainqueur", () => {
-    expect(calculerPositionMarqueurGagnant("sud").top).toBeGreaterThan(100);
+    expect(calculerPositionMarqueurGagnant("nord").top).toBe(0);
 
     expect(
       calculerTrajectoireMarqueurGagnant({
