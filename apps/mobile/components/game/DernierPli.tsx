@@ -35,6 +35,11 @@ interface CiblesTransitionDernierPli {
   translationSortante: number;
 }
 
+interface TrajectoireMarqueurGagnant {
+  depart: { top: number; left: number };
+  arrivee: { top: number; left: number };
+}
+
 const LIBELLES_RANG: Record<Rang, string> = {
   "7": "7",
   "8": "8",
@@ -87,6 +92,10 @@ function formaterCarte(rang: Rang, couleur: Couleur): string {
   return `${LIBELLES_RANG[rang]} ${SYMBOLES_COULEUR[couleur]}`;
 }
 
+function calculerPositionJeton(joueur: PositionJoueur): { top: number; left: number } {
+  return POSITIONS[joueur];
+}
+
 export function calculerEtatInitialTransitionDernierPli({
   precedentDernierPli,
   transitionDernierPliActive,
@@ -120,12 +129,64 @@ export function calculerCiblesTransitionDernierPli(): CiblesTransitionDernierPli
   };
 }
 
+export function calculerTrajectoireMarqueurGagnant({
+  dernierPli,
+  precedentDernierPli,
+  transitionDernierPliActive,
+}: {
+  dernierPli: PliComplete;
+  precedentDernierPli?: PliComplete | null;
+  transitionDernierPliActive?: boolean;
+}): TrajectoireMarqueurGagnant | null {
+  if (!transitionDernierPliActive || !precedentDernierPli) {
+    return null;
+  }
+
+  return {
+    depart: calculerPositionJeton(precedentDernierPli.gagnant),
+    arrivee: calculerPositionJeton(dernierPli.gagnant),
+  };
+}
+
 interface PropsContenuDernierPli {
   dernierPli: PliComplete;
   prefixeTestId?: string;
+  afficherMarqueurGagnant?: boolean;
 }
 
-function ContenuDernierPli({ dernierPli, prefixeTestId = "" }: PropsContenuDernierPli) {
+interface PropsOrnementGagnant {
+  prefixeTestId?: string;
+  joueur?: PositionJoueur;
+}
+
+function OrnementGagnant({ prefixeTestId = "", joueur }: PropsOrnementGagnant) {
+  const suffixe = joueur ? `-${joueur}` : "";
+
+  return (
+    <>
+      <View
+        testID={`${prefixeTestId}surbrillance-gagnant${suffixe}`}
+        style={styles.surbrillanceGagnant}
+      />
+      <View
+        testID={`${prefixeTestId}anneau-gagnant${suffixe}`}
+        style={styles.anneauGagnant}
+      />
+      <View
+        testID={`${prefixeTestId}ruban-gagnant${suffixe}`}
+        style={styles.rubanGagnant}
+      >
+        <Text style={styles.texteRubanGagnant}>1</Text>
+      </View>
+    </>
+  );
+}
+
+function ContenuDernierPli({
+  dernierPli,
+  prefixeTestId = "",
+  afficherMarqueurGagnant = true,
+}: PropsContenuDernierPli) {
   return (
     <>
       <View style={styles.enTete}>
@@ -142,18 +203,11 @@ function ContenuDernierPli({ dernierPli, prefixeTestId = "" }: PropsContenuDerni
             <View
               key={`dernier-pli-${prefixeTestId}${joueur}`}
               testID={`${prefixeTestId}jeton-dernier-pli-${joueur}`}
-              style={[
-                styles.jeton,
-                { top: position.top, left: position.left },
-                estGagnant && styles.jetonGagnant,
-              ]}
+              style={[styles.jeton, { top: position.top, left: position.left }]}
             >
-              {estGagnant && (
-                <View
-                  testID={`${prefixeTestId}anneau-gagnant-${joueur}`}
-                  style={styles.anneauGagnant}
-                />
-              )}
+              {estGagnant && afficherMarqueurGagnant ? (
+                <OrnementGagnant prefixeTestId={prefixeTestId} joueur={joueur} />
+              ) : null}
               <Text
                 testID={`${prefixeTestId}texte-dernier-pli-${joueur}`}
                 style={[
@@ -163,14 +217,6 @@ function ContenuDernierPli({ dernierPli, prefixeTestId = "" }: PropsContenuDerni
               >
                 {formaterCarte(carte.rang, carte.couleur)}
               </Text>
-              {estGagnant && (
-                <View
-                  testID={`${prefixeTestId}ruban-gagnant-${joueur}`}
-                  style={styles.rubanGagnant}
-                >
-                  <Text style={styles.texteRubanGagnant}>1</Text>
-                </View>
-              )}
             </View>
           );
         })}
@@ -186,6 +232,11 @@ export function DernierPli({
   dureeTransitionDernierPliMs = 0,
   cleTransitionDernierPli = 0,
 }: PropsDernierPli) {
+  const trajectoireMarqueurGagnant = calculerTrajectoireMarqueurGagnant({
+    dernierPli,
+    precedentDernierPli,
+    transitionDernierPliActive,
+  });
   const etatInitialTransition = calculerEtatInitialTransitionDernierPli({
     precedentDernierPli,
     transitionDernierPliActive,
@@ -201,6 +252,12 @@ export function DernierPli({
   ).current;
   const translationSortante = useRef(
     new Animated.Value(etatInitialTransition.translationSortante),
+  ).current;
+  const topMarqueurGagnant = useRef(
+    new Animated.Value(trajectoireMarqueurGagnant?.depart.top ?? 0),
+  ).current;
+  const leftMarqueurGagnant = useRef(
+    new Animated.Value(trajectoireMarqueurGagnant?.depart.left ?? 0),
   ).current;
   const animationRef = useRef<Animated.CompositeAnimation | null>(null);
 
@@ -221,6 +278,11 @@ export function DernierPli({
     translationEntrante.setValue(etatInitial.translationEntrante);
     opaciteSortante.setValue(etatInitial.opaciteSortante);
     translationSortante.setValue(etatInitial.translationSortante);
+
+    if (trajectoireMarqueurGagnant) {
+      topMarqueurGagnant.setValue(trajectoireMarqueurGagnant.depart.top);
+      leftMarqueurGagnant.setValue(trajectoireMarqueurGagnant.depart.left);
+    }
 
     if (!transitionDernierPliActive || !precedentDernierPli) {
       return;
@@ -253,6 +315,22 @@ export function DernierPli({
         easing,
         useNativeDriver: false,
       }),
+      ...(trajectoireMarqueurGagnant
+        ? [
+            Animated.timing(topMarqueurGagnant, {
+              toValue: trajectoireMarqueurGagnant.arrivee.top,
+              duration: dureeTransitionDernierPliMs,
+              easing,
+              useNativeDriver: false,
+            }),
+            Animated.timing(leftMarqueurGagnant, {
+              toValue: trajectoireMarqueurGagnant.arrivee.left,
+              duration: dureeTransitionDernierPliMs,
+              easing,
+              useNativeDriver: false,
+            }),
+          ]
+        : []),
     ]);
 
     animationRef.current = animation;
@@ -263,9 +341,12 @@ export function DernierPli({
     opaciteEntrante,
     opaciteSortante,
     precedentDernierPli,
+    topMarqueurGagnant,
     transitionDernierPliActive,
+    trajectoireMarqueurGagnant,
     translationEntrante,
     translationSortante,
+    leftMarqueurGagnant,
   ]);
 
   return (
@@ -283,7 +364,10 @@ export function DernierPli({
                 },
               ]}
             >
-              <ContenuDernierPli dernierPli={precedentDernierPli} />
+              <ContenuDernierPli
+                dernierPli={precedentDernierPli}
+                afficherMarqueurGagnant={false}
+              />
             </Animated.View>
 
             <Animated.View
@@ -297,8 +381,28 @@ export function DernierPli({
                 },
               ]}
             >
-              <ContenuDernierPli dernierPli={dernierPli} prefixeTestId="entrant-" />
+              <ContenuDernierPli
+                dernierPli={dernierPli}
+                prefixeTestId="entrant-"
+                afficherMarqueurGagnant={false}
+              />
             </Animated.View>
+
+            {trajectoireMarqueurGagnant ? (
+              <Animated.View
+                testID="marqueur-gagnant-transition"
+                pointerEvents="none"
+                style={[
+                  styles.marqueurGagnantTransition,
+                  {
+                    top: topMarqueurGagnant,
+                    left: leftMarqueurGagnant,
+                  },
+                ]}
+              >
+                <OrnementGagnant prefixeTestId="transition-" />
+              </Animated.View>
+            ) : null}
           </>
         ) : (
           <Animated.View testID="couche-dernier-pli-principale" style={styles.couchePli}>
@@ -380,7 +484,9 @@ const styles = StyleSheet.create({
     elevation: 2,
     overflow: "visible",
   },
-  jetonGagnant: {
+  surbrillanceGagnant: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 999,
     borderColor: "#f3d36b",
     borderWidth: 2,
     shadowColor: "#f5cf63",
@@ -388,6 +494,13 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
     zIndex: 2,
+  },
+  marqueurGagnantTransition: {
+    position: "absolute",
+    width: LARGEUR_JETON,
+    height: HAUTEUR_JETON,
+    zIndex: 4,
+    overflow: "visible",
   },
   anneauGagnant: {
     position: "absolute",

@@ -4,6 +4,7 @@ import { act, render, screen } from "@testing-library/react-native";
 import {
   calculerCiblesTransitionDernierPli,
   calculerEtatInitialTransitionDernierPli,
+  calculerTrajectoireMarqueurGagnant,
   DernierPli,
 } from "../components/game/DernierPli";
 
@@ -165,5 +166,38 @@ describe("DernierPli", () => {
       opaciteSortante: 0,
       translationSortante: -2,
     });
+  });
+
+  it("anime un marqueur gagnant unique entre l ancien et le nouveau vainqueur", () => {
+    expect(
+      calculerTrajectoireMarqueurGagnant({
+        dernierPli: NOUVEAU_DERNIER_PLI,
+        precedentDernierPli: DERNIER_PLI,
+        transitionDernierPliActive: true,
+      }),
+    ).toMatchObject({
+      depart: expect.objectContaining({
+        top: expect.any(Number),
+        left: expect.any(Number),
+      }),
+      arrivee: expect.objectContaining({
+        top: expect.any(Number),
+        left: expect.any(Number),
+      }),
+    });
+
+    render(
+      <DernierPli
+        dernierPli={NOUVEAU_DERNIER_PLI}
+        precedentDernierPli={DERNIER_PLI}
+        transitionDernierPliActive
+        dureeTransitionDernierPliMs={450}
+        cleTransitionDernierPli={3}
+      />,
+    );
+
+    expect(screen.getByTestId("marqueur-gagnant-transition")).toBeTruthy();
+    expect(screen.queryByTestId("anneau-gagnant-est")).toBeNull();
+    expect(screen.queryByTestId("entrant-anneau-gagnant-sud")).toBeNull();
   });
 });
