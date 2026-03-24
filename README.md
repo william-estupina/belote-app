@@ -167,6 +167,25 @@ pnpm --filter @belote/mobile build:ios
 pnpm mobile:build:ios
 ```
 
+### Build preview Android depuis GitHub Actions
+
+Un workflow manuel GitHub Actions permet de verifier le repo puis de lancer un build EAS Android `preview` pour recuperer un APK sur telephone.
+
+Pre-requis:
+
+- ajouter le secret GitHub Actions `EXPO_TOKEN`
+- ce token doit avoir acces au projet Expo lie dans `apps/mobile/app.json`
+
+Parcours:
+
+1. Ouvrir l'onglet `Actions` du repository
+2. Choisir le workflow `Build preview Android`
+3. Cliquer sur `Run workflow`
+4. Attendre la fin des verifications (`pnpm lint`, `pnpm turbo typecheck test`)
+5. Recuperer le lien Expo du build et le QR code dans le `Job summary`
+
+Le QR code pointe vers l'URL directe de l'APK quand EAS la fournit, sinon vers la page Expo du build.
+
 ## Lancer l'app sur mobile
 
 ### Option 1 : Expo Go (le plus simple)

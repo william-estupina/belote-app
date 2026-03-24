@@ -1,142 +1,144 @@
 # Avancement du projet Belote
 
-> Ce fichier suit la progression des étapes définies dans `PROMPT.md`.
-> Il est mis à jour automatiquement à chaque avancée.
+> Ce fichier suit la progression des etapes definies dans `PROMPT.md`.
+> Il est mis a jour automatiquement a chaque avancee.
 
-## Phase 1 — MVP hors-ligne
+## Phase 1 - MVP hors-ligne
 
-### Étape 1 : Setup du monorepo et outillage ✅
+### Etape 1 : Setup du monorepo et outillage
 
 - [x] Initialiser le monorepo Turborepo + pnpm
 - [x] Configurer les workspaces (`packages/*`, `apps/*`, `tooling/*`)
-- [x] Setup TypeScript configs partagés (`tsconfig.base.json`, `tooling/tsconfig/*`)
+- [x] Setup TypeScript configs partages (`tsconfig.base.json`, `tooling/tsconfig/*`)
 - [x] Setup ESLint flat config + plugins (TS, import-sort, unused-imports)
-- [x] Setup Prettier + intégration ESLint
+- [x] Setup Prettier + integration ESLint
 - [x] Setup Husky + lint-staged + commitlint (Conventional Commits)
 - [x] Setup Gitleaks en pre-commit hook (v8.30.0, fallback gracieux si absent)
-- [x] Setup Knip pour la détection de code mort
-- [x] Setup Syncpack pour la cohérence des versions
+- [x] Setup Knip pour la detection de code mort
+- [x] Setup Syncpack pour la coherence des versions
 - [x] Configurer Vitest pour les packages TS purs (`game-logic`, `bot-engine`)
 - [x] Configurer Jest + jest-expo pour l'app Expo (babel-preset-expo, transformIgnorePatterns pnpm)
-- [x] Créer l'app Expo avec Expo Router
-- [x] Vérifier que `pnpm dev` lance l'app sur web et mobile (Metro Bundler démarre)
-- [x] Vérifier que `pnpm turbo test`, `pnpm turbo typecheck` fonctionnent
+- [x] Creer l'app Expo avec Expo Router
+- [x] Verifier que `pnpm dev` lance l'app sur web et mobile (Metro Bundler demarre)
+- [x] Verifier que `pnpm turbo test`, `pnpm turbo typecheck` fonctionnent
 
-### Étape 2 : Package `game-logic` ✅
+### Etape 2 : Package `game-logic`
 
-- [x] Définir tous les types (`Carte`, `Couleur`, `Rang`, `PositionJoueur`, `Equipe`, `PhaseJeu`, etc.)
-- [x] Implémenter `paquet.ts` : création du paquet 32 cartes, mélange (Fisher-Yates), distribution
-- [x] Implémenter `regles.ts` : calculer les cartes jouables (fournir, couper, monter, défausser)
-- [x] Implémenter `pli.ts` : évaluer qui gagne un pli
-- [x] Implémenter `score.ts` : compter les points, Belote/Rebelote, Dix de der, Capot, chute
-- [x] Écrire les tests unitaires pour chaque module (couverture > 90% — 98.63% statements, 94.93% branches)
+- [x] Definir tous les types (`Carte`, `Couleur`, `Rang`, `PositionJoueur`, `Equipe`, `PhaseJeu`, etc.)
+- [x] Implementer `paquet.ts` : creation du paquet 32 cartes, melange (Fisher-Yates), distribution
+- [x] Implementer `regles.ts` : calculer les cartes jouables (fournir, couper, monter, defausser)
+- [x] Implementer `pli.ts` : evaluer qui gagne un pli
+- [x] Implementer `score.ts` : compter les points, Belote/Rebelote, Dix de der, Capot, chute
+- [x] Ecrire les tests unitaires pour chaque module (couverture > 90% - 98.63% statements, 94.93% branches)
 
-### Étape 3 : State machine XState ✅
+### Etape 3 : State machine XState
 
-- [x] Implémenter la machine à états complète dans `machine.ts`
-- [x] Tous les états : inactif → distribution → encheres1 → encheres2 → distributionRestante → jeu → verificationPli → finPli → scoresManche → finPartie
+- [x] Implementer la machine a etats complete dans `machine.ts`
+- [x] Tous les etats : inactif -> distribution -> encheres1 -> encheres2 -> distributionRestante -> jeu -> verificationPli -> finPli -> scoresManche -> finPartie
 - [x] Les guards : `coupValide`, `pliComplet`, `tousPasseTour1`, `tousPasseTour2`, `mancheTerminee`, `partieTerminee`, `annonceValide`
 - [x] Les actions : `distribuer`, `jouerCarte`, `evaluerPli`, `calculerScoreManche`, `enregistrerPrise`, `enregistrerAnnonce`, `enregistrerPasse`, etc.
-- [x] Tests unitaires de la machine (25 tests — parties complètes simulées, enchères, redistribution, fin de partie)
+- [x] Tests unitaires de la machine (25 tests - parties completes simulees, encheres, redistribution, fin de partie)
 
-### Étape 4 : Package `bot-engine` ✅
+### Etape 4 : Package `bot-engine`
 
-- [x] Implémenter le bot facile (jeu aléatoire légal)
-- [x] Implémenter le bot moyen (heuristiques de base : entame As, jouer fort/faible selon position)
-- [x] Implémenter le bot difficile (comptage de cartes, cartes maîtresses, signalisation, stratégie avancée)
-- [x] Implémenter la stratégie d'enchères par niveau (tour 1 + tour 2)
-- [x] Implémenter le module de comptage de cartes (`comptage-cartes.ts` : suivi cartes jouées/restantes, cartes maîtresses)
-- [x] Tests unitaires (57 tests — enchères, jeu, comptage de cartes, dispatcher bot)
-- [x] **Recalibrage des 3 niveaux de difficulté** (branche `feature/recalibrage-bots-expert`) :
+- [x] Implementer le bot facile (jeu aleatoire legal)
+- [x] Implementer le bot moyen (heuristiques de base : entame As, jouer fort/faible selon position)
+- [x] Implementer le bot difficile (comptage de cartes, cartes maitresses, signalisation, strategie avancee)
+- [x] Implementer la strategie d'encheres par niveau (tour 1 + tour 2)
+- [x] Implementer le module de comptage de cartes (`comptage-cartes.ts` : suivi cartes jouees/restantes, cartes maitresses)
+- [x] Tests unitaires (57 tests - encheres, jeu, comptage de cartes, dispatcher bot)
+- [x] **Recalibrage des 3 niveaux de difficulte** (branche `feature/recalibrage-bots-expert`) :
   - [x] Enrichir `VueBotJeu` avec `positionPreneur` et `positionDonneur`
-  - [x] Suivi cartes avancé (`SuiviCartesAvance` : couleurs épuisées, coupes, défausses par joueur)
+  - [x] Suivi cartes avance (`SuiviCartesAvance` : couleurs epuisees, coupes, defausses par joueur)
   - [x] Remapper facile = ancien moyen (heuristiques + 12% erreur), moyen = ancien difficile (comptage)
-  - [x] Niveau expert enchères : seuils adaptatifs (position, écart score), garde anti-chute, détection belote/rebelote, auto-prend V+9
-  - [x] Niveau expert jeu : entame 5 priorités, surcoupe intelligente (>15 pts), préservation belote, charge partenaire
+  - [x] Niveau expert encheres : seuils adaptatifs (position, ecart score), garde anti-chute, detection belote/rebelote, auto-prend V+9
+  - [x] Niveau expert jeu : entame 5 priorites, surcoupe intelligente (>15 pts), preservation belote, charge partenaire
   - [x] 79 tests bot-engine (vs 57 avant), couverture 79.5% statements, 84.8% branches
 
-### Étape 5 : UI — Écrans et navigation ✅
+### Etape 5 : UI - Ecrans et navigation
 
-- [x] Écran d'accueil (menu principal : Jouer, Paramètres, Règles)
-- [x] Écran de paramètres (difficulté, son, score objectif)
-- [x] Écran des règles du jeu (8 sections détaillées)
-- [x] Navigation avec Expo Router (Stack : accueil, partie, paramètres, règles)
-- [x] Thème et constantes visuelles (`constants/theme.ts` : couleurs, typographie, espacements, bordures)
-- [x] Store Zustand (`stores/app-store.ts` : préférences utilisateur avec difficulté, son, score objectif)
-- [x] Composant réutilisable `BoutonMenu` (primaire/secondaire)
-- [x] Config Metro pour compatibilité web (transformation `import.meta.env`)
-- [x] Tests unitaires (9 tests : accueil, paramètres, règles)
-- [x] Tests e2e Playwright (6 tests : accueil + navigation paramètres + navigation règles, desktop + mobile)
+- [x] Ecran d'accueil (menu principal : Jouer, Parametres, Regles)
+- [x] Ecran de parametres (difficulte, son, score objectif)
+- [x] Ecran des regles du jeu (8 sections detaillees)
+- [x] Navigation avec Expo Router (Stack : accueil, partie, parametres, regles)
+- [x] Theme et constantes visuelles (`constants/theme.ts` : couleurs, typographie, espacements, bordures)
+- [x] Store Zustand (`stores/app-store.ts` : preferences utilisateur avec difficulte, son, score objectif)
+- [x] Composant reutilisable `BoutonMenu` (primaire/secondaire)
+- [x] Config Metro pour compatibilite web (transformation `import.meta.env`)
+- [x] Tests unitaires (9 tests : accueil, parametres, regles)
+- [x] Tests e2e Playwright (6 tests : accueil + navigation parametres + navigation regles, desktop + mobile)
 
-### Étape 6 : UI — GameBoard (Skia) ✅
+### Etape 6 : UI - GameBoard (Skia)
 
 - [x] Rendu du tapis de jeu (fond vert)
 - [x] Rendu d'une carte (image Skia + ombre)
 - [x] Position des 4 joueurs (sud = humain, nord = partenaire bot, est/ouest = adversaires)
-- [x] Main du joueur en éventail (`MainJoueur.tsx` : cartes en arc avec rotation progressive)
+- [x] Main du joueur en eventail (`MainJoueur.tsx` : cartes en arc avec rotation progressive)
 - [x] Dos des cartes pour les adversaires (`MainAdversaire.tsx` : horizontal pour nord, vertical pour est/ouest)
 - [x] Zone centrale pour le pli (`ZonePli.tsx` : 4 positions avec rotation naturelle)
 - [x] Indicateur d'atout + scores (`IndicateurAtout.tsx` + `TableauScores.tsx`)
 - [x] Constantes de layout proportionnelles (`constants/layout.ts`)
 
-### Étape 7 : Animations et interactions ✅
+### Etape 7 : Animations et interactions
 
-- [x] Animation de distribution réaliste en 3 phases :
-  - Phase 1 : cartes volent du centre vers le tapis face cachée (éventails 3+2 avec position/rotation aléatoire)
-  - Phase 2 : prise en main par joueur avec flip 3D (`backfaceVisibility: 'hidden'`, `rotateY` 0→180°) — face révélée pour sud, dos pour bots
+- [x] Animation de distribution realiste en 3 phases :
+  - Phase 1 : cartes volent du centre vers le tapis face cachee (eventails 3+2 avec position/rotation aleatoire)
+  - Phase 2 : prise en main par joueur avec flip 3D (`backfaceVisibility: 'hidden'`, `rotateY` 0->180deg) - face revelee pour sud, dos pour bots
   - Phase 3 : tri de la main (existant)
-  - Distribution restante gère la carte retournée du preneur (slide vers tapis + 2 cas preneur premier/non)
+  - Distribution restante gere la carte retournee du preneur (slide vers tapis + 2 cas preneur premier/non)
   - Types : `CarteSurTapis`, `CarteEnVol` enrichi (`flipDe`, `flipVers`, `easing`)
-  - Composants : `CoucheAnimation` (rendu tapis + vol), `CarteAnimee` (flip 3D dual-layer), `useAnimations` (3 méthodes), `useControleurJeu` (orchestration)
+  - Composants : `CoucheAnimation` (rendu tapis + vol), `CarteAnimee` (flip 3D dual-layer), `useAnimations` (3 methodes), `useControleurJeu` (orchestration)
 - [x] **Optimisation distribution via Skia Atlas** (branche `feature/distribution-atlas-skia`) :
-  - [x] Sprite sheet 8×5 (32 faces + 1 dos) générée via script `sharp` (`scripts/generer-sprite-sheet.ts`)
+  - [x] Sprite sheet 8x5 (32 faces + 1 dos) generee via script `sharp` (`scripts/generer-sprite-sheet.ts`)
   - [x] Hook `useAtlasCartes` : charge le sprite sheet via `useImage`, expose `rectSource`/`rectDos`
-  - [x] Hook `useAnimationsDistribution` : orchestration `withDelay`/`withTiming` natives Reanimated (UI thread), `SharedValue<number[]>` plat pour données worklet, pool `makeMutable` pour progressions
-  - [x] Composant `DistributionCanvas` : unique `<Canvas>` Skia avec `drawAtlas` + `useRSXformBuffer` (single draw call), trajectoires Bézier quadratiques, ease-out cubic
-  - [x] Intégration dans `CoucheAnimation`/`PlateauJeu`, retrait de `lancerDistribution` de `useAnimations`
+  - [x] Hook `useAnimationsDistribution` : orchestration `withDelay`/`withTiming` natives Reanimated (UI thread), `SharedValue<number[]>` plat pour donnees worklet, pool `makeMutable` pour progressions
+  - [x] Composant `DistributionCanvas` : unique `<Canvas>` Skia avec `drawAtlas` + `useRSXformBuffer` (single draw call), trajectoires Bezier quadratiques, ease-out cubic
+  - [x] Integration dans `CoucheAnimation`/`PlateauJeu`, retrait de `lancerDistribution` de `useAnimations`
 - [x] Tap pour jouer une carte (`MainJoueur` avec `Pressable` + feedback visuel au press)
 - [x] Griser les cartes non jouables (`CarteSkia` prop `grisee` + overlay semi-transparent)
-- [x] Animation de jeu de carte (main → centre) (`useAnimations.lancerAnimationJeuCarte` avec Reanimated)
-- [x] Animation de ramassage du pli (`useAnimations.lancerAnimationRamassagePli` avec délai d'observation)
-- [x] Délai réaliste pour les bots (500-1000ms) (`useDelaiBot` hook avec délai aléatoire)
-- [ ] Sons (optionnel — non implémenté, prévu ultérieurement)
+- [x] Animation de jeu de carte (main -> centre) (`useAnimations.lancerAnimationJeuCarte` avec Reanimated)
+- [x] Animation de ramassage du pli (`useAnimations.lancerAnimationRamassagePli` avec delai d'observation)
+- [x] Delai realiste pour les bots (500-1000ms) (`useDelaiBot` hook avec delai aleatoire)
+- [ ] Sons (optionnel - non implemente, prevu ulterieurement)
 
-### Étape 8 : Game Controller (orchestration) ✅
+### Etape 8 : Game Controller (orchestration)
 
 - [x] Hook `useControleurJeu` qui orchestre XState + UI + bots (`hooks/useControleurJeu.ts`)
-- [x] Gestion du tour du joueur humain (attend le tap pour jouer, UI enchères pour prendre/annoncer/passer)
-- [x] Déclenchement automatique des bots (délai réaliste 500-1000ms via `useDelaiBot`)
-- [x] Synchronisation état du jeu ↔ animations (distribution animée, jeu de carte animé, ramassage de pli animé)
-- [x] Transitions enchères ↔ jeu (panneau d'enchères `PanneauEncheres.tsx`, distribution restante animée)
-- [x] Fin de manche (`DialogueFinManche.tsx` : points manche + scores cumulés) et fin de partie (`DialogueFinPartie.tsx` : victoire/défaite + rejouer)
-- [x] Remplacement complet des données de démonstration dans `PlateauJeu.tsx` par l'état XState réel
+- [x] Gestion du tour du joueur humain (attend le tap pour jouer, UI encheres pour prendre/annoncer/passer)
+- [x] Declenchement automatique des bots (delai realiste 500-1000ms via `useDelaiBot`)
+- [x] Synchronisation etat du jeu <-> animations (distribution animee, jeu de carte anime, ramassage de pli anime)
+- [x] Transitions encheres <-> jeu (panneau d'encheres `PanneauEncheres.tsx`, distribution restante animee)
+- [x] Fin de manche (`DialogueFinManche.tsx` : points manche + scores cumules) et fin de partie (`DialogueFinPartie.tsx` : victoire/defaite + rejouer)
+- [x] Remplacement complet des donnees de demonstration dans `PlateauJeu.tsx` par l'etat XState reel
 
-### Étape 9 : Tests d'intégration et E2E 🔲
+### Etape 9 : Tests d'integration et E2E
 
-- [ ] Tests d'intégration : parties complètes simulées
+- [ ] Tests d'integration : parties completes simulees
 - [ ] Tests de composants avec React Native Testing Library
 - [ ] Tests E2E avec Maestro
-- [ ] Vérifier le responsive (web desktop + mobile)
+- [ ] Verifier le responsive (web desktop + mobile)
 
-### Étape 10 : CI/CD et polish 🔲
+### Etape 10 : CI/CD et polish
 
-- [ ] Pipeline GitHub Actions (CI : lint, typecheck, tests, sécurité)
-- [ ] Configurer EAS Build pour les builds mobiles
+- [ ] Pipeline GitHub Actions complet (CI : lint, typecheck, tests, securite)
+- [x] Workflow GitHub Actions manuel pour build preview Android avec verifications bloquantes (`.github/workflows/build-preview.yml`)
+- [x] Configurer EAS Build pour les builds mobiles
 - [ ] Edge cases (redistribution si personne ne prend, etc.)
-- [ ] Persistence (préférences + statistiques) avec AsyncStorage + Zod
+- [ ] Persistence (preferences + statistiques) avec AsyncStorage + Zod
 - [ ] Knip : nettoyer le code mort
-- [ ] `npm audit` + Snyk : résoudre les vulnérabilités
+- [ ] `npm audit` + Snyk : resoudre les vulnerabilites
 
 ---
 
-## Phase 2 — Multijoueur en ligne 🔲
+## Phase 2 - Multijoueur en ligne
 
-_Non commencée_
+_Non commencee_
 
-## Phase 3 — Belote coinchée (optionnelle) 🔲
+## Phase 3 - Belote coinchee (optionnelle)
 
-_Non commencée_
+_Non commencee_
 
 ## Mise a jour recente
 
-- Refactor du pli anime termine : CoucheAnimation est devenue l'unique rendu visuel des cartes du pli, ZonePli ne garde que le cadre, et la resynchronisation visuelle se fait depuis etatJeu.pliEnCours.
+- Refactor du pli anime termine : CoucheAnimation est devenue l'unique rendu visuel des cartes du pli, ZonePli ne garde que le cadre, et la resynchronisation visuelle se fait depuis `etatJeu.pliEnCours`.
+- Demarrage de la CI/CD : ajout d'un workflow GitHub Actions manuel qui relance lint, typecheck et tests avant un build EAS Android `preview`, puis publie dans le summary GitHub le lien de build et un QR code de recuperation.

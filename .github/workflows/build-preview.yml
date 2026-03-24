@@ -1,0 +1,277 @@
+name: Build preview Android
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: build-preview-android-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-preview-android:
+    name: Verifier puis builder l'APK preview Android
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Verifier la presence de EXPO_TOKEN
+        run: |
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "Le secret GitHub Actions EXPO_TOKEN est requis pour lancer un build EAS." >&2
+            echo "Creez-le depuis Settings > Secrets and variables > Actions." >&2
+            exit 1
+          fi
+
+      - name: Recuperer le depot
+        uses: actions/checkout@v5
+
+      - name: Installer pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Installer les dependances
+        run: pnpm install --frozen-lockfile
+
+      - name: Lancer le lint
+        run: pnpm lint
+
+      - name: Lancer le typecheck et les tests
+        run: pnpm turbo typecheck test
+
+      - name: Installer Expo et EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Lancer le build preview Android
+        id: lancer_build
+        continue-on-error: true
+        working-directory: apps/mobile
+        run: |
+          set -o pipefail
+          eas build --platform android --profile preview --non-interactive --wait --json | tee "$RUNNER_TEMP/eas-build.json"
+          echo "code_sortie=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Extraire les metadonnees du build
+        id: extraire_build
+        if: always()
+        env:
+          BUILD_JSON_PATH: ${{ runner.temp }}/eas-build.json
+        run: |
+          node <<'EOF'
+          const fs = require('node:fs');
+
+          const cheminJson = process.env.BUILD_JSON_PATH;
+          const cheminSortie = process.env.GITHUB_OUTPUT;
+
+          const ecrireSortie = (cle, valeur) => {
+            fs.appendFileSync(cheminSortie, `${cle}<<__FIN__\n${valeur ?? ''}\n__FIN__\n`);
+          };
+
+          const trouverPremierObjetBuild = (valeur) => {
+            if (!valeur || typeof valeur !== 'object') {
+              return null;
+            }
+
+            if (Array.isArray(valeur)) {
+              for (const element of valeur) {
+                const resultat = trouverPremierObjetBuild(element);
+                if (resultat) {
+                  return resultat;
+                }
+              }
+              return null;
+            }
+
+            if ('id' in valeur || 'status' in valeur || 'artifacts' in valeur) {
+              return valeur;
+            }
+
+            for (const sousValeur of Object.values(valeur)) {
+              const resultat = trouverPremierObjetBuild(sousValeur);
+              if (resultat) {
+                return resultat;
+              }
+            }
+
+            return null;
+          };
+
+          const collecterUrls = (valeur, resultat = []) => {
+            if (!valeur) {
+              return resultat;
+            }
+
+            if (typeof valeur === 'string') {
+              if (valeur.startsWith('http://') || valeur.startsWith('https://')) {
+                resultat.push(valeur);
+              }
+              return resultat;
+            }
+
+            if (Array.isArray(valeur)) {
+              for (const element of valeur) {
+                collecterUrls(element, resultat);
+              }
+              return resultat;
+            }
+
+            if (typeof valeur === 'object') {
+              for (const sousValeur of Object.values(valeur)) {
+                collecterUrls(sousValeur, resultat);
+              }
+            }
+
+            return resultat;
+          };
+
+          const trouverPremiereUrl = (urls, predicat) => urls.find(predicat) ?? '';
+
+          if (!fs.existsSync(cheminJson)) {
+            ecrireSortie('parse_ok', 'false');
+            ecrireSortie('message', "Le fichier JSON du build EAS n'a pas ete genere.");
+            process.exit(0);
+          }
+
+          const contenu = fs.readFileSync(cheminJson, 'utf8').trim();
+
+          if (!contenu) {
+            ecrireSortie('parse_ok', 'false');
+            ecrireSortie('message', 'Le JSON du build EAS est vide.');
+            process.exit(0);
+          }
+
+          let donnees;
+
+          try {
+            donnees = JSON.parse(contenu);
+          } catch (erreur) {
+            ecrireSortie('parse_ok', 'false');
+            ecrireSortie('message', `Impossible de parser le JSON du build EAS: ${erreur.message}`);
+            process.exit(0);
+          }
+
+          const build = trouverPremierObjetBuild(donnees);
+          const urls = collecterUrls(donnees);
+
+          if (!build && urls.length === 0) {
+            ecrireSortie('parse_ok', 'false');
+            ecrireSortie('message', "Le JSON du build EAS a ete parse mais aucune metadonnee exploitable n'a ete trouvee.");
+            process.exit(0);
+          }
+
+          const urlDetails =
+            build?.buildDetailsPageUrl ??
+            build?.artifacts?.buildUrl ??
+            trouverPremiereUrl(urls, (url) => url.includes('expo.dev') && url.includes('/builds/'));
+
+          const urlApk =
+            build?.artifacts?.applicationArchiveUrl ??
+            build?.applicationArchiveUrl ??
+            trouverPremiereUrl(urls, (url) => url.toLowerCase().includes('.apk'));
+
+          const cibleQr = urlApk
+            ? 'apk'
+            : urlDetails
+              ? 'details'
+              : 'indisponible';
+
+          ecrireSortie('parse_ok', 'true');
+          ecrireSortie('message', '');
+          ecrireSortie('build_id', String(build?.id ?? ''));
+          ecrireSortie('statut', String(build?.status ?? 'inconnu'));
+          ecrireSortie('url_details', urlDetails);
+          ecrireSortie('url_apk', urlApk);
+          ecrireSortie('url_qr', urlApk || urlDetails);
+          ecrireSortie('cible_qr', cibleQr);
+          EOF
+
+      - name: Uploader les metadonnees du build
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eas-build-preview-android-metadata
+          path: ${{ runner.temp }}/eas-build.json
+          if-no-files-found: ignore
+
+      - name: Ecrire le resume GitHub
+        if: always()
+        env:
+          BUILD_ID: ${{ steps.extraire_build.outputs.build_id }}
+          BUILD_STATUS: ${{ steps.extraire_build.outputs.statut }}
+          BUILD_DETAILS_URL: ${{ steps.extraire_build.outputs.url_details }}
+          BUILD_APK_URL: ${{ steps.extraire_build.outputs.url_apk }}
+          QR_URL: ${{ steps.extraire_build.outputs.url_qr }}
+          QR_TARGET: ${{ steps.extraire_build.outputs.cible_qr }}
+          PARSE_OK: ${{ steps.extraire_build.outputs.parse_ok }}
+          PARSE_MESSAGE: ${{ steps.extraire_build.outputs.message }}
+          BUILD_EXIT_CODE: ${{ steps.lancer_build.outputs.code_sortie }}
+        run: |
+          {
+            echo "## Build preview Android"
+            echo
+            echo "- Branche / ref: \`${GITHUB_REF_NAME}\`"
+            echo "- Statut EAS: \`${BUILD_STATUS:-inconnu}\`"
+            echo "- Code sortie commande: \`${BUILD_EXIT_CODE:-inconnu}\`"
+
+            if [ -n "${BUILD_ID}" ]; then
+              echo "- Identifiant build: \`${BUILD_ID}\`"
+            fi
+
+            if [ "${PARSE_OK}" != "true" ] && [ -n "${PARSE_MESSAGE}" ]; then
+              echo
+              echo "> Extraction JSON impossible: ${PARSE_MESSAGE}"
+            fi
+
+            if [ -n "${BUILD_DETAILS_URL}" ]; then
+              echo "- Page Expo du build: [ouvrir le build](${BUILD_DETAILS_URL})"
+            fi
+
+            if [ -n "${BUILD_APK_URL}" ]; then
+              echo "- URL directe APK: [telecharger l'APK](${BUILD_APK_URL})"
+            elif [ -n "${BUILD_DETAILS_URL}" ]; then
+              echo "- URL directe APK: non detectee, utiliser la page Expo du build"
+            else
+              echo "- URL directe APK: indisponible"
+            fi
+
+            if [ -n "${QR_URL}" ]; then
+              echo
+              if [ "${QR_TARGET}" = "apk" ]; then
+                echo "### QR code de telechargement"
+                echo
+                echo "Scanner ce QR code depuis le telephone pour ouvrir directement l'APK."
+              else
+                echo "### QR code d'acces au build"
+                echo
+                echo "Le QR code pointe vers la page Expo du build, car l'URL directe de l'APK n'a pas ete exposee."
+              fi
+              echo
+              if npx --yes qrcode-terminal "${QR_URL}" > "$RUNNER_TEMP/qr-code.txt" 2>/dev/null; then
+                echo '```text'
+                cat "$RUNNER_TEMP/qr-code.txt"
+                echo '```'
+              else
+                echo "> Generation du QR code impossible dans ce run. Utiliser l'URL ci-dessus."
+              fi
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Echouer si le build EAS a echoue
+        if: ${{ steps.lancer_build.outputs.code_sortie != '0' }}
+        run: |
+          echo "Le build EAS preview Android a echoue." >&2
+          exit 1
