@@ -4,6 +4,7 @@ import { Animated } from "react-native";
 
 import {
   calculerCiblesTransitionDernierPli,
+  calculerDureeTransitionMarqueurGagnantMs,
   calculerEtatInitialTransitionDernierPli,
   calculerPositionMarqueurGagnant,
   calculerTrajectoireMarqueurGagnant,
@@ -205,6 +206,11 @@ describe("DernierPli", () => {
     expect(screen.queryByTestId("entrant-anneau-gagnant-sud")).toBeNull();
   });
 
+  it("fait arriver le halo gagnant plus vite que la transition globale", () => {
+    expect(calculerDureeTransitionMarqueurGagnantMs(450)).toBe(225);
+    expect(calculerDureeTransitionMarqueurGagnantMs(360)).toBe(180);
+  });
+
   it("ne relance pas la transition si le parent rerend avec la meme cle", () => {
     const espionTiming = jest.spyOn(Animated, "timing");
     const { rerender } = render(
@@ -217,7 +223,7 @@ describe("DernierPli", () => {
       />,
     );
 
-    expect(espionTiming).toHaveBeenCalledTimes(1);
+    expect(espionTiming).toHaveBeenCalledTimes(2);
 
     rerender(
       <DernierPli
@@ -235,7 +241,7 @@ describe("DernierPli", () => {
       />,
     );
 
-    expect(espionTiming).toHaveBeenCalledTimes(1);
+    expect(espionTiming).toHaveBeenCalledTimes(2);
     espionTiming.mockRestore();
   });
 });

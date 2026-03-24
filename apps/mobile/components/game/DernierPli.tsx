@@ -20,6 +20,7 @@ const LARGEUR_CONTENEUR = estWeb ? 188 : 176;
 const HAUTEUR_CONTENU = TAILLE_ZONE + (estWeb ? 24 : 22);
 const DECALAGE_ENTRANT = 0;
 const DECALAGE_SORTANT = 0;
+const PART_TRANSITION_MARQUEUR_GAGNANT = 0.5;
 
 interface EtatInitialTransitionDernierPli {
   opaciteEntrante: number;
@@ -141,6 +142,19 @@ export function calculerCiblesTransitionDernierPli(): CiblesTransitionDernierPli
     opaciteSortante: 0,
     translationSortante: DECALAGE_SORTANT,
   };
+}
+
+export function calculerDureeTransitionMarqueurGagnantMs(
+  dureeTransitionDernierPliMs: number,
+): number {
+  if (dureeTransitionDernierPliMs <= 0) {
+    return 0;
+  }
+
+  return Math.max(
+    1,
+    Math.round(dureeTransitionDernierPliMs * PART_TRANSITION_MARQUEUR_GAGNANT),
+  );
 }
 
 export function calculerTrajectoireMarqueurGagnant({
@@ -278,6 +292,9 @@ export function DernierPli({
   const progressionTransition = useRef(
     new Animated.Value(transitionDisponible ? 0 : 1),
   ).current;
+  const progressionMarqueurGagnant = useRef(
+    new Animated.Value(transitionDisponible ? 0 : 1),
+  ).current;
   const cleMarqueurTransitionRef = useRef<number | null>(null);
   const parametresTransitionMarqueurGagnantRef =
     useRef<ParametresTransitionMarqueurGagnant | null>(null);
@@ -286,6 +303,7 @@ export function DernierPli({
     transitionDernierPliActive,
   });
   const animationRef = useRef<Animated.CompositeAnimation | null>(null);
+  const animationMarqueurRef = useRef<Animated.CompositeAnimation | null>(null);
 
   if (transitionDisponible) {
     if (cleMarqueurTransitionRef.current !== cleTransitionDernierPli) {
@@ -333,7 +351,7 @@ export function DernierPli({
     ],
   });
   const translationMarqueurGagnantX = parametresTransitionMarqueurGagnant
-    ? progressionTransition.interpolate({
+    ? progressionMarqueurGagnant.interpolate({
         inputRange: [0, 1],
         outputRange: [
           parametresTransitionMarqueurGagnant.departLeft,
@@ -342,7 +360,7 @@ export function DernierPli({
       })
     : null;
   const translationMarqueurGagnantY = parametresTransitionMarqueurGagnant
-    ? progressionTransition.interpolate({
+    ? progressionMarqueurGagnant.interpolate({
         inputRange: [0, 1],
         outputRange: [
           parametresTransitionMarqueurGagnant.departTop,
@@ -354,12 +372,15 @@ export function DernierPli({
   useEffect(() => {
     return () => {
       animationRef.current?.stop();
+      animationMarqueurRef.current?.stop();
     };
   }, []);
 
   useLayoutEffect(() => {
     animationRef.current?.stop();
+    animationMarqueurRef.current?.stop();
     progressionTransition.setValue(transitionDisponible ? 0 : 1);
+    progressionMarqueurGagnant.setValue(transitionDisponible ? 0 : 1);
 
     if (!transitionDisponible) {
       return;
@@ -374,9 +395,20 @@ export function DernierPli({
 
     animationRef.current = animation;
     animation.start();
+
+    const animationMarqueur = Animated.timing(progressionMarqueurGagnant, {
+      toValue: 1,
+      duration: calculerDureeTransitionMarqueurGagnantMs(dureeTransitionDernierPliMs),
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: !estWeb,
+    });
+
+    animationMarqueurRef.current = animationMarqueur;
+    animationMarqueur.start();
   }, [
     cleTransitionDernierPli,
     dureeTransitionDernierPliMs,
+    progressionMarqueurGagnant,
     progressionTransition,
     transitionDisponible,
   ]);
