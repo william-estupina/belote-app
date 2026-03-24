@@ -1,7 +1,10 @@
 import type { PliComplete } from "@belote/shared-types";
 import { act, render, screen } from "@testing-library/react-native";
 
-import { DernierPli } from "../components/game/DernierPli";
+import {
+  calculerEtatInitialTransitionDernierPli,
+  DernierPli,
+} from "../components/game/DernierPli";
 
 const DERNIER_PLI: PliComplete = {
   cartes: [
@@ -124,5 +127,33 @@ describe("DernierPli", () => {
 
     expect(screen.getByTestId("texte-dernier-pli-nord").props.children).toBe("A \u2660");
     expect(screen.getByTestId("entrant-texte-dernier-pli-nord")).toBeTruthy();
+  });
+
+  it("prepare une couche entrante deja masquee au debut d'une transition", () => {
+    expect(
+      calculerEtatInitialTransitionDernierPli({
+        precedentDernierPli: DERNIER_PLI,
+        transitionDernierPliActive: true,
+      }),
+    ).toEqual({
+      opaciteEntrante: 0,
+      translationEntrante: 4,
+      opaciteSortante: 1,
+      translationSortante: 0,
+    });
+  });
+
+  it("laisse le rendu stable hors transition", () => {
+    expect(
+      calculerEtatInitialTransitionDernierPli({
+        precedentDernierPli: null,
+        transitionDernierPliActive: false,
+      }),
+    ).toEqual({
+      opaciteEntrante: 1,
+      translationEntrante: 0,
+      opaciteSortante: 1,
+      translationSortante: 0,
+    });
   });
 });

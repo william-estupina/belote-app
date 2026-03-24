@@ -1,5 +1,5 @@
 import type { Couleur, PliComplete, PositionJoueur, Rang } from "@belote/shared-types";
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { Animated, Easing, Platform, StyleSheet, Text, View } from "react-native";
 
 import { COULEURS } from "../../constants/theme";
@@ -20,6 +20,13 @@ const LARGEUR_CONTENEUR = estWeb ? 188 : 176;
 const HAUTEUR_CONTENU = TAILLE_ZONE + (estWeb ? 24 : 22);
 const DECALAGE_ENTRANT = 4;
 const DECALAGE_SORTANT = -2;
+
+interface EtatInitialTransitionDernierPli {
+  opaciteEntrante: number;
+  translationEntrante: number;
+  opaciteSortante: number;
+  translationSortante: number;
+}
 
 const LIBELLES_RANG: Record<Rang, string> = {
   "7": "7",
@@ -71,6 +78,30 @@ const POSITIONS = positionsCroix();
 
 function formaterCarte(rang: Rang, couleur: Couleur): string {
   return `${LIBELLES_RANG[rang]} ${SYMBOLES_COULEUR[couleur]}`;
+}
+
+export function calculerEtatInitialTransitionDernierPli({
+  precedentDernierPli,
+  transitionDernierPliActive,
+}: {
+  precedentDernierPli?: PliComplete | null;
+  transitionDernierPliActive?: boolean;
+}): EtatInitialTransitionDernierPli {
+  if (!transitionDernierPliActive || !precedentDernierPli) {
+    return {
+      opaciteEntrante: 1,
+      translationEntrante: 0,
+      opaciteSortante: 1,
+      translationSortante: 0,
+    };
+  }
+
+  return {
+    opaciteEntrante: 0,
+    translationEntrante: DECALAGE_ENTRANT,
+    opaciteSortante: 1,
+    translationSortante: 0,
+  };
 }
 
 interface PropsContenuDernierPli {
@@ -139,10 +170,22 @@ export function DernierPli({
   dureeTransitionDernierPliMs = 0,
   cleTransitionDernierPli = 0,
 }: PropsDernierPli) {
-  const opaciteEntrante = useRef(new Animated.Value(1)).current;
-  const translationEntrante = useRef(new Animated.Value(0)).current;
-  const opaciteSortante = useRef(new Animated.Value(1)).current;
-  const translationSortante = useRef(new Animated.Value(0)).current;
+  const etatInitialTransition = calculerEtatInitialTransitionDernierPli({
+    precedentDernierPli,
+    transitionDernierPliActive,
+  });
+  const opaciteEntrante = useRef(
+    new Animated.Value(etatInitialTransition.opaciteEntrante),
+  ).current;
+  const translationEntrante = useRef(
+    new Animated.Value(etatInitialTransition.translationEntrante),
+  ).current;
+  const opaciteSortante = useRef(
+    new Animated.Value(etatInitialTransition.opaciteSortante),
+  ).current;
+  const translationSortante = useRef(
+    new Animated.Value(etatInitialTransition.translationSortante),
+  ).current;
   const animationRef = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
@@ -151,21 +194,21 @@ export function DernierPli({
     };
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     animationRef.current?.stop();
 
+    const etatInitial = calculerEtatInitialTransitionDernierPli({
+      precedentDernierPli,
+      transitionDernierPliActive,
+    });
+    opaciteEntrante.setValue(etatInitial.opaciteEntrante);
+    translationEntrante.setValue(etatInitial.translationEntrante);
+    opaciteSortante.setValue(etatInitial.opaciteSortante);
+    translationSortante.setValue(etatInitial.translationSortante);
+
     if (!transitionDernierPliActive || !precedentDernierPli) {
-      opaciteEntrante.setValue(1);
-      translationEntrante.setValue(0);
-      opaciteSortante.setValue(1);
-      translationSortante.setValue(0);
       return;
     }
-
-    opaciteEntrante.setValue(0);
-    translationEntrante.setValue(DECALAGE_ENTRANT);
-    opaciteSortante.setValue(1);
-    translationSortante.setValue(0);
 
     const easing = Easing.inOut(Easing.quad);
     const animation = Animated.parallel([
