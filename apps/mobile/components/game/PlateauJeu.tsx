@@ -63,6 +63,7 @@ export default function PlateauJeu() {
     etatJeu.phaseUI,
     distributionEnCours ?? false,
   );
+  const afficherCarteRetournee = etatJeu.phaseUI === "encheres";
 
   // Dernière action d'enchère par joueur (pour les badges sur les avatars)
   const derniereActionParJoueur = useMemo(() => {
@@ -188,8 +189,10 @@ export default function PlateauJeu() {
             cartes={etatJeu.mainJoueur}
             largeurEcran={largeur}
             hauteurEcran={hauteur}
-            animerNouvellesCartes={!distributionEnCours}
-            modeDisposition={distributionEnCours ? "reception" : "eventail"}
+            animerNouvellesCartes={!distributionEnCours && !etatJeu.triMainDiffere}
+            modeDisposition={
+              distributionEnCours || etatJeu.triMainDiffere ? "reception" : "eventail"
+            }
             nbCartesDisposition={
               distributionEnCours
                 ? Math.max(etatJeu.mainJoueur.length, etatJeu.nbCartesAnticipeesJoueur)
@@ -206,7 +209,7 @@ export default function PlateauJeu() {
           />
 
           {/* Carte retournée visible pendant les enchères */}
-          {afficherUIEncheres && etatJeu.carteRetournee && (
+          {afficherCarteRetournee && etatJeu.carteRetournee && (
             <ZoneCarteRetournee
               carte={etatJeu.carteRetournee}
               largeurEcran={largeur}
@@ -241,6 +244,7 @@ export default function PlateauJeu() {
 
           {/* Panneau d'enchères (quand c'est au joueur humain de décider) */}
           {afficherUIEncheres &&
+            !etatJeu.triMainDiffere &&
             etatJeu.estTourHumain &&
             etatJeu.phaseEncheres !== null && (
               <PanneauEncheres

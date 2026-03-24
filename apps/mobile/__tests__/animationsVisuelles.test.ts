@@ -27,7 +27,7 @@ describe("animations visuelles", () => {
     expect(FACTEUR_RALENTISSEMENT_ANIMATIONS_MAJEURES).toBe(1.2);
     expect(ralentirDureeAnimationMajeure(200)).toBe(240);
     expect(ralentirTensionAnimationMajeure(120)).toBe(100);
-    expect(DUREE_PULSE_JOUEUR_ACTIF).toBe(350);
+    expect(DUREE_PULSE_JOUEUR_ACTIF).toBe(500);
     expect(DUREE_FONDU_ENTREE_MAIN).toBe(50);
     expect(ANIMATIONS_CARTE_RETOURNEE).toEqual({
       delaiFlip: 120,

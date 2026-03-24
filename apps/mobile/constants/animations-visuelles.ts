@@ -17,7 +17,7 @@ export function ralentirTensionAnimationMajeure(tension: number): number {
   return Math.round(tension / FACTEUR_RALENTISSEMENT_ANIMATIONS_MAJEURES);
 }
 
-export const DUREE_PULSE_JOUEUR_ACTIF = accelererDureeAnimation(700);
+export const DUREE_PULSE_JOUEUR_ACTIF = accelererDureeAnimation(1000);
 export const DUREE_FONDU_ENTREE_MAIN = accelererDureeAnimation(100);
 
 export const ANIMATIONS_CARTE_RETOURNEE = {
