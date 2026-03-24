@@ -83,7 +83,15 @@ describe("DernierPli", () => {
   it("conserve temporairement l'ancien dernier pli pendant la transition vers le nouveau", () => {
     const { rerender } = render(<DernierPli dernierPli={DERNIER_PLI} />);
 
-    rerender(<DernierPli dernierPli={NOUVEAU_DERNIER_PLI} />);
+    rerender(
+      <DernierPli
+        dernierPli={NOUVEAU_DERNIER_PLI}
+        precedentDernierPli={DERNIER_PLI}
+        transitionDernierPliActive
+        dureeTransitionDernierPliMs={450}
+        cleTransitionDernierPli={1}
+      />,
+    );
 
     expect(screen.getByText("24 pts")).toBeTruthy();
     expect(screen.getByText("18 pts")).toBeTruthy();
@@ -93,6 +101,8 @@ describe("DernierPli", () => {
     act(() => {
       jest.runAllTimers();
     });
+
+    rerender(<DernierPli dernierPli={NOUVEAU_DERNIER_PLI} />);
 
     expect(screen.queryByText("24 pts")).toBeNull();
     expect(screen.getByText("18 pts")).toBeTruthy();

@@ -1,5 +1,9 @@
 import type { Carte } from "@belote/shared-types";
 
+import {
+  demarrerTransitionDernierPli,
+  terminerTransitionDernierPli,
+} from "../hooks/etatDernierPliVisuel";
 import { appliquerEtatVerrouillePendantFinPli } from "../hooks/etatFinPliVisuel";
 import { ajouterCarteAuPliVisuel } from "../hooks/etatPliVisuel";
 import { construireCartesGeleesDepuisPli } from "../hooks/useAnimations";
@@ -35,6 +39,11 @@ function creerEtat(): EtatJeu {
     cartesRestantesPaquet: 0,
     indexDonneur: 1,
     nbCartesAnticipeesJoueur: 0,
+    dernierPliVisible: null,
+    precedentDernierPliVisible: null,
+    transitionDernierPliActive: false,
+    dureeTransitionDernierPliMs: 0,
+    cleTransitionDernierPli: 0,
   };
 }
 
@@ -143,5 +152,63 @@ describe("appliquerEtatVerrouillePendantFinPli", () => {
     expect(resultat.pliEnCours).toEqual(pliVisible);
     expect(resultat.plisEquipe1).toBe(2);
     expect(resultat.plisEquipe2).toBe(1);
+  });
+});
+
+describe("transition du dernier pli visible", () => {
+  const PREMIER_PLI = {
+    cartes: [{ joueur: "est" as const, carte: CARTE_TEST }],
+    gagnant: "est" as const,
+    points: 11,
+  };
+
+  const SECOND_PLI = {
+    cartes: [
+      { joueur: "sud" as const, carte: { couleur: "coeur", rang: "10" } as Carte },
+    ],
+    gagnant: "sud" as const,
+    points: 20,
+  };
+
+  it("affiche simplement le premier dernier pli au debut du ramassage sans transition", () => {
+    const resultat = demarrerTransitionDernierPli(creerEtat(), PREMIER_PLI, 450);
+
+    expect(resultat.dernierPliVisible).toEqual(PREMIER_PLI);
+    expect(resultat.precedentDernierPliVisible).toBeNull();
+    expect(resultat.transitionDernierPliActive).toBe(false);
+    expect(resultat.cleTransitionDernierPli).toBe(0);
+  });
+
+  it("bascule vers le nouveau pli exactement au debut du ramassage", () => {
+    const precedent = {
+      ...creerEtat(),
+      dernierPliVisible: PREMIER_PLI,
+    };
+
+    const resultat = demarrerTransitionDernierPli(precedent, SECOND_PLI, 450);
+
+    expect(resultat.dernierPliVisible).toEqual(SECOND_PLI);
+    expect(resultat.precedentDernierPliVisible).toEqual(PREMIER_PLI);
+    expect(resultat.transitionDernierPliActive).toBe(true);
+    expect(resultat.dureeTransitionDernierPliMs).toBe(450);
+    expect(resultat.cleTransitionDernierPli).toBe(1);
+  });
+
+  it("nettoie la couche sortante a la fin du ramassage", () => {
+    const enTransition = {
+      ...creerEtat(),
+      dernierPliVisible: SECOND_PLI,
+      precedentDernierPliVisible: PREMIER_PLI,
+      transitionDernierPliActive: true,
+      dureeTransitionDernierPliMs: 450,
+      cleTransitionDernierPli: 1,
+    };
+
+    const resultat = terminerTransitionDernierPli(enTransition);
+
+    expect(resultat.dernierPliVisible).toEqual(SECOND_PLI);
+    expect(resultat.precedentDernierPliVisible).toBeNull();
+    expect(resultat.transitionDernierPliActive).toBe(false);
+    expect(resultat.cleTransitionDernierPli).toBe(1);
   });
 });

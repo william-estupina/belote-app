@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Garder le widget du dernier pli visible pendant `finPli` et animer doucement le remplacement de l'ancien apercu par le nouveau.
+**Goal:** Garder le widget du dernier pli visible pendant `finPli` et synchroniser sa transition douce avec le debut et la fin reels du ramassage.
 
-**Architecture:** `PlateauJeu` elargit seulement sa condition d'affichage. `DernierPli` porte un petit etat visuel local pour conserver la couche sortante pendant que la couche entrante effectue un fondu avec glissement leger.
+**Architecture:** `useControleurJeu` garde un etat UI dedie au dernier pli visible et declenche sa transition exactement au `onDebutRamassage`, puis la termine au `onTerminee`. `DernierPli` devient un composant anime pilote par props, avec un mouvement tres discret et une duree calquee sur le ramassage.
 
 **Tech Stack:** React Native, TypeScript strict, Jest, Animated API React Native
 
@@ -15,34 +15,39 @@
 ## Structure des fichiers
 
 - Modify: `apps/mobile/components/game/PlateauJeu.tsx`
-  Role: conserver l'affichage du widget pendant `finPli`.
+  Role: afficher le widget avec les nouvelles props de transition.
 - Modify: `apps/mobile/components/game/DernierPli.tsx`
-  Role: memoriser les couches de transition et jouer l'animation douce.
+  Role: jouer l'animation douce pilotee par le controleur.
+- Modify: `apps/mobile/hooks/useControleurJeu.ts`
+  Role: declencher et terminer la transition du dernier pli sur le vrai cycle de ramassage.
 - Modify: `apps/mobile/__tests__/dernier-pli.test.tsx`
-  Role: couvrir la retention temporaire de l'ancien pli et la fin de transition.
+  Role: couvrir le rendu anime pilote par props.
+- Modify: `apps/mobile/__tests__/useControleurJeuPli.test.ts`
+  Role: couvrir le timing de debut et fin de transition.
 
 ---
 
-### Task 1: Ecrire le test rouge pour la transition douce
+### Task 1: Ecrire les tests rouges pour la transition synchronisee
 
 **Files:**
 
 - Modify: `apps/mobile/__tests__/dernier-pli.test.tsx`
 
-- [ ] **Step 1: Ajouter un test de transition**
+- [ ] **Step 1: Ajouter un test de composant pilote par transition**
 
 Ajouter un test qui:
 
-- rend `DernierPli` avec un premier pli
-- rerender avec un second pli
-- verifie la presence temporaire d'une couche sortante et d'une couche entrante
+- rend `DernierPli` avec un pli visible et un pli precedent
+- verifie qu'aucune animation n'est demarree tant que `transitionDernierPliActive` est faux
+- active ensuite la transition et verifie la coexistence des deux couches
 
-- [ ] **Step 2: Verifier la fin de transition**
+- [ ] **Step 2: Ajouter un test de logique du controleur**
 
-Dans le meme test:
+Ajouter un test pur sur le helper de transition du dernier pli pour verifier:
 
-- avancer les timers
-- verifier que seule la nouvelle couche reste
+- pas de bascule avant demarrage du ramassage
+- bascule au demarrage
+- nettoyage a la fin
 
 - [ ] **Step 3: Lancer le test et verifier l'echec**
 
@@ -52,44 +57,57 @@ Run:
 cmd /c pnpm --filter @belote/mobile test -- --runTestsByPath __tests__/dernier-pli.test.tsx
 ```
 
-Expected:
-
-- echec car la transition n'existe pas encore
+Expected: echec car le timing n'est pas encore pilote par le ramassage
 
 ---
 
-### Task 2: Implementer la retention et l'animation douce
+### Task 2: Implementer le pilotage depuis le ramassage et l'animation douce
 
 **Files:**
 
 - Modify: `apps/mobile/components/game/DernierPli.tsx`
 - Modify: `apps/mobile/components/game/PlateauJeu.tsx`
+- Modify: `apps/mobile/hooks/useControleurJeu.ts`
+- Modify: `apps/mobile/hooks/planRamassagePli.ts`
 
-- [ ] **Step 1: Garder le widget visible pendant `finPli`**
+- [ ] **Step 1: Exposer la duree totale du ramassage**
 
-Etendre la condition d'affichage de `PlateauJeu`.
+Ajouter un helper simple pour obtenir la duree totale de transition depuis le plan de ramassage.
 
-- [ ] **Step 2: Ajouter la signature du pli et l'etat de transition**
+- [ ] **Step 2: Ajouter l'etat UI du dernier pli visible dans `useControleurJeu`**
 
-Dans `DernierPli.tsx`, conserver:
+Conserver:
 
-- le pli affiche
+- le pli actuellement visible
 - le pli sortant temporaire
-- les valeurs animees d'entree/sortie/lueur
+- le drapeau `transitionDernierPliActive`
+- la duree de transition
+- une cle de relance d'animation
 
-- [ ] **Step 3: Jouer la transition lors d'un nouveau pli**
+- [ ] **Step 3: Demarrer la transition au `onDebutRamassage`**
 
-Au changement de signature:
+Quand le ramassage commence:
 
-- figer le pli sortant
-- afficher le nouveau pli
-- lancer le fondu/glissement doux
+- si aucun dernier pli visible n'existe, afficher simplement le premier
+- sinon, garder l'ancien en sortant
+- afficher le nouveau en entrant
+- marquer la transition active avec la duree totale du ramassage
 
-- [ ] **Step 4: Nettoyer la couche sortante en fin d'animation**
+- [ ] **Step 4: Terminer la transition au `onTerminee`**
 
-Une fois l'animation terminee:
+Quand le ramassage se termine:
 
-- supprimer le pli sortant
+- desactiver la transition
+- retirer la couche sortante
+- garder le nouveau pli comme reference visible
+
+- [ ] **Step 5: Adapter `DernierPli` pour n'animer que quand on lui demande**
+
+Le composant doit seulement jouer:
+
+- un micro glissement vertical
+- un fondu doux
+- une variation d'opacite tres legere sur l'ancien
 
 ---
 

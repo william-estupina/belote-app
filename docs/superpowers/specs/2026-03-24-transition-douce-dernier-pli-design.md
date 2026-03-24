@@ -18,14 +18,17 @@ Le besoin valide est:
 
 ## Decision retenue
 
-La correction reste entierement cote UI mobile.
+La correction reste cote UI mobile, mais le timing de transition n'est plus pilote uniquement par `DernierPli`.
 
-- `PlateauJeu` continue d'utiliser l'historique des plis, mais affiche `DernierPli` aussi pendant `finPli`
-- `DernierPli` gere localement une transition entre l'ancien pli et le nouveau
-- la transition retenue est une version douce:
-  - ancien pli legerement voile et tres legerement translate vers le haut
-  - nouveau pli qui apparait avec un fondu et un petit glissement vertical
-  - accent lumineux bref sur la couche entrante
+- `PlateauJeu` affiche toujours le widget pendant `jeu` et `finPli`
+- `useControleurJeu` garde un `dernierPliVisible` dedie a l'UI
+- le widget ne bascule vers le nouveau pli qu'au moment exact ou le ramassage commence
+- la transition se termine au meme moment que la fin du ramassage
+- la version retenue est `un peu vivante`:
+  - ancien pli stable jusqu'au demarrage du ramassage
+  - micro glissement vertical du nouveau pli
+  - fondu doux entre les deux couches
+  - aucune rotation 3D ni effet demonstratif
 
 ## Alternatives ecartees
 
@@ -61,48 +64,75 @@ Avantages:
 - garde la logique de transition pres du composant concerne
 - correction minimale, sure et testable
 
-Recommendation retenue: Option C.
+### Option D - piloter la transition depuis le ramassage reel
+
+Avantages:
+
+- synchro exacte entre depart des cartes et depart du widget
+- synchro exacte entre fin du ramassage et fin de transition
+- permet de garder l'ancien pli strictement immobile tant que le ramassage n'a pas commence
+
+Inconvenients:
+
+- petit etat UI supplementaire dans `useControleurJeu`
+
+Recommendation retenue: Option D.
 
 ## Architecture cible
 
 ### `PlateauJeu.tsx`
 
 - afficher `DernierPli` en phase `jeu` et `finPli`
-- continuer a fournir le dernier pli metier via `historiquePlis[historiquePlis.length - 1]`
+- fournir au composant:
+  - `dernierPliVisible`
+  - `precedentDernierPliVisible`
+  - `transitionDernierPliActive`
+  - `dureeTransitionDernierPliMs`
+  - `cleTransitionDernierPli`
+
+### `useControleurJeu.ts`
+
+Nouveaux champs UI:
+
+- `dernierPliVisible`
+- `precedentDernierPliVisible`
+- `transitionDernierPliActive`
+- `dureeTransitionDernierPliMs`
+- `cleTransitionDernierPli`
+
+Regle cle:
+
+- quand `historiquePlis` recoit un nouveau pli, on ne remplace pas encore le widget
+- au `onDebutRamassage`, on fait seulement alors basculer le widget vers le nouveau pli
+- au `onTerminee` du ramassage, on termine la transition et on retire la couche sortante
 
 ### `DernierPli.tsx`
 
-- memoriser le pli actuellement affiche
-- detecter un changement de signature du pli recu en props
-- pendant la transition:
-  - conserver une couche sortante
-  - rendre une couche entrante au-dessus
-  - lancer une animation douce
-- quand l'animation se termine:
-  - supprimer la couche sortante
-  - garder uniquement le nouveau pli
+- ne deduit plus seul le bon moment de transition
+- anime seulement l'etat qu'on lui donne
+- joue une transition courte et legere sur toute la duree du ramassage
 
-La verite metier reste la prop `dernierPli`. Le composant ne cree qu'un cache visuel temporaire pour la transition.
+Le composant devient un rendu anime pilote par le controleur.
 
 ## Comportement de transition
 
 Sequence cible:
 
 1. l'ancien dernier pli reste visible pendant `finPli`
-2. quand un nouveau pli apparait dans `historiquePlis`, `DernierPli` garde temporairement l'ancien en couche sortante
-3. le nouveau pli entre avec:
+2. l'historique peut deja contenir le nouveau pli sans que le widget ne bouge encore
+3. au debut reel du ramassage, `useControleurJeu` active la transition
+4. le nouveau pli entre avec:
    - opacite 0 -> 1
-   - translation verticale legere -> 0
-   - echelle 0.97 -> 1
-4. l'ancien pli sort avec:
-   - opacite 1 -> 0.4
-   - translation verticale 0 -> -6
-   - echelle 1 -> 0.97
-5. une lueur breve accompagne l'arrivee
+   - translation verticale tres legere (environ 4px) -> 0
+   - echelle 0.99 -> 1
+5. l'ancien pli sort avec:
+   - opacite 1 -> 0.72
+   - translation verticale 0 -> -2
+6. a la fin du ramassage, la couche sortante est retiree
 
 Contraintes:
 
-- animation assez courte pour ne pas ralentir le rythme du jeu
+- animation douce sur toute la duree reelle du ramassage
 - pas de rotation 3D, pas d'effet tape-a-l'oeil
 - lisibilite des cartes et du gagnant preservee pendant tout le passage
 
@@ -113,13 +143,16 @@ Contraintes:
 Verifier que:
 
 - le composant affiche le contenu compact habituel
-- quand la prop `dernierPli` change, une couche sortante est conservee temporairement
-- la couche entrante apparait en meme temps
-- a la fin de l'animation, seule la nouvelle couche reste
+- si le nouveau pli existe mais que `transitionDernierPliActive` est faux, l'ancien peut rester visible
+- quand `transitionDernierPliActive` devient vrai, une couche sortante et une couche entrante coexistent
+- a la fin de la transition pilotee, seule la nouvelle couche reste
 
-### `apps/mobile/__tests__/PlateauJeu.test` ou test de condition indirecte
+### `apps/mobile/__tests__/useControleurJeuPli.test.ts`
 
-Pour cette correction minimale, il suffit de verifier que la condition d'affichage accepte `finPli`, soit par test cible si un test existe deja, soit via un helper simple si l'on extrait la condition.
+Verifier que:
+
+- le demarrage de la transition du dernier pli n'arrive qu'au debut du ramassage
+- la transition se termine a la fin du ramassage
 
 ## Verification finale
 

@@ -15,8 +15,13 @@ import type { Actor } from "xstate";
 import { createActor } from "xstate";
 
 import { ANIMATIONS } from "../constants/layout";
+import {
+  demarrerTransitionDernierPli,
+  terminerTransitionDernierPli,
+} from "./etatDernierPliVisuel";
 import { appliquerEtatVerrouillePendantFinPli } from "./etatFinPliVisuel";
 import { ajouterCarteAuPliVisuel } from "./etatPliVisuel";
+import { calculerDureeTotaleRamassagePli } from "./planRamassagePli";
 import { construireCartesGeleesDepuisPli, useAnimations } from "./useAnimations";
 import { useAnimationsDistribution } from "./useAnimationsDistribution";
 import { useAtlasCartes } from "./useAtlasCartes";
@@ -82,6 +87,16 @@ export interface EtatJeu {
   indexDonneur: number;
   /** Nombre de cartes vise pendant la distribution pour la main du joueur */
   nbCartesAnticipeesJoueur: number;
+  /** Dernier pli actuellement visible dans le widget */
+  dernierPliVisible: ContextePartie["historiquePlis"][number] | null;
+  /** Ancien pli conserve temporairement pendant la transition */
+  precedentDernierPliVisible: ContextePartie["historiquePlis"][number] | null;
+  /** Transition du widget dernier pli en cours */
+  transitionDernierPliActive: boolean;
+  /** Duree de transition du widget dernier pli */
+  dureeTransitionDernierPliMs: number;
+  /** Clef pour relancer l'animation du widget dernier pli */
+  cleTransitionDernierPli: number;
 }
 
 interface OptionsControleur {
@@ -235,6 +250,11 @@ export function useControleurJeu({
     cartesRestantesPaquet: 0,
     indexDonneur: 1,
     nbCartesAnticipeesJoueur: 0,
+    dernierPliVisible: null,
+    precedentDernierPliVisible: null,
+    transitionDernierPliActive: false,
+    dureeTransitionDernierPliMs: 0,
+    cleTransitionDernierPli: 0,
   });
 
   // Timer pour effacer la bulle belote/rebelote
@@ -579,6 +599,11 @@ export function useControleurJeu({
         pliEnCours: [],
         cartesRestantesPaquet: totalCartesAttendues,
         nbCartesAnticipeesJoueur: 0,
+        dernierPliVisible: null,
+        precedentDernierPliVisible: null,
+        transitionDernierPliActive: false,
+        dureeTransitionDernierPliMs: 0,
+        cleTransitionDernierPli: 0,
       }));
 
       let cartesRecues = 0;
@@ -640,6 +665,7 @@ export function useControleurJeu({
         animationPliEnCours.current = false;
         return;
       }
+      const dureeTransitionDernierPliMs = calculerDureeTotaleRamassagePli();
 
       animations.lancerAnimationRamassagePli(
         dernierPli.cartes,
@@ -656,10 +682,12 @@ export function useControleurJeu({
           const ctx = snap.context;
 
           // Mettre à jour l'état complet (pliEnCours sera vide via le contexte machine)
-          setEtatJeu((prev) => ({
-            ...prev,
-            ...extraireEtatUI(ctx, etat),
-          }));
+          setEtatJeu((prev) =>
+            terminerTransitionDernierPli({
+              ...prev,
+              ...extraireEtatUI(ctx, etat),
+            }),
+          );
 
           // Si la manche continue, déclencher le prochain tour
           if (etat === "jeu") {
@@ -670,7 +698,11 @@ export function useControleurJeu({
         () => {
           if (estDemonte.current) return;
           setEtatJeu((prev) => ({
-            ...prev,
+            ...demarrerTransitionDernierPli(
+              prev,
+              dernierPli,
+              dureeTransitionDernierPliMs,
+            ),
             pliEnCours: [],
           }));
         },
@@ -961,6 +993,11 @@ export function useControleurJeu({
       cartesRestantesPaquet: 0,
       indexDonneur: 1,
       nbCartesAnticipeesJoueur: 0,
+      dernierPliVisible: null,
+      precedentDernierPliVisible: null,
+      transitionDernierPliActive: false,
+      dureeTransitionDernierPliMs: 0,
+      cleTransitionDernierPli: 0,
     }));
   }, []);
 

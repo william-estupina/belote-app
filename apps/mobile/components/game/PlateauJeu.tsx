@@ -173,9 +173,13 @@ export default function PlateauJeu() {
           )}
 
           {/* Dernier pli (haut à droite) */}
-          {doitAfficherDernierPli(etatJeu.phaseUI, etatJeu.historiquePlis.length) && (
+          {doitAfficherDernierPli(etatJeu.phaseUI, etatJeu.dernierPliVisible ? 1 : 0) && (
             <DernierPli
-              dernierPli={etatJeu.historiquePlis[etatJeu.historiquePlis.length - 1]}
+              dernierPli={etatJeu.dernierPliVisible!}
+              precedentDernierPli={etatJeu.precedentDernierPliVisible}
+              transitionDernierPliActive={etatJeu.transitionDernierPliActive}
+              dureeTransitionDernierPliMs={etatJeu.dureeTransitionDernierPliMs}
+              cleTransitionDernierPli={etatJeu.cleTransitionDernierPli}
             />
           )}
 

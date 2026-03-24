@@ -14,3 +14,8 @@ export function planifierRamassagePli(): PlanRamassagePli {
     delaiPhase2: dureeConvergence,
   };
 }
+
+export function calculerDureeTotaleRamassagePli(): number {
+  const { delaiPhase2, dureeGlissement } = planifierRamassagePli();
+  return delaiPhase2 + dureeGlissement;
+}
