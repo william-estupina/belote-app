@@ -191,13 +191,19 @@ jobs:
               ? 'details'
               : 'indisponible';
 
+          const urlQr = urlApk || urlDetails;
+          const urlImageQr = urlQr
+            ? `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(urlQr)}`
+            : '';
+
           ecrireSortie('parse_ok', 'true');
           ecrireSortie('message', '');
           ecrireSortie('build_id', String(build?.id ?? ''));
           ecrireSortie('statut', String(build?.status ?? 'inconnu'));
           ecrireSortie('url_details', urlDetails);
           ecrireSortie('url_apk', urlApk);
-          ecrireSortie('url_qr', urlApk || urlDetails);
+          ecrireSortie('url_qr', urlQr);
+          ecrireSortie('url_image_qr', urlImageQr);
           ecrireSortie('cible_qr', cibleQr);
           EOF
 
@@ -209,6 +215,22 @@ jobs:
           path: ${{ runner.temp }}/eas-build.json
           if-no-files-found: ignore
 
+      - name: Telecharger le QR code PNG
+        if: ${{ always() && steps.extraire_build.outputs.url_image_qr != '' }}
+        continue-on-error: true
+        env:
+          QR_IMAGE_URL: ${{ steps.extraire_build.outputs.url_image_qr }}
+        run: |
+          curl --fail --location --silent --show-error "${QR_IMAGE_URL}" --output "$RUNNER_TEMP/qr-code-build-preview.png"
+
+      - name: Uploader le QR code PNG
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eas-build-preview-android-qr-code
+          path: ${{ runner.temp }}/qr-code-build-preview.png
+          if-no-files-found: ignore
+
       - name: Ecrire le resume GitHub
         if: always()
         env:
@@ -217,6 +239,7 @@ jobs:
           BUILD_DETAILS_URL: ${{ steps.extraire_build.outputs.url_details }}
           BUILD_APK_URL: ${{ steps.extraire_build.outputs.url_apk }}
           QR_URL: ${{ steps.extraire_build.outputs.url_qr }}
+          QR_IMAGE_URL: ${{ steps.extraire_build.outputs.url_image_qr }}
           QR_TARGET: ${{ steps.extraire_build.outputs.cible_qr }}
           PARSE_OK: ${{ steps.extraire_build.outputs.parse_ok }}
           PARSE_MESSAGE: ${{ steps.extraire_build.outputs.message }}
@@ -261,14 +284,14 @@ jobs:
                 echo
                 echo "Le QR code pointe vers la page Expo du build, car l'URL directe de l'APK n'a pas ete exposee."
               fi
+
               echo
-              if npx --yes qrcode-terminal "${QR_URL}" > "$RUNNER_TEMP/qr-code.txt" 2>/dev/null; then
-                echo '```text'
-                cat "$RUNNER_TEMP/qr-code.txt"
-                echo '```'
-              else
-                echo "> Generation du QR code impossible dans ce run. Utiliser l'URL ci-dessus."
+              if [ -n "${QR_IMAGE_URL}" ]; then
+                echo "![QR code build preview](${QR_IMAGE_URL})"
+                echo
               fi
+
+              echo "Artifact PNG: \`eas-build-preview-android-qr-code\`"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
