@@ -22,6 +22,10 @@ import {
 import { appliquerEtatVerrouillePendantFinPli } from "./etatFinPliVisuel";
 import { ajouterCarteAuPliVisuel } from "./etatPliVisuel";
 import { calculerDureeTotaleRamassagePli } from "./planRamassagePli";
+import {
+  construireTransitionTriMainInitiale,
+  DELAI_SUPPLEMENTAIRE_TRI_MAIN_INITIALE_MS,
+} from "./transition-tri-main-initiale";
 import { trierMainJoueur } from "./triMainJoueur";
 import { construireCartesGeleesDepuisPli, useAnimations } from "./useAnimations";
 import { useAnimationsDistribution } from "./useAnimationsDistribution";
@@ -88,6 +92,8 @@ export interface EtatJeu {
   indexDonneur: number;
   /** Nombre de cartes vise pendant la distribution pour la main du joueur */
   nbCartesAnticipeesJoueur: number;
+  /** Conserve temporairement l ordre de reception avant le tri visuel */
+  triMainDiffere: boolean;
   /** Dernier pli actuellement visible dans le widget */
   dernierPliVisible: ContextePartie["historiquePlis"][number] | null;
   /** Ancien pli conserve temporairement pendant la transition */
@@ -114,6 +120,30 @@ const INDEX_HUMAIN = 0; // sud
 function getPositionPartenaire(position: PositionJoueur): PositionJoueur {
   const index = POSITIONS_JOUEUR.indexOf(position);
   return POSITIONS_JOUEUR[(index + 2) % 4];
+}
+
+function estMemeCarte(a: Carte, b: Carte): boolean {
+  return a.couleur === b.couleur && a.rang === b.rang;
+}
+
+function synchroniserOrdreVisibleMain(
+  mainVisible: ReadonlyArray<Carte>,
+  mainContexte: ReadonlyArray<Carte>,
+): Carte[] {
+  const cartesRestantes = [...mainContexte];
+  const mainSynchronisee: Carte[] = [];
+
+  for (const carteVisible of mainVisible) {
+    const indexCarte = cartesRestantes.findIndex((carte) =>
+      estMemeCarte(carte, carteVisible),
+    );
+    if (indexCarte === -1) continue;
+
+    mainSynchronisee.push(cartesRestantes[indexCarte]);
+    cartesRestantes.splice(indexCarte, 1);
+  }
+
+  return [...mainSynchronisee, ...cartesRestantes];
 }
 
 // --- Hook principal ---
@@ -155,6 +185,7 @@ export function useControleurJeu({
     cartesRestantesPaquet: 0,
     indexDonneur: 1,
     nbCartesAnticipeesJoueur: 0,
+    triMainDiffere: false,
     dernierPliVisible: null,
     precedentDernierPliVisible: null,
     transitionDernierPliActive: false,
@@ -454,6 +485,14 @@ export function useControleurJeu({
         const snap = acteur.getSnapshot();
         const etat = snap.value as string;
         const ctx = snap.context;
+        const mainTriee = trierMainJoueur(ctx.mains[INDEX_HUMAIN], {
+          couleurPrioritaire: ctx.couleurAtout ?? ctx.carteRetournee?.couleur ?? null,
+          couleurAtout: ctx.couleurAtout,
+        });
+        const transitionTri = construireTransitionTriMainInitiale(
+          ctx.mains[INDEX_HUMAIN],
+          mainTriee,
+        );
 
         animationDistribEnCours.current = false;
         animDistribution.terminerDistribution();
@@ -461,10 +500,7 @@ export function useControleurJeu({
         setEtatJeu((prev) => ({
           ...prev,
           ...extraireEtatUI(ctx, etat),
-          mainJoueur: trierMainJoueur(ctx.mains[INDEX_HUMAIN], {
-            couleurPrioritaire: ctx.couleurAtout ?? ctx.carteRetournee?.couleur ?? null,
-            couleurAtout: ctx.couleurAtout,
-          }),
+          ...transitionTri.etatAvantTri,
           nbCartesAdversaires: {
             nord: ctx.mains[2].length,
             est: ctx.mains[3].length,
@@ -473,6 +509,24 @@ export function useControleurJeu({
           cartesRestantesPaquet: 0,
           nbCartesAnticipeesJoueur: ctx.mains[INDEX_HUMAIN].length,
         }));
+
+        const timeoutTri = setTimeout(() => {
+          if (estDemonte.current) return;
+
+          const acteurCourant = acteurRef.current;
+          if (!acteurCourant) return;
+          const snapshotCourant = acteurCourant.getSnapshot();
+
+          if (snapshotCourant.context.mains[INDEX_HUMAIN].length !== mainTriee.length) {
+            return;
+          }
+
+          setEtatJeu((prev) => ({
+            ...prev,
+            ...transitionTri.etatApresTri,
+          }));
+        }, DELAI_SUPPLEMENTAIRE_TRI_MAIN_INITIALE_MS);
+        timeoutsControleurRef.current.push(timeoutTri);
 
         const estPhaseEncheres = etat === "encheres1" || etat === "encheres2";
         const delaiAvantBot = estPhaseEncheres ? ANIMATIONS.pauseAvantEncheres : 50;
@@ -511,6 +565,7 @@ export function useControleurJeu({
         pliEnCours: [],
         cartesRestantesPaquet: totalCartesAttendues,
         nbCartesAnticipeesJoueur: 0,
+        triMainDiffere: false,
         dernierPliVisible: null,
         precedentDernierPliVisible: null,
         transitionDernierPliActive: false,
@@ -598,6 +653,10 @@ export function useControleurJeu({
             terminerTransitionDernierPli({
               ...prev,
               ...extraireEtatUI(ctx, etat),
+              mainJoueur: synchroniserOrdreVisibleMain(
+                prev.mainJoueur,
+                ctx.mains[INDEX_HUMAIN],
+              ),
             }),
           );
 
@@ -638,6 +697,13 @@ export function useControleurJeu({
 
       // Mettre à jour l'état UI — mais ne pas écraser les mains pendant l'animation
       const nouvelEtat = extraireEtatUI(contexte, etatMachine);
+      const construireEtatSansRetri = (mainVisible: ReadonlyArray<Carte>) => ({
+        ...nouvelEtat,
+        mainJoueur: synchroniserOrdreVisibleMain(
+          mainVisible,
+          contexte.mains[INDEX_HUMAIN],
+        ),
+      });
 
       // Détecter un nouveau pli AVANT la mise à jour d'état
       const nouveauPliDetecte = contexte.historiquePlis.length > nbPlisVus.current;
@@ -664,14 +730,26 @@ export function useControleurJeu({
         // avant que l'animation de ramassage n'arrive
         const dernierPli = contexte.historiquePlis[contexte.historiquePlis.length - 1];
         setEtatJeu((prev) =>
-          appliquerEtatVerrouillePendantFinPli(prev, nouvelEtat, dernierPli.cartes),
+          appliquerEtatVerrouillePendantFinPli(
+            prev,
+            construireEtatSansRetri(prev.mainJoueur),
+            dernierPli.cartes,
+          ),
         );
       } else if (animationPliEnCours.current) {
         // Pendant le ramassage du pli, préserver les cartes visuelles au centre
         // et ne pas mettre à jour les piles avant la fin de l'animation
-        setEtatJeu((prev) => appliquerEtatVerrouillePendantFinPli(prev, nouvelEtat));
+        setEtatJeu((prev) =>
+          appliquerEtatVerrouillePendantFinPli(
+            prev,
+            construireEtatSansRetri(prev.mainJoueur),
+          ),
+        );
       } else {
-        setEtatJeu((prev) => ({ ...prev, ...nouvelEtat }));
+        setEtatJeu((prev) => ({
+          ...prev,
+          ...construireEtatSansRetri(prev.mainJoueur),
+        }));
       }
 
       // Afficher temporairement la bulle belote/rebelote
@@ -905,6 +983,7 @@ export function useControleurJeu({
       cartesRestantesPaquet: 0,
       indexDonneur: 1,
       nbCartesAnticipeesJoueur: 0,
+      triMainDiffere: false,
       dernierPliVisible: null,
       precedentDernierPliVisible: null,
       transitionDernierPliActive: false,
@@ -937,6 +1016,7 @@ export function useControleurJeu({
             couleurPrioritaire: ctx.couleurAtout ?? ctx.carteRetournee?.couleur ?? null,
             couleurAtout: ctx.couleurAtout,
           }),
+          triMainDiffere: false,
           nbCartesAdversaires: {
             nord: ctx.mains[2].length,
             est: ctx.mains[3].length,
@@ -1005,6 +1085,7 @@ export function useControleurJeu({
         carteRetournee: null,
         cartesRestantesPaquet: totalCartesAttendues,
         nbCartesAnticipeesJoueur: prev.mainJoueur.length,
+        triMainDiffere: false,
       }));
 
       let cartesRecues = 0;
@@ -1044,33 +1125,43 @@ export function useControleurJeu({
             ? [carteRetournee, ...cartesVisiblesSud]
             : [...cartesVisiblesSud];
 
-        animDistribution.lancerDistribution(
-          estPreneurPremier
-            ? {
-                ...mainsRecord,
-                [positionPreneur]: carteRetournee
-                  ? [carteRetournee, ...mainsRecord[positionPreneur]]
-                  : mainsRecord[positionPreneur],
-              }
-            : mainsRecord,
-          {
-            indexDonneur: contexte.indexDonneur,
-            nbCartesExistantesSud,
-            cartesVisibles,
-            onPaquetDepart: (position, cartes) => {
-              if (position !== "sud" || estDemonte.current) return;
+        const mainsADistribuer = estPreneurPremier
+          ? {
+              ...mainsRecord,
+              [positionPreneur]: carteRetournee
+                ? [carteRetournee, ...mainsRecord[positionPreneur]]
+                : mainsRecord[positionPreneur],
+            }
+          : mainsRecord;
 
-              setEtatJeu((prev) => ({
-                ...prev,
-                nbCartesAnticipeesJoueur: Math.max(
-                  prev.nbCartesAnticipeesJoueur,
-                  prev.mainJoueur.length + cartes.length,
-                ),
-              }));
-            },
-            onPaquetArrive: gererPaquetArrive,
+        // Calculer les cartes existantes par adversaire avant cette distribution
+        const nbCartesExistantesAdversaires: Partial<
+          Record<"nord" | "est" | "ouest", number>
+        > = {};
+        for (const pos of ["nord", "est", "ouest"] as const) {
+          const idx = POSITIONS_JOUEUR.indexOf(pos);
+          nbCartesExistantesAdversaires[pos] =
+            contexte.mains[idx].length - mainsADistribuer[pos].length;
+        }
+
+        animDistribution.lancerDistribution(mainsADistribuer, {
+          indexDonneur: contexte.indexDonneur,
+          nbCartesExistantesSud,
+          nbCartesExistantesAdversaires,
+          cartesVisibles,
+          onPaquetDepart: (position, cartes) => {
+            if (position !== "sud" || estDemonte.current) return;
+
+            setEtatJeu((prev) => ({
+              ...prev,
+              nbCartesAnticipeesJoueur: Math.max(
+                prev.nbCartesAnticipeesJoueur,
+                prev.mainJoueur.length + cartes.length,
+              ),
+            }));
           },
-        );
+          onPaquetArrive: gererPaquetArrive,
+        });
       };
 
       if (!estPreneurPremier && carteRetournee) {

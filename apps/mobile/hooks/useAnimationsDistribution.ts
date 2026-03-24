@@ -22,6 +22,7 @@ import {
   type RectSource,
 } from "./distributionAtlas";
 import {
+  calculerCiblesEventailAdversaire,
   obtenirCibleDistributionAtlas,
   obtenirOrdreDistribution,
   obtenirOrigineDistribution,
@@ -58,6 +59,7 @@ export interface ResultatAnimationsDistribution {
     options?: {
       indexDonneur?: number;
       nbCartesExistantesSud?: number;
+      nbCartesExistantesAdversaires?: Partial<Record<"nord" | "est" | "ouest", number>>;
       onPaquetDepart?: (position: PositionJoueur, cartes: Carte[]) => void;
       onPaquetArrive?: (position: PositionJoueur, cartes: Carte[]) => void;
       onTerminee?: () => void;
@@ -113,6 +115,7 @@ export function useAnimationsDistribution(
     options?: {
       indexDonneur?: number;
       nbCartesExistantesSud?: number;
+      nbCartesExistantesAdversaires?: Partial<Record<"nord" | "est" | "ouest", number>>;
       onPaquetDepart?: (position: PositionJoueur, cartes: Carte[]) => void;
       onPaquetArrive?: (position: PositionJoueur, cartes: Carte[]) => void;
       onTerminee?: () => void;
@@ -126,6 +129,7 @@ export function useAnimationsDistribution(
       options?: {
         indexDonneur?: number;
         nbCartesExistantesSud?: number;
+        nbCartesExistantesAdversaires?: Partial<Record<"nord" | "est" | "ouest", number>>;
         onPaquetDepart?: (position: PositionJoueur, cartes: Carte[]) => void;
         onPaquetArrive?: (position: PositionJoueur, cartes: Carte[]) => void;
         onTerminee?: () => void;
@@ -176,6 +180,7 @@ export function useAnimationsDistribution(
       const decalage = distribution.arcDistribution.decalagePerpendiculaire;
       const indexDonneur = options?.indexDonneur ?? 0;
       const nbCartesExistantesSud = options?.nbCartesExistantesSud ?? 0;
+      const nbCartesExistantesAdv = options?.nbCartesExistantesAdversaires ?? {};
       const ordreDistribution = obtenirOrdreDistribution(indexDonneur);
       const origineDistribution = obtenirOrigineDistribution(indexDonneur);
 
@@ -219,6 +224,22 @@ export function useAnimationsDistribution(
                   hauteurCarte,
                 })
               : null;
+          const posAdv = position as "nord" | "est" | "ouest";
+          const existAdv = nbCartesExistantesAdv[posAdv] ?? 0;
+          // Éventail calculé pour le total FINAL, pas par paquet.
+          // Les cartes remplissent progressivement leurs emplacements définitifs,
+          // le canvas reste le seul rendu (pas de bascule vers MainAdversaire entre paquets).
+          const ciblesAdversaire =
+            position !== "sud"
+              ? calculerCiblesEventailAdversaire(
+                  posAdv,
+                  existAdv + indexCarte,
+                  nbCartesPaquet,
+                  existAdv + mains[position].length,
+                  largeurEcran,
+                  hauteurEcran,
+                )
+              : null;
           const posMain = cibleDistribution.arrivee;
 
           // Direction de vol pour éventail perpendiculaire
@@ -240,6 +261,7 @@ export function useAnimationsDistribution(
               position === "sud" && dispositionSud
                 ? dispositionSud.cartes[nbCartesExistantesSud + indexCarte + idx]
                 : null;
+            const cibleAdv = ciblesAdversaire?.[idx] ?? null;
             const arrivee: PointNormalise =
               position === "sud" && dispositionCarteSud
                 ? calculerPointAncrageCarteMainJoueurNormalisee({
@@ -250,7 +272,9 @@ export function useAnimationsDistribution(
                     largeurCarte,
                     hauteurCarte,
                   })
-                : { x: posMain.x, y: posMain.y };
+                : cibleAdv
+                  ? cibleAdv.arrivee
+                  : { x: posMain.x, y: posMain.y };
             const controle = calculerPointArc(depart, arrivee, decalage);
 
             const estVisible =
@@ -271,7 +295,9 @@ export function useAnimationsDistribution(
             const rotArrivee =
               position === "sud" && dispositionCarteSud
                 ? dispositionCarteSud.angle
-                : cibleDistribution.rotationArrivee;
+                : cibleAdv
+                  ? cibleAdv.rotationArrivee
+                  : cibleDistribution.rotationArrivee;
             const echDepart = 0.5;
             const echArrivee = cibleDistribution.echelleArrivee;
 
@@ -339,11 +365,10 @@ export function useAnimationsDistribution(
 
       // Planifier les callbacks et masquer les cartes arrivées dans l'atlas.
       // Stratégie anti-doublon / anti-clignotement :
-      // - Les cartes arrivées (t=1) restent visibles dans le canvas
-      // - Quand un NOUVEAU paquet "sud" part, on masque les cartes "sud"
-      //   du paquet précédent (MainJoueur les a déjà depuis plusieurs frames)
-      // - Pour le dernier paquet, le canvas et MainJoueur affichent les cartes
-      //   aux mêmes positions → superposition invisible jusqu'au démontage
+      // - Cartes "sud" : masquées au départ du paquet suivant (MainJoueur les a déjà)
+      // - Cartes adversaires : restent visibles dans le canvas jusqu'au démontage final.
+      //   Elles sont positionnées dès le départ à leur emplacement dans l'éventail final,
+      //   donc pas de bascule de rendu (canvas Skia → MainAdversaire) entre paquets.
       let delaiFinDistributionMs = 0;
       let indexDebutPaquet = 0;
       const indicesSudArrivees: { debut: number; fin: number }[] = [];
@@ -352,8 +377,7 @@ export function useAnimationsDistribution(
         const indexFin = paquet.indexDerniereCarteAtlas;
         const delaiCarte = delaisCartes[indexFin];
 
-        // Quand un nouveau paquet sud part, masquer les cartes sud
-        // précédemment arrivées dans le canvas (MainJoueur les a déjà)
+        // Masquage uniquement pour "sud" (pas les adversaires)
         if (paquet.position === "sud" && indicesSudArrivees.length > 0) {
           const indicesToHide = [...indicesSudArrivees];
           const timeout = setTimeout(() => {

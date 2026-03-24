@@ -5,6 +5,7 @@ import {
   ADVERSAIRE,
   ANIMATIONS,
   POSITIONS_MAINS,
+  RATIO_ASPECT_CARTE,
   RATIO_LARGEUR_CARTE,
 } from "../constants/layout";
 import type { PointNormalise } from "./distributionAtlas";
@@ -87,4 +88,122 @@ export function obtenirCibleDistributionAtlas(
     rotationArrivee: 0,
     echelleArrivee: ECHELLE_MAIN_ADVERSE,
   };
+}
+
+export interface CibleCarteEventail {
+  arrivee: PointNormalise;
+  rotationArrivee: number;
+}
+
+/**
+ * Calcule les positions individuelles en éventail pour les cartes adversaires,
+ * en miroir exact de la disposition de MainAdversaire.
+ * Retourne une cible par carte du paquet (indexDebut..indexDebut+nbCartesAPlacer-1).
+ */
+export function calculerCiblesEventailAdversaire(
+  position: "nord" | "est" | "ouest",
+  indexDebut: number,
+  nbCartesAPlacer: number,
+  nbCartesTotal: number,
+  largeurEcran: number,
+  hauteurEcran: number,
+): CibleCarteEventail[] {
+  if (position === "nord") {
+    return calculerCiblesNord(
+      indexDebut,
+      nbCartesAPlacer,
+      nbCartesTotal,
+      largeurEcran,
+      hauteurEcran,
+    );
+  }
+  return calculerCiblesVertical(
+    position,
+    indexDebut,
+    nbCartesAPlacer,
+    nbCartesTotal,
+    largeurEcran,
+    hauteurEcran,
+  );
+}
+
+function calculerCiblesNord(
+  indexDebut: number,
+  nbCartesAPlacer: number,
+  nbCartesTotal: number,
+  lE: number,
+  hE: number,
+): CibleCarteEventail[] {
+  const largeurCarte = Math.round(lE * ADVERSAIRE.ratioLargeurCarte);
+  const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
+  const espacement = largeurCarte * (1 - ADVERSAIRE.chevauchement);
+  const largeurMain = espacement * (nbCartesTotal - 1) + largeurCarte;
+  const xDepart = (lE - largeurMain) / 2;
+  const containerTop = hE * ADVERSAIRE.margeNordY;
+  const arcMax = hE * ADVERSAIRE.decalageArc;
+
+  const resultats: CibleCarteEventail[] = [];
+  for (let i = 0; i < nbCartesAPlacer; i++) {
+    const index = indexDebut + i;
+    const t = nbCartesTotal > 1 ? (index / (nbCartesTotal - 1)) * 2 - 1 : 0;
+    const angle = (-t * ADVERSAIRE.angleTotal) / 2;
+    const angleRad = (angle * Math.PI) / 180;
+    const decalageY = arcMax * (1 - t * t);
+    const x = xDepart + espacement * index;
+
+    // Centre de la carte après rotation autour du point haut-centre (transformOrigin)
+    const centerX = x + largeurCarte / 2 - (Math.sin(angleRad) * hauteurCarte) / 2;
+    const centerY = containerTop + decalageY + (Math.cos(angleRad) * hauteurCarte) / 2;
+
+    resultats.push({
+      arrivee: { x: centerX / lE, y: centerY / hE },
+      rotationArrivee: angle,
+    });
+  }
+  return resultats;
+}
+
+function calculerCiblesVertical(
+  cote: "est" | "ouest",
+  indexDebut: number,
+  nbCartesAPlacer: number,
+  nbCartesTotal: number,
+  lE: number,
+  hE: number,
+): CibleCarteEventail[] {
+  const largeurCarte = Math.round(lE * ADVERSAIRE.ratioLargeurCarte);
+  const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
+  const arcMax = lE * ADVERSAIRE.decalageArc;
+  const espacementVisuel = largeurCarte * (1 - ADVERSAIRE.chevauchement);
+  const hauteurMain = espacementVisuel * (nbCartesTotal - 1) + largeurCarte;
+  const yDepart = (hE - hauteurMain) / 2;
+  const estOuest = cote === "ouest";
+
+  const resultats: CibleCarteEventail[] = [];
+  for (let i = 0; i < nbCartesAPlacer; i++) {
+    const index = indexDebut + i;
+    const t = nbCartesTotal > 1 ? (index / (nbCartesTotal - 1)) * 2 - 1 : 0;
+    const signeEventail = estOuest ? 1 : -1;
+    const angleEventail = (t * ADVERSAIRE.angleTotal * signeEventail) / 2;
+    const angleFinal = 90 + angleEventail;
+    const decalageX = arcMax * (1 - t * t);
+    const y = yDepart + espacementVisuel * index;
+
+    // transformOrigin est au centre, la rotation ne déplace pas le centre
+    let centerX: number;
+    if (estOuest) {
+      // Container left = lE * margeCoteX, carte left = decalageX dans le container
+      centerX = lE * ADVERSAIRE.margeCoteX + decalageX + largeurCarte / 2;
+    } else {
+      // Container right edge = lE - lE * margeCoteX, carte right = decalageX
+      centerX = lE * (1 - ADVERSAIRE.margeCoteX) - decalageX - largeurCarte / 2;
+    }
+    const centerY = y + hauteurCarte / 2;
+
+    resultats.push({
+      arrivee: { x: centerX / lE, y: centerY / hE },
+      rotationArrivee: angleFinal,
+    });
+  }
+  return resultats;
 }
