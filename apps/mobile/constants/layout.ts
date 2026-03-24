@@ -97,11 +97,11 @@ export const ANIMATIONS = {
   },
   // Jeu de carte : main -> centre
   jeuCarte: {
-    duree: accelererDureeAnimation(300), // duree de l'animation (ms)
+    duree: 200, // duree de l'animation (ms)
   },
   // Ramassage du pli : centre -> gagnant
   ramassagePli: {
-    duree: accelererDureeAnimation(400), // duree de l'animation (ms)
+    duree: 300, // duree du mouvement de ramassage (ms)
     delaiAvant: accelererDureeAnimation(800), // pause avant ramassage pour voir le pli (ms)
   },
   // Delai des bots (phase jeu)
