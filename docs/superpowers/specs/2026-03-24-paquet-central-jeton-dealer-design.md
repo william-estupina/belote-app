@@ -34,8 +34,7 @@ Actuellement, le paquet de cartes avant distribution est positionne a un point i
 
 ### Verification
 
-- `cartesRestantes` est decremente par paquets (via callbacks `onPaquetDepart`) et non carte par carte — a verifier dans `useControleurJeu.ts` / `useAnimationsDistribution.ts`.
-- Si ce n'est pas le cas, ajuster la decrementation pour qu'elle suive le rythme 3/2.
+- `cartesRestantes` est decremente dans le callback `onPaquetArrive` (pas `onPaquetDepart`) par `cartes.length` (3 ou 2). Il y a 8 evenements au total (4 joueurs x 2 rounds). Le `nbCouches` diminue progressivement a chaque arrivee — pas de changement necessaire.
 
 ---
 
@@ -64,6 +63,10 @@ interface PropsJetonDealer {
 - Ombre : `rgba(0,0,0,0.3)`, offset (0, 2), radius 4
 - Texte "D" blanc `#ffffff`, bold, ~12px (mobile) / ~14px (web)
 - Centre horizontalement sous l'avatar du donneur
+
+**Prerequis — extraction de constantes :**
+
+Les constantes `POSITIONS_AVATAR`, `TAILLE_AVATAR` et `DECALAGE_NOM` sont actuellement privees dans `AvatarJoueur.tsx`. Elles doivent etre extraites dans `constants/layout.ts` pour etre partagees avec `JetonDealer.tsx`. `AvatarJoueur.tsx` les importera depuis le nouveau fichier. Note : `TAILLE_AVATAR` et `DECALAGE_NOM` sont dependants de la plateforme (web/mobile).
 
 **Positionnement :**
 
@@ -107,13 +110,14 @@ interface PropsJetonDealer {
 
 ## Fichiers impactes
 
-| Fichier                      | Action                                                           |
-| ---------------------------- | ---------------------------------------------------------------- |
-| `distributionLayoutAtlas.ts` | Simplifier `obtenirOrigineDistribution` → point fixe             |
-| `PaquetCentral.tsx`          | Retirer `indexDonneur`, utiliser constantes layout               |
-| `JetonDealer.tsx`            | Nouveau composant                                                |
-| `PlateauJeu.tsx`             | Ajouter `JetonDealer`, retirer `indexDonneur` de `PaquetCentral` |
-| `useControleurJeu.ts`        | Verifier decrementation `cartesRestantesPaquet` par paquets      |
+| Fichier                      | Action                                                                                                               |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `constants/layout.ts`        | Ajouter `POSITIONS_AVATAR`, `TAILLE_AVATAR`, `DECALAGE_NOM`                                                          |
+| `AvatarJoueur.tsx`           | Importer les constantes extraites depuis `constants/layout.ts`                                                       |
+| `distributionLayoutAtlas.ts` | Simplifier `obtenirOrigineDistribution` → point fixe, supprimer `FACTEUR_RAPPROCHEMENT_DONNEUR` et `interpolerPoint` |
+| `PaquetCentral.tsx`          | Retirer `indexDonneur`, utiliser constantes layout                                                                   |
+| `JetonDealer.tsx`            | Nouveau composant (Reanimated `useAnimatedStyle`)                                                                    |
+| `PlateauJeu.tsx`             | Ajouter `JetonDealer`, retirer `indexDonneur` de `PaquetCentral`                                                     |
 
 ## Hors scope
 
