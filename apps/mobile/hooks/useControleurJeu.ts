@@ -17,7 +17,7 @@ import { createActor } from "xstate";
 import { ANIMATIONS } from "../constants/layout";
 import { appliquerEtatVerrouillePendantFinPli } from "./etatFinPliVisuel";
 import { ajouterCarteAuPliVisuel } from "./etatPliVisuel";
-import { useAnimations } from "./useAnimations";
+import { construireCartesGeleesDepuisPli, useAnimations } from "./useAnimations";
 import { useAnimationsDistribution } from "./useAnimationsDistribution";
 import { useAtlasCartes } from "./useAtlasCartes";
 import { useDelaiBot } from "./useDelaiBot";
