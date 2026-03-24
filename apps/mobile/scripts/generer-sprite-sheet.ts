@@ -1,14 +1,12 @@
 import fs from "fs";
 import path from "path";
 import sharp from "sharp";
-import { fileURLToPath } from "url";
 
 // Grille 8x5 : lignes = couleurs (trefle, carreau, coeur, pique), colonnes = rangs.
 // La derniere ligne reserve la premiere cellule au dos de carte.
 
 const COULEURS_FICHIER = ["clubs", "diamonds", "hearts", "spades"] as const;
 const RANGS_FICHIER = ["7", "8", "9", "10", "jack", "queen", "king", "ace"] as const;
-type CouleurFichier = (typeof COULEURS_FICHIER)[number];
 
 const COLONNES = 8;
 const LIGNES = 5;
@@ -17,19 +15,6 @@ const LARGEUR_CELLULE = 167;
 const HAUTEUR_CELLULE = 243;
 const RAYON_COIN = 12;
 const MARGE_FACE = Math.round(LARGEUR_CELLULE * 0.03);
-const ZONE_SYMBOLE_LARGEUR = 34;
-const ZONE_SYMBOLE_HAUTEUR = 38;
-const ZONE_SYMBOLE_GAUCHE = 4;
-const ZONE_SYMBOLE_HAUT = 31;
-
-const PROPRIETES_SYMBOLE: Record<CouleurFichier, { couleur: string; entite: string }> = {
-  clubs: { couleur: "#1b1b2f", entite: "&#9827;" },
-  diamonds: { couleur: "#c41e3a", entite: "&#9830;" },
-  hearts: { couleur: "#c41e3a", entite: "&#9829;" },
-  spades: { couleur: "#1b1b2f", entite: "&#9824;" },
-};
-
-const REPERTOIRE_SCRIPT = path.dirname(fileURLToPath(import.meta.url));
 
 function creerSvgFondRecto(): Buffer {
   return Buffer.from(
@@ -116,61 +101,7 @@ function creerSvgDos(): Buffer {
   );
 }
 
-function creerSvgOverlaySymboles(couleurFichier: CouleurFichier): Buffer {
-  const { couleur, entite } = PROPRIETES_SYMBOLE[couleurFichier];
-  const centreX = ZONE_SYMBOLE_GAUCHE + ZONE_SYMBOLE_LARGEUR / 2;
-  const centreY = ZONE_SYMBOLE_HAUT + ZONE_SYMBOLE_HAUTEUR / 2;
-  const centreXBas = LARGEUR_CELLULE - centreX;
-  const centreYBas = HAUTEUR_CELLULE - centreY;
-
-  return Buffer.from(
-    `
-      <svg width="${LARGEUR_CELLULE}" height="${HAUTEUR_CELLULE}" viewBox="0 0 ${LARGEUR_CELLULE} ${HAUTEUR_CELLULE}" xmlns="http://www.w3.org/2000/svg">
-        <rect
-          x="${ZONE_SYMBOLE_GAUCHE}"
-          y="${ZONE_SYMBOLE_HAUT}"
-          width="${ZONE_SYMBOLE_LARGEUR}"
-          height="${ZONE_SYMBOLE_HAUTEUR}"
-          rx="4"
-          ry="4"
-          fill="#f0e8d4"
-        />
-        <text
-          x="${centreX}"
-          y="${ZONE_SYMBOLE_HAUT + ZONE_SYMBOLE_HAUTEUR - 4}"
-          text-anchor="middle"
-          font-size="34"
-          font-family="DejaVu Serif, Times New Roman, serif"
-          fill="${couleur}"
-        >${entite}</text>
-        <rect
-          x="${LARGEUR_CELLULE - ZONE_SYMBOLE_GAUCHE - ZONE_SYMBOLE_LARGEUR}"
-          y="${HAUTEUR_CELLULE - ZONE_SYMBOLE_HAUT - ZONE_SYMBOLE_HAUTEUR}"
-          width="${ZONE_SYMBOLE_LARGEUR}"
-          height="${ZONE_SYMBOLE_HAUTEUR}"
-          rx="4"
-          ry="4"
-          fill="#f0e8d4"
-        />
-        <g transform="translate(${centreXBas} ${centreYBas}) rotate(180)">
-          <text
-            x="0"
-            y="15"
-            text-anchor="middle"
-            font-size="34"
-            font-family="DejaVu Serif, Times New Roman, serif"
-            fill="${couleur}"
-          >${entite}</text>
-        </g>
-      </svg>
-    `,
-  );
-}
-
-async function creerTuileRecto(
-  cheminFichier: string,
-  couleurFichier: CouleurFichier,
-): Promise<Buffer> {
+async function creerTuileRecto(cheminFichier: string): Promise<Buffer> {
   const imageRedimensionnee = await sharp(cheminFichier)
     .resize(LARGEUR_CELLULE - MARGE_FACE * 2, HAUTEUR_CELLULE - MARGE_FACE * 2, {
       fit: "contain",
@@ -190,7 +121,6 @@ async function creerTuileRecto(
     .composite([
       { input: creerSvgFondRecto() },
       { input: imageRedimensionnee, left: MARGE_FACE, top: MARGE_FACE },
-      { input: creerSvgOverlaySymboles(couleurFichier) },
     ])
     .png()
     .toBuffer();
@@ -211,8 +141,8 @@ async function creerTuileDos(): Promise<Buffer> {
 }
 
 async function generer() {
-  const dossierCartes = path.resolve(REPERTOIRE_SCRIPT, "../assets/cartes");
-  const dossierSprites = path.resolve(REPERTOIRE_SCRIPT, "../assets/sprites");
+  const dossierCartes = path.resolve(__dirname, "../assets/cartes");
+  const dossierSprites = path.resolve(__dirname, "../assets/sprites");
 
   if (!fs.existsSync(dossierSprites)) {
     fs.mkdirSync(dossierSprites, { recursive: true });
@@ -235,7 +165,7 @@ async function generer() {
       }
 
       composites.push({
-        input: await creerTuileRecto(cheminFichier, couleurFichier),
+        input: await creerTuileRecto(cheminFichier),
         left: col * LARGEUR_CELLULE,
         top: ligne * HAUTEUR_CELLULE,
       });
