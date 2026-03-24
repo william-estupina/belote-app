@@ -40,6 +40,13 @@ interface TrajectoireMarqueurGagnant {
   arrivee: { top: number; left: number };
 }
 
+interface ParametresTransitionMarqueurGagnant {
+  departTop: number;
+  departLeft: number;
+  arriveeTop: number;
+  arriveeLeft: number;
+}
+
 const LIBELLES_RANG: Record<Rang, string> = {
   "7": "7",
   "8": "8",
@@ -155,6 +162,30 @@ export function calculerTrajectoireMarqueurGagnant({
   };
 }
 
+export function calculerParametresTransitionMarqueurGagnant({
+  gagnantActuel,
+  gagnantPrecedent,
+  transitionDernierPliActive,
+}: {
+  gagnantActuel: PositionJoueur;
+  gagnantPrecedent?: PositionJoueur | null;
+  transitionDernierPliActive?: boolean;
+}): ParametresTransitionMarqueurGagnant | null {
+  if (!transitionDernierPliActive || !gagnantPrecedent) {
+    return null;
+  }
+
+  const depart = calculerPositionMarqueurGagnant(gagnantPrecedent);
+  const arrivee = calculerPositionMarqueurGagnant(gagnantActuel);
+
+  return {
+    departTop: depart.top,
+    departLeft: depart.left,
+    arriveeTop: arrivee.top,
+    arriveeLeft: arrivee.left,
+  };
+}
+
 interface PropsContenuDernierPli {
   dernierPli: PliComplete;
   prefixeTestId?: string;
@@ -241,34 +272,84 @@ export function DernierPli({
   dureeTransitionDernierPliMs = 0,
   cleTransitionDernierPli = 0,
 }: PropsDernierPli) {
-  const trajectoireMarqueurGagnant = calculerTrajectoireMarqueurGagnant({
-    dernierPli,
-    precedentDernierPli,
-    transitionDernierPliActive,
-  });
+  const transitionDisponible = transitionDernierPliActive && precedentDernierPli !== null;
+  const gagnantActuel = dernierPli.gagnant;
+  const gagnantPrecedent = precedentDernierPli?.gagnant ?? null;
+  const progressionTransition = useRef(
+    new Animated.Value(transitionDisponible ? 0 : 1),
+  ).current;
+  const cleMarqueurTransitionRef = useRef<number | null>(null);
+  const parametresTransitionMarqueurGagnantRef =
+    useRef<ParametresTransitionMarqueurGagnant | null>(null);
   const etatInitialTransition = calculerEtatInitialTransitionDernierPli({
     precedentDernierPli,
     transitionDernierPliActive,
   });
-  const opaciteEntrante = useRef(
-    new Animated.Value(etatInitialTransition.opaciteEntrante),
-  ).current;
-  const translationEntrante = useRef(
-    new Animated.Value(etatInitialTransition.translationEntrante),
-  ).current;
-  const opaciteSortante = useRef(
-    new Animated.Value(etatInitialTransition.opaciteSortante),
-  ).current;
-  const translationSortante = useRef(
-    new Animated.Value(etatInitialTransition.translationSortante),
-  ).current;
-  const translationMarqueurGagnantY = useRef(
-    new Animated.Value(trajectoireMarqueurGagnant?.depart.top ?? 0),
-  ).current;
-  const translationMarqueurGagnantX = useRef(
-    new Animated.Value(trajectoireMarqueurGagnant?.depart.left ?? 0),
-  ).current;
   const animationRef = useRef<Animated.CompositeAnimation | null>(null);
+
+  if (transitionDisponible) {
+    if (cleMarqueurTransitionRef.current !== cleTransitionDernierPli) {
+      cleMarqueurTransitionRef.current = cleTransitionDernierPli;
+      parametresTransitionMarqueurGagnantRef.current =
+        calculerParametresTransitionMarqueurGagnant({
+          gagnantActuel,
+          gagnantPrecedent,
+          transitionDernierPliActive,
+        });
+    }
+  } else if (cleMarqueurTransitionRef.current !== null) {
+    cleMarqueurTransitionRef.current = null;
+    parametresTransitionMarqueurGagnantRef.current = null;
+  }
+
+  const parametresTransitionMarqueurGagnant =
+    parametresTransitionMarqueurGagnantRef.current;
+  const opaciteEntrante = progressionTransition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [
+      etatInitialTransition.opaciteEntrante,
+      calculerCiblesTransitionDernierPli().opaciteEntrante,
+    ],
+  });
+  const translationEntrante = progressionTransition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [
+      etatInitialTransition.translationEntrante,
+      calculerCiblesTransitionDernierPli().translationEntrante,
+    ],
+  });
+  const opaciteSortante = progressionTransition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [
+      etatInitialTransition.opaciteSortante,
+      calculerCiblesTransitionDernierPli().opaciteSortante,
+    ],
+  });
+  const translationSortante = progressionTransition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [
+      etatInitialTransition.translationSortante,
+      calculerCiblesTransitionDernierPli().translationSortante,
+    ],
+  });
+  const translationMarqueurGagnantX = parametresTransitionMarqueurGagnant
+    ? progressionTransition.interpolate({
+        inputRange: [0, 1],
+        outputRange: [
+          parametresTransitionMarqueurGagnant.departLeft,
+          parametresTransitionMarqueurGagnant.arriveeLeft,
+        ],
+      })
+    : null;
+  const translationMarqueurGagnantY = parametresTransitionMarqueurGagnant
+    ? progressionTransition.interpolate({
+        inputRange: [0, 1],
+        outputRange: [
+          parametresTransitionMarqueurGagnant.departTop,
+          parametresTransitionMarqueurGagnant.arriveeTop,
+        ],
+      })
+    : null;
 
   useEffect(() => {
     return () => {
@@ -278,84 +359,26 @@ export function DernierPli({
 
   useLayoutEffect(() => {
     animationRef.current?.stop();
+    progressionTransition.setValue(transitionDisponible ? 0 : 1);
 
-    const etatInitial = calculerEtatInitialTransitionDernierPli({
-      precedentDernierPli,
-      transitionDernierPliActive,
-    });
-    opaciteEntrante.setValue(etatInitial.opaciteEntrante);
-    translationEntrante.setValue(etatInitial.translationEntrante);
-    opaciteSortante.setValue(etatInitial.opaciteSortante);
-    translationSortante.setValue(etatInitial.translationSortante);
-
-    if (trajectoireMarqueurGagnant) {
-      translationMarqueurGagnantY.setValue(trajectoireMarqueurGagnant.depart.top);
-      translationMarqueurGagnantX.setValue(trajectoireMarqueurGagnant.depart.left);
-    }
-
-    if (!transitionDernierPliActive || !precedentDernierPli) {
+    if (!transitionDisponible) {
       return;
     }
 
-    const ciblesTransition = calculerCiblesTransitionDernierPli();
-    const easing = Easing.linear;
-    const animation = Animated.parallel([
-      Animated.timing(opaciteEntrante, {
-        toValue: ciblesTransition.opaciteEntrante,
-        duration: dureeTransitionDernierPliMs,
-        easing,
-        useNativeDriver: false,
-      }),
-      Animated.timing(translationEntrante, {
-        toValue: ciblesTransition.translationEntrante,
-        duration: dureeTransitionDernierPliMs,
-        easing,
-        useNativeDriver: false,
-      }),
-      Animated.timing(opaciteSortante, {
-        toValue: ciblesTransition.opaciteSortante,
-        duration: dureeTransitionDernierPliMs,
-        easing,
-        useNativeDriver: false,
-      }),
-      Animated.timing(translationSortante, {
-        toValue: ciblesTransition.translationSortante,
-        duration: dureeTransitionDernierPliMs,
-        easing,
-        useNativeDriver: false,
-      }),
-      ...(trajectoireMarqueurGagnant
-        ? [
-            Animated.timing(translationMarqueurGagnantY, {
-              toValue: trajectoireMarqueurGagnant.arrivee.top,
-              duration: dureeTransitionDernierPliMs,
-              easing,
-              useNativeDriver: false,
-            }),
-            Animated.timing(translationMarqueurGagnantX, {
-              toValue: trajectoireMarqueurGagnant.arrivee.left,
-              duration: dureeTransitionDernierPliMs,
-              easing,
-              useNativeDriver: false,
-            }),
-          ]
-        : []),
-    ]);
+    const animation = Animated.timing(progressionTransition, {
+      toValue: 1,
+      duration: dureeTransitionDernierPliMs,
+      easing: Easing.linear,
+      useNativeDriver: !estWeb,
+    });
 
     animationRef.current = animation;
     animation.start();
   }, [
     cleTransitionDernierPli,
     dureeTransitionDernierPliMs,
-    opaciteEntrante,
-    opaciteSortante,
-    precedentDernierPli,
-    translationMarqueurGagnantY,
-    transitionDernierPliActive,
-    trajectoireMarqueurGagnant,
-    translationEntrante,
-    translationSortante,
-    translationMarqueurGagnantX,
+    progressionTransition,
+    transitionDisponible,
   ]);
 
   return (
@@ -425,7 +448,7 @@ export function DernierPli({
                 />
               </Animated.View>
 
-              {trajectoireMarqueurGagnant ? (
+              {translationMarqueurGagnantX && translationMarqueurGagnantY ? (
                 <Animated.View
                   testID="marqueur-gagnant-transition"
                   pointerEvents="none"

@@ -1,5 +1,6 @@
 import type { PliComplete } from "@belote/shared-types";
 import { act, render, screen } from "@testing-library/react-native";
+import { Animated } from "react-native";
 
 import {
   calculerCiblesTransitionDernierPli,
@@ -202,5 +203,39 @@ describe("DernierPli", () => {
     expect(screen.getByTestId("marqueur-gagnant-transition")).toBeTruthy();
     expect(screen.queryByTestId("anneau-gagnant-est")).toBeNull();
     expect(screen.queryByTestId("entrant-anneau-gagnant-sud")).toBeNull();
+  });
+
+  it("ne relance pas la transition si le parent rerend avec la meme cle", () => {
+    const espionTiming = jest.spyOn(Animated, "timing");
+    const { rerender } = render(
+      <DernierPli
+        dernierPli={NOUVEAU_DERNIER_PLI}
+        precedentDernierPli={DERNIER_PLI}
+        transitionDernierPliActive
+        dureeTransitionDernierPliMs={450}
+        cleTransitionDernierPli={4}
+      />,
+    );
+
+    expect(espionTiming).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <DernierPli
+        dernierPli={{
+          ...NOUVEAU_DERNIER_PLI,
+          cartes: [...NOUVEAU_DERNIER_PLI.cartes],
+        }}
+        precedentDernierPli={{
+          ...DERNIER_PLI,
+          cartes: [...DERNIER_PLI.cartes],
+        }}
+        transitionDernierPliActive
+        dureeTransitionDernierPliMs={450}
+        cleTransitionDernierPli={4}
+      />,
+    );
+
+    expect(espionTiming).toHaveBeenCalledTimes(1);
+    espionTiming.mockRestore();
   });
 });
