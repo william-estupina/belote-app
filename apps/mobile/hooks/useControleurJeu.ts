@@ -22,6 +22,7 @@ import {
 import { appliquerEtatVerrouillePendantFinPli } from "./etatFinPliVisuel";
 import { ajouterCarteAuPliVisuel } from "./etatPliVisuel";
 import { calculerDureeTotaleRamassagePli } from "./planRamassagePli";
+import { trierMainJoueur } from "./triMainJoueur";
 import { construireCartesGeleesDepuisPli, useAnimations } from "./useAnimations";
 import { useAnimationsDistribution } from "./useAnimationsDistribution";
 import { useAtlasCartes } from "./useAtlasCartes";
@@ -113,102 +114,6 @@ const INDEX_HUMAIN = 0; // sud
 function getPositionPartenaire(position: PositionJoueur): PositionJoueur {
   const index = POSITIONS_JOUEUR.indexOf(position);
   return POSITIONS_JOUEUR[(index + 2) % 4];
-}
-
-// --- Tri des cartes du joueur (alternance rouge/noir, par force décroissante) ---
-
-/** Force hors atout (ordre normal : As > 10 > Roi > Dame > Valet > 9 > 8 > 7) */
-const FORCE_HORS_ATOUT: Record<string, number> = {
-  as: 7,
-  "10": 6,
-  roi: 5,
-  dame: 4,
-  valet: 3,
-  "9": 2,
-  "8": 1,
-  "7": 0,
-};
-
-/** Force à l'atout (ordre spécial : Valet > 9 > As > 10 > Roi > Dame > 8 > 7) */
-const FORCE_ATOUT: Record<string, number> = {
-  valet: 7,
-  "9": 6,
-  as: 5,
-  "10": 4,
-  roi: 3,
-  dame: 2,
-  "8": 1,
-  "7": 0,
-};
-
-// Couleurs alternées : noir, rouge, noir, rouge
-const ORDRE_COULEURS_ALTERNEES: Couleur[] = ["pique", "coeur", "trefle", "carreau"];
-
-function trierMainJoueur(cartes: Carte[], couleurAtout?: Couleur | null): Carte[] {
-  if (couleurAtout) {
-    return trierMainAvecAtout(cartes, couleurAtout);
-  }
-
-  // Grouper par couleur
-  const parCouleur = new Map<Couleur, Carte[]>();
-  for (const couleur of ORDRE_COULEURS_ALTERNEES) {
-    parCouleur.set(couleur, []);
-  }
-  for (const carte of cartes) {
-    parCouleur.get(carte.couleur)!.push(carte);
-  }
-
-  // Trier chaque groupe par puissance décroissante (hors atout)
-  for (const groupe of parCouleur.values()) {
-    groupe.sort((a, b) => FORCE_HORS_ATOUT[b.rang] - FORCE_HORS_ATOUT[a.rang]);
-  }
-
-  // Concaténer dans l'ordre alterné
-  const resultat: Carte[] = [];
-  for (const couleur of ORDRE_COULEURS_ALTERNEES) {
-    resultat.push(...parCouleur.get(couleur)!);
-  }
-  return resultat;
-}
-
-/** Tri avec les atouts à gauche, puis les couleurs restantes en alternance noir/rouge */
-function trierMainAvecAtout(cartes: Carte[], couleurAtout: Couleur): Carte[] {
-  const atouts = cartes.filter((c) => c.couleur === couleurAtout);
-  const nonAtouts = cartes.filter((c) => c.couleur !== couleurAtout);
-
-  atouts.sort((a, b) => FORCE_ATOUT[b.rang] - FORCE_ATOUT[a.rang]);
-
-  // Alternance noir/rouge pour les couleurs non-atout
-  const noires: Couleur[] = (["pique", "trefle"] as Couleur[]).filter(
-    (c) => c !== couleurAtout,
-  );
-  const rouges: Couleur[] = (["coeur", "carreau"] as Couleur[]).filter(
-    (c) => c !== couleurAtout,
-  );
-
-  // Commencer par le groupe le plus fourni pour une meilleure alternance
-  const couleursOrdonnees: Couleur[] = [];
-  const commencerParNoir = noires.length >= rouges.length;
-  let iN = 0;
-  let iR = 0;
-  while (iN < noires.length || iR < rouges.length) {
-    if (commencerParNoir) {
-      if (iN < noires.length) couleursOrdonnees.push(noires[iN++]);
-      if (iR < rouges.length) couleursOrdonnees.push(rouges[iR++]);
-    } else {
-      if (iR < rouges.length) couleursOrdonnees.push(rouges[iR++]);
-      if (iN < noires.length) couleursOrdonnees.push(noires[iN++]);
-    }
-  }
-
-  const parCouleur = new Map<Couleur, Carte[]>();
-  for (const c of couleursOrdonnees) parCouleur.set(c, []);
-  for (const carte of nonAtouts) parCouleur.get(carte.couleur)!.push(carte);
-  for (const groupe of parCouleur.values()) {
-    groupe.sort((a, b) => FORCE_HORS_ATOUT[b.rang] - FORCE_HORS_ATOUT[a.rang]);
-  }
-
-  return [...atouts, ...couleursOrdonnees.flatMap((c) => parCouleur.get(c)!)];
 }
 
 // --- Hook principal ---
@@ -331,7 +236,11 @@ export function useControleurJeu({
 
       return {
         phaseUI,
-        mainJoueur: trierMainJoueur(contexte.mains[INDEX_HUMAIN], contexte.couleurAtout),
+        mainJoueur: trierMainJoueur(contexte.mains[INDEX_HUMAIN], {
+          couleurPrioritaire:
+            contexte.couleurAtout ?? contexte.carteRetournee?.couleur ?? null,
+          couleurAtout: contexte.couleurAtout,
+        }),
         nbCartesAdversaires: {
           nord: contexte.mains[2].length,
           est: contexte.mains[3].length,
@@ -552,7 +461,10 @@ export function useControleurJeu({
         setEtatJeu((prev) => ({
           ...prev,
           ...extraireEtatUI(ctx, etat),
-          mainJoueur: trierMainJoueur(ctx.mains[INDEX_HUMAIN], ctx.couleurAtout),
+          mainJoueur: trierMainJoueur(ctx.mains[INDEX_HUMAIN], {
+            couleurPrioritaire: ctx.couleurAtout ?? ctx.carteRetournee?.couleur ?? null,
+            couleurAtout: ctx.couleurAtout,
+          }),
           nbCartesAdversaires: {
             nord: ctx.mains[2].length,
             est: ctx.mains[3].length,
@@ -1021,7 +933,10 @@ export function useControleurJeu({
         setEtatJeu((prev) => ({
           ...prev,
           ...extraireEtatUI(ctx, etat),
-          mainJoueur: trierMainJoueur(ctx.mains[INDEX_HUMAIN], ctx.couleurAtout),
+          mainJoueur: trierMainJoueur(ctx.mains[INDEX_HUMAIN], {
+            couleurPrioritaire: ctx.couleurAtout ?? ctx.carteRetournee?.couleur ?? null,
+            couleurAtout: ctx.couleurAtout,
+          }),
           nbCartesAdversaires: {
             nord: ctx.mains[2].length,
             est: ctx.mains[3].length,
