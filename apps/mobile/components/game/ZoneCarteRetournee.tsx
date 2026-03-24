@@ -1,5 +1,5 @@
-// Affiche le paquet (dos) et la carte retournée au centre du plateau pendant les enchères
-// Animation flip : la carte retournée démarre dos visible et se retourne face visible
+// Affiche le paquet (dos) et la carte retournee au centre du plateau pendant les encheres
+// Animation flip : la carte retournee demarre dos visible et se retourne face visible
 import type { Carte } from "@belote/shared-types";
 import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
@@ -12,6 +12,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import { ANIMATIONS_CARTE_RETOURNEE } from "../../constants/animations-visuelles";
 import {
   ANIMATIONS,
   RATIO_ASPECT_CARTE,
@@ -19,9 +20,6 @@ import {
 } from "../../constants/layout";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
 import { CarteDos, CarteFaceAtlas } from "./Carte";
-
-const DUREE_FLIP = 400; // durée de l'animation de retournement (ms)
-const DELAI_FLIP = 200; // petit délai avant le flip pour laisser le composant apparaître
 
 interface PropsZoneCarteRetournee {
   carte: Carte;
@@ -41,7 +39,7 @@ export function ZoneCarteRetournee({
   const hauteurCarte = largeurCarte * RATIO_ASPECT_CARTE;
   const espacement = 6;
 
-  // Largeur totale : paquet + espacement + carte retournée
+  // Largeur totale : paquet + espacement + carte retournee
   const largeurTotale = largeurCarte * 2 + espacement;
 
   // Animation flip : 0 = dos visible, 1 = face visible
@@ -50,12 +48,15 @@ export function ZoneCarteRetournee({
   useEffect(() => {
     progressionFlip.value = 0;
     progressionFlip.value = withDelay(
-      DELAI_FLIP,
-      withTiming(1, { duration: DUREE_FLIP, easing: Easing.inOut(Easing.ease) }),
+      ANIMATIONS_CARTE_RETOURNEE.delaiFlip,
+      withTiming(1, {
+        duration: ANIMATIONS_CARTE_RETOURNEE.dureeFlip,
+        easing: Easing.inOut(Easing.ease),
+      }),
     );
   }, [progressionFlip]);
 
-  // Style dos : visible de 0° à 90°, puis masqué
+  // Style dos : visible de 0 degres a 90 degres, puis masque
   const styleDos = useAnimatedStyle(() => {
     const rotationY = interpolate(progressionFlip.value, [0, 0.5, 1], [0, 90, 90]);
     return {
@@ -65,7 +66,7 @@ export function ZoneCarteRetournee({
     };
   });
 
-  // Style face : masquée de -90° à 0°, apparaît à partir de 0.5
+  // Style face : masquee de -90 degres a 0 degre, apparait a partir de 0.5
   const styleFace = useAnimatedStyle(() => {
     const rotationY = interpolate(progressionFlip.value, [0, 0.5, 1], [-90, -90, 0]);
     return {
@@ -85,9 +86,9 @@ export function ZoneCarteRetournee({
         },
       ]}
     >
-      {/* Paquet (dos de carte) avec léger effet d'empilement */}
+      {/* Paquet (dos de carte) avec leger effet d'empilement */}
       <View style={styles.paquet}>
-        {/* Cartes empilées pour donner l'illusion d'épaisseur */}
+        {/* Cartes empilees pour donner l'illusion d'epaisseur */}
         <View style={[styles.carteEmpilee, { top: -2, left: -1 }]}>
           <CarteDos largeur={largeurCarte} hauteur={hauteurCarte} />
         </View>
@@ -97,18 +98,18 @@ export function ZoneCarteRetournee({
         <CarteDos largeur={largeurCarte} hauteur={hauteurCarte} />
       </View>
 
-      {/* Carte retournée avec animation flip */}
+      {/* Carte retournee avec animation flip */}
       <View
         style={[
           styles.carteFlipConteneur,
           { marginLeft: espacement, width: largeurCarte, height: hauteurCarte },
         ]}
       >
-        {/* Dos (visible au début, disparaît à 50%) */}
+        {/* Dos (visible au debut, disparait a 50%) */}
         <Animated.View style={[styles.carteFlipFace, styleDos]}>
           <CarteDos largeur={largeurCarte} hauteur={hauteurCarte} />
         </Animated.View>
-        {/* Face (apparaît à 50%, finit à 0° rotation) */}
+        {/* Face (apparait a 50%, finit a 0 degre rotation) */}
         <Animated.View style={[styles.carteFlipFace, styleFace]}>
           <CarteFaceAtlas
             atlas={atlas}

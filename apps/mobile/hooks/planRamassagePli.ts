@@ -1,3 +1,5 @@
+import { accelererDureeAnimation } from "../constants/animations-visuelles";
+
 export interface PlanRamassagePli {
   dureeConvergence: number;
   dureeGlissement: number;
@@ -5,8 +7,8 @@ export interface PlanRamassagePli {
 }
 
 export function planifierRamassagePli(): PlanRamassagePli {
-  const dureeConvergence = 180;
-  const dureeGlissement = 270;
+  const dureeConvergence = accelererDureeAnimation(180);
+  const dureeGlissement = accelererDureeAnimation(270);
 
   return {
     dureeConvergence,

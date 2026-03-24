@@ -1,4 +1,4 @@
-// Dialogue animé de fin de manche — affiche les scores avec animation de comptage
+// Dialogue anime de fin de manche : affiche les scores avec animation de comptage
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -10,6 +10,10 @@ import {
   View,
 } from "react-native";
 
+import {
+  accelererTensionAnimation,
+  ANIMATIONS_DIALOGUE_FIN_MANCHE,
+} from "../../constants/animations-visuelles";
 import { COULEURS } from "../../constants/theme";
 
 interface PropsDialogueFinManche {
@@ -22,18 +26,7 @@ interface PropsDialogueFinManche {
 
 const estWeb = Platform.OS === "web";
 
-// Durées des phases d'animation (ms)
-const _DUREE_ENTREE_PANNEAU = 300;
-const DELAI_SCORES_MANCHE = 200;
-const DUREE_APPARITION_MANCHE = 400;
-const DELAI_SECTION_TOTAL = 800;
-const DUREE_APPARITION_TOTAL = 300;
-const DELAI_COMPTAGE = 1200;
-const DUREE_COMPTAGE = 800;
-const DELAI_BOUTON = 2200;
-const DUREE_APPARITION_BOUTON = 300;
-
-/** Hook : anime un nombre de `debut` à `fin` sur `duree` ms, démarré après `delai` ms */
+/** Hook : anime un nombre de `debut` a `fin` sur `duree` ms, demarre apres `delai` ms */
 function useCompteurAnime(
   debut: number,
   fin: number,
@@ -72,18 +65,18 @@ export function DialogueFinManche({
   const ancienScore1 = scoreEquipe1 - scoreMancheEquipe1;
   const ancienScore2 = scoreEquipe2 - scoreMancheEquipe2;
 
-  // Compteurs animés
+  // Compteurs animes
   const compteur1 = useCompteurAnime(
     ancienScore1,
     scoreEquipe1,
-    DELAI_COMPTAGE,
-    DUREE_COMPTAGE,
+    ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiComptage,
+    ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeComptage,
   );
   const compteur2 = useCompteurAnime(
     ancienScore2,
     scoreEquipe2,
-    DELAI_COMPTAGE,
-    DUREE_COMPTAGE,
+    ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiComptage,
+    ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeComptage,
   );
 
   // --- Animations Animated ---
@@ -93,7 +86,7 @@ export function DialogueFinManche({
   const animBouton = useRef(new Animated.Value(0)).current;
   const animOverlay = useRef(new Animated.Value(0)).current;
 
-  // Animations d'éclair doré pendant le comptage
+  // Animations d'eclair dore pendant le comptage
   const animEclair1 = useRef(new Animated.Value(0)).current;
   const animEclair2 = useRef(new Animated.Value(0)).current;
 
@@ -101,15 +94,15 @@ export function DialogueFinManche({
     // Overlay fondu
     Animated.timing(animOverlay, {
       toValue: 1,
-      duration: 200,
+      duration: ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeFonduOverlay,
       useNativeDriver: true,
     }).start();
 
     // Panneau : scale + fade
     Animated.spring(animPanneau, {
       toValue: 1,
-      delay: 100,
-      tension: 60,
+      delay: ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiEntreePanneau,
+      tension: accelererTensionAnimation(60),
       friction: 8,
       useNativeDriver: true,
     }).start();
@@ -117,8 +110,8 @@ export function DialogueFinManche({
     // Scores de la manche : slide up + fade
     Animated.timing(animScoresManche, {
       toValue: 1,
-      delay: DELAI_SCORES_MANCHE,
-      duration: DUREE_APPARITION_MANCHE,
+      delay: ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiScoresManche,
+      duration: ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeApparitionManche,
       easing: Easing.out(Easing.back(1.2)),
       useNativeDriver: true,
     }).start();
@@ -126,33 +119,35 @@ export function DialogueFinManche({
     // Section total : fade
     Animated.timing(animSectionTotal, {
       toValue: 1,
-      delay: DELAI_SECTION_TOTAL,
-      duration: DUREE_APPARITION_TOTAL,
+      delay: ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiSectionTotal,
+      duration: ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeApparitionTotal,
       useNativeDriver: true,
     }).start();
 
-    // Éclairs dorés pendant le comptage
+    // Eclairs dores pendant le comptage
     const demarrerEclair = (anim: Animated.Value) =>
       Animated.sequence([
         Animated.timing(anim, {
           toValue: 1,
-          duration: 200,
+          duration: ANIMATIONS_DIALOGUE_FIN_MANCHE.dureePicEclair,
           useNativeDriver: true,
         }),
         Animated.timing(anim, {
           toValue: 0.3,
-          duration: DUREE_COMPTAGE - 200,
+          duration:
+            ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeComptage -
+            ANIMATIONS_DIALOGUE_FIN_MANCHE.dureePicEclair,
           useNativeDriver: true,
         }),
         Animated.timing(anim, {
           toValue: 0,
-          duration: 300,
+          duration: ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeSortieEclair,
           useNativeDriver: true,
         }),
       ]);
 
     Animated.parallel([
-      Animated.delay(DELAI_COMPTAGE).start === undefined
+      Animated.delay(ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiComptage).start === undefined
         ? Animated.timing(new Animated.Value(0), {
             toValue: 0,
             duration: 0,
@@ -165,22 +160,22 @@ export function DialogueFinManche({
           }),
     ]);
 
-    // Lancer les éclairs avec délai
+    // Lancer les eclairs avec delai
     setTimeout(() => {
       if (scoreMancheEquipe1 > 0) demarrerEclair(animEclair1).start();
       if (scoreMancheEquipe2 > 0) demarrerEclair(animEclair2).start();
-    }, DELAI_COMPTAGE);
+    }, ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiComptage);
 
     // Bouton : fade in
     Animated.timing(animBouton, {
       toValue: 1,
-      delay: DELAI_BOUTON,
-      duration: DUREE_APPARITION_BOUTON,
+      delay: ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiBouton,
+      duration: ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeApparitionBouton,
       useNativeDriver: true,
     }).start();
   }, []);
 
-  // Equipe gagnante de la manche (pour le style doré)
+  // Equipe gagnante de la manche (pour le style dore)
   const equipe1Gagne = scoreMancheEquipe1 > scoreMancheEquipe2;
   const equipe2Gagne = scoreMancheEquipe2 > scoreMancheEquipe1;
 
@@ -205,7 +200,7 @@ export function DialogueFinManche({
         {/* Titre */}
         <Text style={styles.titre}>Fin de manche</Text>
 
-        {/* Points de la manche — slide in */}
+        {/* Points de la manche : slide in */}
         <Animated.View
           style={{
             opacity: animScoresManche,
@@ -235,11 +230,11 @@ export function DialogueFinManche({
 
         <View style={styles.separateur} />
 
-        {/* Score total — fade in puis comptage */}
+        {/* Score total : fade in puis comptage */}
         <Animated.View style={{ opacity: animSectionTotal }}>
           <Text style={styles.sousTitre}>Score total</Text>
 
-          {/* Équipe 1 */}
+          {/* Equipe 1 */}
           <View style={styles.ligneTotal}>
             <Text style={styles.equipe}>Vous</Text>
             <View style={styles.scoreConteneur}>
@@ -263,7 +258,7 @@ export function DialogueFinManche({
             </View>
           </View>
 
-          {/* Équipe 2 */}
+          {/* Equipe 2 */}
           <View style={styles.ligneTotal}>
             <Text style={styles.equipe}>Adversaires</Text>
             <View style={styles.scoreConteneur}>
@@ -288,7 +283,7 @@ export function DialogueFinManche({
           </View>
         </Animated.View>
 
-        {/* Bouton Continuer — fade in à la fin */}
+        {/* Bouton Continuer : fade in a la fin */}
         <Animated.View style={{ opacity: animBouton }}>
           <Pressable style={styles.bouton} onPress={onContinuer}>
             <Text style={styles.texteBouton}>Continuer</Text>

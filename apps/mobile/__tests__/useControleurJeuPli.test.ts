@@ -171,7 +171,7 @@ describe("transition du dernier pli visible", () => {
   };
 
   it("affiche simplement le premier dernier pli au debut du ramassage sans transition", () => {
-    const resultat = demarrerTransitionDernierPli(creerEtat(), PREMIER_PLI, 450);
+    const resultat = demarrerTransitionDernierPli(creerEtat(), PREMIER_PLI, 225);
 
     expect(resultat.dernierPliVisible).toEqual(PREMIER_PLI);
     expect(resultat.precedentDernierPliVisible).toBeNull();
@@ -185,12 +185,12 @@ describe("transition du dernier pli visible", () => {
       dernierPliVisible: PREMIER_PLI,
     };
 
-    const resultat = demarrerTransitionDernierPli(precedent, SECOND_PLI, 450);
+    const resultat = demarrerTransitionDernierPli(precedent, SECOND_PLI, 225);
 
     expect(resultat.dernierPliVisible).toEqual(SECOND_PLI);
     expect(resultat.precedentDernierPliVisible).toEqual(PREMIER_PLI);
     expect(resultat.transitionDernierPliActive).toBe(true);
-    expect(resultat.dureeTransitionDernierPliMs).toBe(450);
+    expect(resultat.dureeTransitionDernierPliMs).toBe(225);
     expect(resultat.cleTransitionDernierPli).toBe(1);
   });
 
@@ -200,7 +200,7 @@ describe("transition du dernier pli visible", () => {
       dernierPliVisible: SECOND_PLI,
       precedentDernierPliVisible: PREMIER_PLI,
       transitionDernierPliActive: true,
-      dureeTransitionDernierPliMs: 450,
+      dureeTransitionDernierPliMs: 225,
       cleTransitionDernierPli: 1,
     };
 

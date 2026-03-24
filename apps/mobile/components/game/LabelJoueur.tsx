@@ -2,6 +2,7 @@ import type { PositionJoueur } from "@belote/shared-types";
 import { useEffect, useRef } from "react";
 import { Animated, Easing, Platform, StyleSheet, Text, View } from "react-native";
 
+import { DUREE_PULSE_JOUEUR_ACTIF } from "../../constants/animations-visuelles";
 import { COULEURS } from "../../constants/theme";
 
 interface PropsLabelJoueur {
@@ -40,13 +41,13 @@ export function LabelJoueur({
         Animated.sequence([
           Animated.timing(opacitePulse, {
             toValue: 0.3,
-            duration: 700,
+            duration: DUREE_PULSE_JOUEUR_ACTIF,
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
           }),
           Animated.timing(opacitePulse, {
             toValue: 1,
-            duration: 700,
+            duration: DUREE_PULSE_JOUEUR_ACTIF,
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
           }),

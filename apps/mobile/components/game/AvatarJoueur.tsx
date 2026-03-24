@@ -3,6 +3,8 @@ import type { ActionEnchere, Couleur, PositionJoueur } from "@belote/shared-type
 import { useEffect, useRef } from "react";
 import { Animated, Easing, Platform, StyleSheet, Text, View } from "react-native";
 
+import { DUREE_PULSE_JOUEUR_ACTIF } from "../../constants/animations-visuelles";
+
 const SYMBOLES_COULEUR: Record<Couleur, string> = {
   coeur: "\u2665",
   carreau: "\u2666",
@@ -135,13 +137,13 @@ export function AvatarJoueur({
         Animated.sequence([
           Animated.timing(opacitePulse, {
             toValue: 0.52,
-            duration: 700,
+            duration: DUREE_PULSE_JOUEUR_ACTIF,
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
           }),
           Animated.timing(opacitePulse, {
             toValue: 1,
-            duration: 700,
+            duration: DUREE_PULSE_JOUEUR_ACTIF,
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
           }),

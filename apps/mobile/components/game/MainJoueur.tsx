@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import { DUREE_FONDU_ENTREE_MAIN } from "../../constants/animations-visuelles";
 import {
   ANIMATIONS,
   POSITIONS_MAINS,
@@ -125,7 +126,7 @@ function CarteEventailAnimee({
       animX.value = withTiming(x, config);
       animBottom.value = withTiming(decalageY, config);
       animAngle.value = withTiming(angle, config);
-      animOpacite.value = withTiming(1, { duration: 100 });
+      animOpacite.value = withTiming(1, { duration: DUREE_FONDU_ENTREE_MAIN });
       return;
     }
     const config = {
