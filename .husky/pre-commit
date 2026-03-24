@@ -1,3 +1,4 @@
+#!/bin/sh
 pnpm lint-staged
 
 # Scan des secrets dans les changements staged

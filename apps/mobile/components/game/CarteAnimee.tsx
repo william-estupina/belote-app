@@ -76,6 +76,8 @@ export function CarteAnimee({
   const aFlip = flipDe !== undefined && flipVers !== undefined;
   const animationFrameFinRef = useRef<number | null>(null);
   const timeoutFinRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onTermineeRef = useRef(onTerminee);
+  onTermineeRef.current = onTerminee;
 
   const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
   const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
@@ -101,19 +103,20 @@ export function CarteAnimee({
 
   useEffect(() => {
     const planifierFinAnimation = () => {
-      if (!onTerminee) return;
+      const cb = onTermineeRef.current;
+      if (!cb) return;
 
       if (typeof globalThis.requestAnimationFrame === "function") {
         animationFrameFinRef.current = globalThis.requestAnimationFrame(() => {
           animationFrameFinRef.current = null;
-          onTerminee();
+          cb();
         });
         return;
       }
 
       timeoutFinRef.current = setTimeout(() => {
         timeoutFinRef.current = null;
-        onTerminee();
+        cb();
       }, 0);
     };
 
@@ -123,12 +126,12 @@ export function CarteAnimee({
       { duration: duree, easing: EASINGS[easing] },
       (termine) => {
         "worklet";
-        if (termine && onTerminee) {
+        if (termine) {
           runOnJS(planifierFinAnimation)();
         }
       },
     );
-  }, [progres, duree, onTerminee, easing, segment]);
+  }, [progres, duree, easing, segment]);
 
   // Style du conteneur (position + rotation Z + scale)
   const styleConteneur = useAnimatedStyle(() => {
