@@ -153,7 +153,7 @@ describe("MainJoueur", () => {
     );
   });
 
-  it("reorganise la main 50 % plus vite et accelere aussi le fondu d entree", () => {
+  it("ralentit legerement la reorganisation principale tout en gardant le petit fondu rapide", () => {
     render(
       <MainJoueur
         cartes={CARTES}
@@ -168,7 +168,7 @@ describe("MainJoueur", () => {
 
     expect(mockWithTiming).toHaveBeenCalledWith(
       expect.any(Number),
-      expect.objectContaining({ duration: 175 }),
+      expect.objectContaining({ duration: 210 }),
     );
     expect(mockWithTiming).toHaveBeenCalledWith(
       1,

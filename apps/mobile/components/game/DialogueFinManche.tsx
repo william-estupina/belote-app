@@ -10,10 +10,7 @@ import {
   View,
 } from "react-native";
 
-import {
-  accelererTensionAnimation,
-  ANIMATIONS_DIALOGUE_FIN_MANCHE,
-} from "../../constants/animations-visuelles";
+import { ANIMATIONS_DIALOGUE_FIN_MANCHE } from "../../constants/animations-visuelles";
 import { COULEURS } from "../../constants/theme";
 
 interface PropsDialogueFinManche {
@@ -102,7 +99,7 @@ export function DialogueFinManche({
     Animated.spring(animPanneau, {
       toValue: 1,
       delay: ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiEntreePanneau,
-      tension: accelererTensionAnimation(60),
+      tension: ANIMATIONS_DIALOGUE_FIN_MANCHE.tensionEntreePanneau,
       friction: 8,
       useNativeDriver: true,
     }).start();
