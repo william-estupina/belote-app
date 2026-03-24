@@ -2,7 +2,7 @@ import type { Carte } from "@belote/shared-types";
 
 import { appliquerEtatVerrouillePendantFinPli } from "../hooks/etatFinPliVisuel";
 import { ajouterCarteAuPliVisuel } from "../hooks/etatPliVisuel";
-import { construireCartesPoseesAuPliDepuisPli } from "../hooks/useAnimations";
+import { construireCartesGeleesDepuisPli } from "../hooks/useAnimations";
 import type { EtatJeu } from "../hooks/useControleurJeu";
 
 const CARTE_TEST: Carte = { couleur: "pique", rang: "as" };
@@ -52,27 +52,30 @@ describe("ajouterCarteAuPliVisuel", () => {
 
     expect(suivant.pliEnCours).toEqual([{ joueur: "est", carte: CARTE_TEST }]);
   });
+});
 
-  it("conserve la verite metier du pli quand la couche animation filtre une carte encore en vol", () => {
-    const etatAvecCarte = ajouterCarteAuPliVisuel(creerEtat(), "est", CARTE_TEST);
+describe("construireCartesGeleesDepuisPli", () => {
+  it("construit des cartes gelees pour les cartes du pli absentes de cartesEnVol", () => {
+    const pli = [{ joueur: "est" as const, carte: CARTE_TEST }];
+    const cartesEnVol: Array<{ carte: Carte }> = [];
 
-    const cartesPoseesPendantLeVol = construireCartesPoseesAuPliDepuisPli(
-      etatAvecCarte.pliEnCours,
-      [{ joueur: "est", carte: CARTE_TEST }],
-    );
-    const cartesPoseesApresLeVol = construireCartesPoseesAuPliDepuisPli(
-      etatAvecCarte.pliEnCours,
-      [],
-    );
+    const gelee = construireCartesGeleesDepuisPli(pli, cartesEnVol);
 
-    expect(etatAvecCarte.pliEnCours).toEqual([{ joueur: "est", carte: CARTE_TEST }]);
-    expect(cartesPoseesPendantLeVol).toEqual([]);
-    expect(cartesPoseesApresLeVol).toHaveLength(1);
-    expect(cartesPoseesApresLeVol[0]).toMatchObject({
-      joueur: "est",
+    expect(gelee).toHaveLength(1);
+    expect(gelee[0]).toMatchObject({
+      id: "pli-est-pique-as",
       carte: CARTE_TEST,
-      faceVisible: true,
+      segment: 0,
     });
+  });
+
+  it("ne cree pas de carte gelee si elle est deja en vol", () => {
+    const pli = [{ joueur: "est" as const, carte: CARTE_TEST }];
+    const cartesEnVol = [{ carte: CARTE_TEST }];
+
+    const gelee = construireCartesGeleesDepuisPli(pli, cartesEnVol);
+
+    expect(gelee).toHaveLength(0);
   });
 });
 

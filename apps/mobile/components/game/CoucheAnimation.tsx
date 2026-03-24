@@ -2,10 +2,8 @@ import type { Carte } from "@belote/shared-types";
 import { View } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 
-import { RATIO_ASPECT_CARTE, RATIO_LARGEUR_CARTE } from "../../constants/layout";
 import type { CarteAtlas } from "../../hooks/useAnimationsDistribution";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
-import { CarteFaceAtlas } from "./Carte";
 import { CarteAnimee, type PositionCarte } from "./CarteAnimee";
 import { DistributionCanvas } from "./DistributionCanvas";
 
@@ -24,7 +22,6 @@ export interface CarteEnVol {
 
 interface PropsCoucheAnimation {
   cartesEnVol: CarteEnVol[];
-  cartesPoseesAuPli?: CartePoseeAuPli[];
   largeurEcran: number;
   hauteurEcran: number;
   onAnimationTerminee: (id: string) => void;
@@ -36,19 +33,8 @@ interface PropsCoucheAnimation {
   distributionEnCours?: boolean;
 }
 
-interface CartePoseeAuPli {
-  id: string;
-  carte: Carte;
-  x: number;
-  y: number;
-  rotation: number;
-  echelle: number;
-  faceVisible: boolean;
-}
-
 export function CoucheAnimation({
   cartesEnVol,
-  cartesPoseesAuPli = [],
   largeurEcran,
   hauteurEcran,
   onAnimationTerminee,
@@ -67,12 +53,9 @@ export function CoucheAnimation({
     nbCartesActivesDistribution &&
     distributionEnCours;
 
-  if (cartesEnVol.length === 0 && cartesPoseesAuPli.length === 0 && !aDistributionAtlas) {
+  if (cartesEnVol.length === 0 && !aDistributionAtlas) {
     return null;
   }
-
-  const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
-  const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
 
   return (
     <View
@@ -97,33 +80,6 @@ export function CoucheAnimation({
           hauteurEcran={hauteurEcran}
         />
       )}
-
-      {cartesPoseesAuPli.map((cartePosee) => (
-        <View
-          key={cartePosee.id}
-          style={{
-            position: "absolute",
-            left: cartePosee.x * largeurEcran - largeurCarte / 2,
-            top: cartePosee.y * hauteurEcran - hauteurCarte / 2,
-            transform: [
-              { rotate: `${cartePosee.rotation}deg` },
-              { scale: cartePosee.echelle },
-            ],
-            shadowColor: "#000",
-            shadowOffset: { width: 1, height: 2 },
-            shadowOpacity: 0.4,
-            shadowRadius: 3,
-            elevation: 4,
-          }}
-        >
-          <CarteFaceAtlas
-            atlas={atlas}
-            carte={cartePosee.carte}
-            largeur={largeurCarte}
-            hauteur={hauteurCarte}
-          />
-        </View>
-      ))}
 
       {cartesEnVol.map((vol) => (
         <CarteAnimee

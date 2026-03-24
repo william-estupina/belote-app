@@ -33,7 +33,6 @@ export default function PlateauJeu() {
   const {
     etatJeu,
     cartesEnVol,
-    cartesPoseesAuPli,
     surAnimationTerminee,
     atlas,
     cartesAtlasDistribution,
@@ -224,7 +223,6 @@ export default function PlateauJeu() {
           {/* Couche d'animation (cartes en vol) */}
           <CoucheAnimation
             cartesEnVol={cartesEnVol}
-            cartesPoseesAuPli={cartesPoseesAuPli}
             largeurEcran={largeur}
             hauteurEcran={hauteur}
             onAnimationTerminee={surAnimationTerminee}
