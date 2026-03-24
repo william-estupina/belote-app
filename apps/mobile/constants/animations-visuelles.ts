@@ -31,7 +31,7 @@ export const ANIMATIONS_DIALOGUE_FIN_MANCHE = {
   delaiSectionTotal: ralentirDureeAnimationMajeure(accelererDureeAnimation(800)),
   dureeApparitionTotal: ralentirDureeAnimationMajeure(accelererDureeAnimation(300)),
   delaiComptage: ralentirDureeAnimationMajeure(accelererDureeAnimation(1200)),
-  dureeComptage: ralentirDureeAnimationMajeure(accelererDureeAnimation(800)),
+  dureeComptage: 600,
   delaiBouton: ralentirDureeAnimationMajeure(accelererDureeAnimation(2200)),
   dureeApparitionBouton: ralentirDureeAnimationMajeure(accelererDureeAnimation(300)),
   dureeFonduOverlay: ralentirDureeAnimationMajeure(accelererDureeAnimation(200)),

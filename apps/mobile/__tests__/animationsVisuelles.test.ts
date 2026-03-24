@@ -39,7 +39,7 @@ describe("animations visuelles", () => {
       delaiSectionTotal: 480,
       dureeApparitionTotal: 180,
       delaiComptage: 720,
-      dureeComptage: 480,
+      dureeComptage: 600,
       delaiBouton: 1320,
       dureeApparitionBouton: 180,
       dureeFonduOverlay: 120,
