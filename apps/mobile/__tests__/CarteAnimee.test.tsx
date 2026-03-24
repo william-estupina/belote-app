@@ -90,6 +90,55 @@ describe("CarteAnimee", () => {
     global.requestAnimationFrame = requestAnimationFrameOriginal;
   });
 
+  it("relance l'animation quand le segment change", () => {
+    const withTimingMock = jest.fn(
+      (valeur: number, _config: unknown, surFin?: (termine?: boolean) => void) => {
+        surFin?.(true);
+        return valeur;
+      },
+    );
+    const reanimated = jest.requireMock("react-native-reanimated") as {
+      withTiming: jest.Mock;
+    };
+    reanimated.withTiming = withTimingMock;
+
+    const surFin = jest.fn();
+
+    const { rerender } = render(
+      <CarteAnimee
+        carte={CARTE_TEST}
+        depart={{ x: 0.2, y: 0.8, rotation: 0, echelle: 1 }}
+        arrivee={{ x: 0.5, y: 0.5, rotation: 5, echelle: 0.9 }}
+        faceVisible
+        duree={300}
+        segment={0}
+        largeurEcran={1200}
+        hauteurEcran={800}
+        atlas={ATLAS_TEST}
+        onTerminee={surFin}
+      />,
+    );
+
+    const premiersAppels = withTimingMock.mock.calls.length;
+
+    rerender(
+      <CarteAnimee
+        carte={CARTE_TEST}
+        depart={{ x: 0.5, y: 0.5, rotation: 0, echelle: 0.85 }}
+        arrivee={{ x: 0.5, y: 0.2, rotation: 0, echelle: 0.6 }}
+        faceVisible={false}
+        duree={400}
+        segment={1}
+        largeurEcran={1200}
+        hauteurEcran={800}
+        atlas={ATLAS_TEST}
+        onTerminee={surFin}
+      />,
+    );
+
+    expect(withTimingMock.mock.calls.length).toBeGreaterThan(premiersAppels);
+  });
+
   it("utilise l'atlas pour une carte face en vol quand il est disponible", () => {
     const { getByTestId } = render(
       <CarteAnimee

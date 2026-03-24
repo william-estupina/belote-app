@@ -43,6 +43,8 @@ interface PropsCarteAnimee {
   flipVers?: number;
   /** Profil d'easing. Défaut: 'out-cubic' */
   easing?: "out-cubic" | "inout-cubic";
+  /** S'incrémente à chaque nouvelle trajectoire pour relancer l'animation */
+  segment?: number;
 }
 
 const EASINGS = {
@@ -68,6 +70,7 @@ export function CarteAnimee({
   flipDe,
   flipVers,
   easing = "out-cubic",
+  segment = 0,
 }: PropsCarteAnimee) {
   const progres = useSharedValue(0);
   const aFlip = flipDe !== undefined && flipVers !== undefined;
@@ -114,6 +117,7 @@ export function CarteAnimee({
       }, 0);
     };
 
+    progres.value = 0;
     progres.value = withTiming(
       1,
       { duration: duree, easing: EASINGS[easing] },
@@ -124,7 +128,7 @@ export function CarteAnimee({
         }
       },
     );
-  }, [progres, duree, onTerminee, easing]);
+  }, [progres, duree, onTerminee, easing, segment]);
 
   // Style du conteneur (position + rotation Z + scale)
   const styleConteneur = useAnimatedStyle(() => {
@@ -144,6 +148,11 @@ export function CarteAnimee({
       top: position.y * hauteurEcran - hauteurCarte / 2,
       transform: [{ rotate: `${rotation}deg` }, { scale: echelle }],
       zIndex: 100,
+      shadowColor: "#000",
+      shadowOffset: { width: 1, height: 2 },
+      shadowOpacity: 0.4,
+      shadowRadius: 3,
+      elevation: 4,
     };
   });
 
