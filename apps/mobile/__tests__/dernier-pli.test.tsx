@@ -1,5 +1,5 @@
 import type { PliComplete } from "@belote/shared-types";
-import { render, screen } from "@testing-library/react-native";
+import { act, render, screen } from "@testing-library/react-native";
 
 import { DernierPli } from "../components/game/DernierPli";
 
@@ -14,7 +14,27 @@ const DERNIER_PLI: PliComplete = {
   points: 24,
 };
 
+const NOUVEAU_DERNIER_PLI: PliComplete = {
+  cartes: [
+    { joueur: "nord", carte: { rang: "dame", couleur: "trefle" } },
+    { joueur: "ouest", carte: { rang: "10", couleur: "coeur" } },
+    { joueur: "est", carte: { rang: "9", couleur: "pique" } },
+    { joueur: "sud", carte: { rang: "as", couleur: "carreau" } },
+  ],
+  gagnant: "sud",
+  points: 18,
+};
+
 describe("DernierPli", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
+  });
+
   it("affiche un rendu compact avec valeurs courtes et symboles de couleur", () => {
     render(<DernierPli dernierPli={DERNIER_PLI} />);
 
@@ -58,5 +78,24 @@ describe("DernierPli", () => {
     expect(screen.queryByText("Appuyer pour agrandir")).toBeNull();
     expect(screen.queryByText("Appuyer pour fermer")).toBeNull();
     expect(screen.queryByLabelText("Voir le dernier pli en d\u00E9tail")).toBeNull();
+  });
+
+  it("conserve temporairement l'ancien dernier pli pendant la transition vers le nouveau", () => {
+    const { rerender } = render(<DernierPli dernierPli={DERNIER_PLI} />);
+
+    rerender(<DernierPli dernierPli={NOUVEAU_DERNIER_PLI} />);
+
+    expect(screen.getByText("24 pts")).toBeTruthy();
+    expect(screen.getByText("18 pts")).toBeTruthy();
+    expect(screen.getByTestId("couche-dernier-pli-sortante")).toBeTruthy();
+    expect(screen.getByTestId("couche-dernier-pli-entrante")).toBeTruthy();
+
+    act(() => {
+      jest.runAllTimers();
+    });
+
+    expect(screen.queryByText("24 pts")).toBeNull();
+    expect(screen.getByText("18 pts")).toBeTruthy();
+    expect(screen.queryByTestId("couche-dernier-pli-sortante")).toBeNull();
   });
 });

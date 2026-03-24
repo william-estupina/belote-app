@@ -6,6 +6,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { COULEURS } from "../../constants/theme";
 import { useControleurJeu } from "../../hooks/useControleurJeu";
+import { doitAfficherDernierPli } from "../../hooks/visibiliteDernierPli";
 import { doitAfficherUIEncheres } from "../../hooks/visibiliteEncheres";
 import { useAppStore } from "../../stores/app-store";
 import { AvatarJoueur } from "./AvatarJoueur";
@@ -172,7 +173,7 @@ export default function PlateauJeu() {
           )}
 
           {/* Dernier pli (haut à droite) */}
-          {etatJeu.phaseUI === "jeu" && etatJeu.historiquePlis.length > 0 && (
+          {doitAfficherDernierPli(etatJeu.phaseUI, etatJeu.historiquePlis.length) && (
             <DernierPli
               dernierPli={etatJeu.historiquePlis[etatJeu.historiquePlis.length - 1]}
             />

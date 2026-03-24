@@ -1,5 +1,6 @@
 import type { Couleur, PliComplete, PositionJoueur, Rang } from "@belote/shared-types";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Animated, Easing, Platform, StyleSheet, Text, View } from "react-native";
 
 import { COULEURS } from "../../constants/theme";
 
@@ -12,6 +13,10 @@ const LARGEUR_JETON = estWeb ? 58 : 54;
 const HAUTEUR_JETON = estWeb ? 34 : 32;
 const TAILLE_ZONE = estWeb ? 148 : 136;
 const LARGEUR_CONTENEUR = estWeb ? 188 : 176;
+const HAUTEUR_CONTENU = TAILLE_ZONE + (estWeb ? 24 : 22);
+const DUREE_TRANSITION = 320;
+const DECALAGE_ENTRANT = 10;
+const DECALAGE_SORTANT = -6;
 
 const LIBELLES_RANG: Record<Rang, string> = {
   "7": "7",
@@ -65,9 +70,21 @@ function formaterCarte(rang: Rang, couleur: Couleur): string {
   return `${LIBELLES_RANG[rang]} ${SYMBOLES_COULEUR[couleur]}`;
 }
 
-export function DernierPli({ dernierPli }: PropsDernierPli) {
+function creerSignatureDernierPli(dernierPli: PliComplete): string {
+  const cartes = dernierPli.cartes
+    .map(({ joueur, carte }) => `${joueur}:${carte.couleur}:${carte.rang}`)
+    .join("|");
+  return `${dernierPli.gagnant}-${dernierPli.points}-${cartes}`;
+}
+
+interface PropsContenuDernierPli {
+  dernierPli: PliComplete;
+  prefixeTestId?: string;
+}
+
+function ContenuDernierPli({ dernierPli, prefixeTestId = "" }: PropsContenuDernierPli) {
   return (
-    <View style={styles.conteneur}>
+    <>
       <View style={styles.enTete}>
         <Text style={styles.titre}>Dernier pli</Text>
         <Text style={styles.pointsBadge}>{dernierPli.points} pts</Text>
@@ -80,17 +97,22 @@ export function DernierPli({ dernierPli }: PropsDernierPli) {
 
           return (
             <View
-              key={`dernier-pli-${joueur}`}
-              testID={`jeton-dernier-pli-${joueur}`}
+              key={`dernier-pli-${prefixeTestId}${joueur}`}
+              testID={`${prefixeTestId}jeton-dernier-pli-${joueur}`}
               style={[
                 styles.jeton,
                 { top: position.top, left: position.left },
                 estGagnant && styles.jetonGagnant,
               ]}
             >
-              {estGagnant && <View testID={`anneau-gagnant-${joueur}`} style={styles.anneauGagnant} />}
+              {estGagnant && (
+                <View
+                  testID={`${prefixeTestId}anneau-gagnant-${joueur}`}
+                  style={styles.anneauGagnant}
+                />
+              )}
               <Text
-                testID={`texte-dernier-pli-${joueur}`}
+                testID={`${prefixeTestId}texte-dernier-pli-${joueur}`}
                 style={[
                   styles.texteJeton,
                   { color: COULEURS_TEXTE_COULEUR[carte.couleur] },
@@ -99,13 +121,206 @@ export function DernierPli({ dernierPli }: PropsDernierPli) {
                 {formaterCarte(carte.rang, carte.couleur)}
               </Text>
               {estGagnant && (
-                <View testID={`ruban-gagnant-${joueur}`} style={styles.rubanGagnant}>
+                <View
+                  testID={`${prefixeTestId}ruban-gagnant-${joueur}`}
+                  style={styles.rubanGagnant}
+                >
                   <Text style={styles.texteRubanGagnant}>1</Text>
                 </View>
               )}
             </View>
           );
         })}
+      </View>
+    </>
+  );
+}
+
+export function DernierPli({ dernierPli }: PropsDernierPli) {
+  const signatureRecue = useMemo(
+    () => creerSignatureDernierPli(dernierPli),
+    [dernierPli],
+  );
+  const [pliAffiche, setPliAffiche] = useState(dernierPli);
+  const [signatureAffichee, setSignatureAffichee] = useState(signatureRecue);
+  const [pliSortant, setPliSortant] = useState<PliComplete | null>(null);
+  const opaciteEntrante = useRef(new Animated.Value(1)).current;
+  const translationEntrante = useRef(new Animated.Value(0)).current;
+  const echelleEntrante = useRef(new Animated.Value(1)).current;
+  const opaciteSortante = useRef(new Animated.Value(1)).current;
+  const translationSortante = useRef(new Animated.Value(0)).current;
+  const echelleSortante = useRef(new Animated.Value(1)).current;
+  const opaciteLueur = useRef(new Animated.Value(0)).current;
+  const echelleLueur = useRef(new Animated.Value(0.92)).current;
+  const animationRef = useRef<Animated.CompositeAnimation | null>(null);
+
+  useEffect(() => {
+    return () => {
+      animationRef.current?.stop();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (signatureRecue === signatureAffichee) {
+      setPliAffiche(dernierPli);
+      return;
+    }
+
+    animationRef.current?.stop();
+    setPliSortant(pliAffiche);
+    setPliAffiche(dernierPli);
+    setSignatureAffichee(signatureRecue);
+
+    opaciteEntrante.setValue(0);
+    translationEntrante.setValue(DECALAGE_ENTRANT);
+    echelleEntrante.setValue(0.97);
+    opaciteSortante.setValue(1);
+    translationSortante.setValue(0);
+    echelleSortante.setValue(1);
+    opaciteLueur.setValue(0);
+    echelleLueur.setValue(0.92);
+
+    const easing = Easing.out(Easing.cubic);
+    const animation = Animated.parallel([
+      Animated.timing(opaciteEntrante, {
+        toValue: 1,
+        duration: DUREE_TRANSITION,
+        easing,
+        useNativeDriver: false,
+      }),
+      Animated.timing(translationEntrante, {
+        toValue: 0,
+        duration: DUREE_TRANSITION,
+        easing,
+        useNativeDriver: false,
+      }),
+      Animated.timing(echelleEntrante, {
+        toValue: 1,
+        duration: DUREE_TRANSITION,
+        easing,
+        useNativeDriver: false,
+      }),
+      Animated.timing(opaciteSortante, {
+        toValue: 0.4,
+        duration: DUREE_TRANSITION,
+        easing,
+        useNativeDriver: false,
+      }),
+      Animated.timing(translationSortante, {
+        toValue: DECALAGE_SORTANT,
+        duration: DUREE_TRANSITION,
+        easing,
+        useNativeDriver: false,
+      }),
+      Animated.timing(echelleSortante, {
+        toValue: 0.97,
+        duration: DUREE_TRANSITION,
+        easing,
+        useNativeDriver: false,
+      }),
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(opaciteLueur, {
+            toValue: 0.22,
+            duration: 140,
+            easing,
+            useNativeDriver: false,
+          }),
+          Animated.timing(echelleLueur, {
+            toValue: 1,
+            duration: 140,
+            easing,
+            useNativeDriver: false,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(opaciteLueur, {
+            toValue: 0,
+            duration: 180,
+            easing,
+            useNativeDriver: false,
+          }),
+          Animated.timing(echelleLueur, {
+            toValue: 1.06,
+            duration: 180,
+            easing,
+            useNativeDriver: false,
+          }),
+        ]),
+      ]),
+    ]);
+
+    animationRef.current = animation;
+    animation.start(({ finished }) => {
+      if (finished) {
+        setPliSortant(null);
+      }
+    });
+  }, [
+    dernierPli,
+    echelleEntrante,
+    echelleLueur,
+    echelleSortante,
+    opaciteEntrante,
+    opaciteLueur,
+    opaciteSortante,
+    pliAffiche,
+    signatureAffichee,
+    signatureRecue,
+    translationEntrante,
+    translationSortante,
+  ]);
+
+  return (
+    <View style={styles.conteneur}>
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.lueurTransition,
+          {
+            opacity: opaciteLueur,
+            transform: [{ scale: echelleLueur }],
+          },
+        ]}
+      />
+
+      <View style={styles.zoneTransition}>
+        {pliSortant && (
+          <Animated.View
+            testID="couche-dernier-pli-sortante"
+            style={[
+              styles.couchePli,
+              styles.coucheSuperposee,
+              {
+                opacity: opaciteSortante,
+                transform: [
+                  { translateY: translationSortante },
+                  { scale: echelleSortante },
+                ],
+              },
+            ]}
+          >
+            <ContenuDernierPli dernierPli={pliSortant} prefixeTestId="sortant-" />
+          </Animated.View>
+        )}
+
+        <Animated.View
+          testID={
+            pliSortant ? "couche-dernier-pli-entrante" : "couche-dernier-pli-principale"
+          }
+          style={[
+            styles.couchePli,
+            pliSortant && styles.coucheSuperposee,
+            {
+              opacity: pliSortant ? opaciteEntrante : 1,
+              transform: pliSortant
+                ? [{ translateY: translationEntrante }, { scale: echelleEntrante }]
+                : undefined,
+            },
+          ]}
+        >
+          <ContenuDernierPli dernierPli={pliAffiche} />
+        </Animated.View>
       </View>
     </View>
   );
@@ -126,6 +341,30 @@ const styles = StyleSheet.create({
     zIndex: 10,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.14)",
+    overflow: "hidden",
+  },
+  zoneTransition: {
+    width: "100%",
+    minHeight: HAUTEUR_CONTENU,
+    position: "relative",
+  },
+  couchePli: {
+    width: "100%",
+  },
+  coucheSuperposee: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+  },
+  lueurTransition: {
+    position: "absolute",
+    top: estWeb ? 34 : 30,
+    left: 20,
+    right: 20,
+    height: estWeb ? 110 : 96,
+    borderRadius: 999,
+    backgroundColor: "rgba(245, 207, 99, 0.22)",
   },
   enTete: {
     width: "100%",
