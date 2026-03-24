@@ -31,7 +31,9 @@ describe("DernierPli", () => {
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
     jest.useRealTimers();
   });
 
@@ -107,5 +109,20 @@ describe("DernierPli", () => {
     expect(screen.queryByText("24 pts")).toBeNull();
     expect(screen.getByText("18 pts")).toBeTruthy();
     expect(screen.queryByTestId("couche-dernier-pli-sortante")).toBeNull();
+  });
+
+  it("garde l'ancien pli comme base stable pendant la transition", () => {
+    render(
+      <DernierPli
+        dernierPli={NOUVEAU_DERNIER_PLI}
+        precedentDernierPli={DERNIER_PLI}
+        transitionDernierPliActive
+        dureeTransitionDernierPliMs={450}
+        cleTransitionDernierPli={2}
+      />,
+    );
+
+    expect(screen.getByTestId("texte-dernier-pli-nord").props.children).toBe("A \u2660");
+    expect(screen.getByTestId("entrant-texte-dernier-pli-nord")).toBeTruthy();
   });
 });

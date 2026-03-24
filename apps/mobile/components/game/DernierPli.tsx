@@ -211,44 +211,40 @@ export function DernierPli({
   return (
     <View style={styles.conteneur}>
       <View style={styles.zoneTransition}>
-        {transitionDernierPliActive && precedentDernierPli && (
-          <Animated.View
-            testID="couche-dernier-pli-sortante"
-            style={[
-              styles.couchePli,
-              styles.coucheSuperposee,
-              {
-                opacity: opaciteSortante,
-                transform: [{ translateY: translationSortante }],
-              },
-            ]}
-          >
-            <ContenuDernierPli
-              dernierPli={precedentDernierPli}
-              prefixeTestId="sortant-"
-            />
+        {transitionDernierPliActive && precedentDernierPli ? (
+          <>
+            <Animated.View
+              testID="couche-dernier-pli-sortante"
+              style={[
+                styles.couchePli,
+                {
+                  opacity: opaciteSortante,
+                  transform: [{ translateY: translationSortante }],
+                },
+              ]}
+            >
+              <ContenuDernierPli dernierPli={precedentDernierPli} />
+            </Animated.View>
+
+            <Animated.View
+              testID="couche-dernier-pli-entrante"
+              style={[
+                styles.couchePli,
+                styles.coucheSuperposee,
+                {
+                  opacity: opaciteEntrante,
+                  transform: [{ translateY: translationEntrante }],
+                },
+              ]}
+            >
+              <ContenuDernierPli dernierPli={dernierPli} prefixeTestId="entrant-" />
+            </Animated.View>
+          </>
+        ) : (
+          <Animated.View testID="couche-dernier-pli-principale" style={styles.couchePli}>
+            <ContenuDernierPli dernierPli={dernierPli} />
           </Animated.View>
         )}
-
-        <Animated.View
-          testID={
-            transitionDernierPliActive
-              ? "couche-dernier-pli-entrante"
-              : "couche-dernier-pli-principale"
-          }
-          style={[
-            styles.couchePli,
-            transitionDernierPliActive && styles.coucheSuperposee,
-            {
-              opacity: transitionDernierPliActive ? opaciteEntrante : 1,
-              transform: transitionDernierPliActive
-                ? [{ translateY: translationEntrante }]
-                : undefined,
-            },
-          ]}
-        >
-          <ContenuDernierPli dernierPli={dernierPli} />
-        </Animated.View>
       </View>
     </View>
   );
