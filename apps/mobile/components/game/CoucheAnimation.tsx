@@ -16,6 +16,7 @@ export interface CarteEnVol {
   arrivee: PositionCarte;
   faceVisible: boolean;
   duree: number;
+  segment: number;
   flipDe?: number;
   flipVers?: number;
   easing?: "out-cubic" | "inout-cubic";
@@ -132,6 +133,7 @@ export function CoucheAnimation({
           arrivee={vol.arrivee}
           faceVisible={vol.faceVisible}
           duree={vol.duree}
+          segment={vol.segment}
           atlas={atlas}
           flipDe={vol.flipDe}
           flipVers={vol.flipVers}

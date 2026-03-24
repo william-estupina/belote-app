@@ -41,6 +41,7 @@ describe("CoucheAnimation", () => {
           arrivee: { x: 0.6, y: 0.45, rotation: 8, echelle: 0.9 },
           faceVisible: true,
           duree: 300,
+          segment: 0,
         },
       ],
       largeurEcran: 1200,
