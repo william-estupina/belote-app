@@ -19,8 +19,10 @@ jobs:
 
     steps:
       - name: Verifier la presence de EXPO_TOKEN
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+          if [ -z "${EXPO_TOKEN}" ]; then
             echo "Le secret GitHub Actions EXPO_TOKEN est requis pour lancer un build EAS." >&2
             echo "Creez-le depuis Settings > Secrets and variables > Actions." >&2
             exit 1
