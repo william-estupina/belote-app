@@ -4,6 +4,7 @@ import { act, render, screen } from "@testing-library/react-native";
 import {
   calculerCiblesTransitionDernierPli,
   calculerEtatInitialTransitionDernierPli,
+  calculerPositionMarqueurGagnant,
   calculerTrajectoireMarqueurGagnant,
   DernierPli,
 } from "../components/game/DernierPli";
@@ -169,6 +170,8 @@ describe("DernierPli", () => {
   });
 
   it("anime un marqueur gagnant unique entre l ancien et le nouveau vainqueur", () => {
+    expect(calculerPositionMarqueurGagnant("sud").top).toBeGreaterThan(100);
+
     expect(
       calculerTrajectoireMarqueurGagnant({
         dernierPli: NOUVEAU_DERNIER_PLI,

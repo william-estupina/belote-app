@@ -96,6 +96,18 @@ function calculerPositionJeton(joueur: PositionJoueur): { top: number; left: num
   return POSITIONS[joueur];
 }
 
+export function calculerPositionMarqueurGagnant(joueur: PositionJoueur): {
+  top: number;
+  left: number;
+} {
+  const positionJeton = calculerPositionJeton(joueur);
+
+  return {
+    top: positionJeton.top + (HAUTEUR_CONTENU - TAILLE_ZONE),
+    left: positionJeton.left,
+  };
+}
+
 export function calculerEtatInitialTransitionDernierPli({
   precedentDernierPli,
   transitionDernierPliActive,
@@ -143,8 +155,8 @@ export function calculerTrajectoireMarqueurGagnant({
   }
 
   return {
-    depart: calculerPositionJeton(precedentDernierPli.gagnant),
-    arrivee: calculerPositionJeton(dernierPli.gagnant),
+    depart: calculerPositionMarqueurGagnant(precedentDernierPli.gagnant),
+    arrivee: calculerPositionMarqueurGagnant(dernierPli.gagnant),
   };
 }
 
