@@ -2,6 +2,7 @@ import type { PliComplete } from "@belote/shared-types";
 import { act, render, screen } from "@testing-library/react-native";
 
 import {
+  calculerCiblesTransitionDernierPli,
   calculerEtatInitialTransitionDernierPli,
   DernierPli,
 } from "../components/game/DernierPli";
@@ -154,6 +155,15 @@ describe("DernierPli", () => {
       translationEntrante: 0,
       opaciteSortante: 1,
       translationSortante: 0,
+    });
+  });
+
+  it("termine la transition sur une vraie disparition de la couche sortante", () => {
+    expect(calculerCiblesTransitionDernierPli()).toEqual({
+      opaciteEntrante: 1,
+      translationEntrante: 0,
+      opaciteSortante: 0,
+      translationSortante: -2,
     });
   });
 });

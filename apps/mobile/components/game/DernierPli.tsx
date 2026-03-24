@@ -28,6 +28,13 @@ interface EtatInitialTransitionDernierPli {
   translationSortante: number;
 }
 
+interface CiblesTransitionDernierPli {
+  opaciteEntrante: number;
+  translationEntrante: number;
+  opaciteSortante: number;
+  translationSortante: number;
+}
+
 const LIBELLES_RANG: Record<Rang, string> = {
   "7": "7",
   "8": "8",
@@ -101,6 +108,15 @@ export function calculerEtatInitialTransitionDernierPli({
     translationEntrante: DECALAGE_ENTRANT,
     opaciteSortante: 1,
     translationSortante: 0,
+  };
+}
+
+export function calculerCiblesTransitionDernierPli(): CiblesTransitionDernierPli {
+  return {
+    opaciteEntrante: 1,
+    translationEntrante: 0,
+    opaciteSortante: 0,
+    translationSortante: DECALAGE_SORTANT,
   };
 }
 
@@ -210,28 +226,29 @@ export function DernierPli({
       return;
     }
 
+    const ciblesTransition = calculerCiblesTransitionDernierPli();
     const easing = Easing.inOut(Easing.quad);
     const animation = Animated.parallel([
       Animated.timing(opaciteEntrante, {
-        toValue: 1,
+        toValue: ciblesTransition.opaciteEntrante,
         duration: dureeTransitionDernierPliMs,
         easing,
         useNativeDriver: false,
       }),
       Animated.timing(translationEntrante, {
-        toValue: 0,
+        toValue: ciblesTransition.translationEntrante,
         duration: dureeTransitionDernierPliMs,
         easing,
         useNativeDriver: false,
       }),
       Animated.timing(opaciteSortante, {
-        toValue: 0.72,
+        toValue: ciblesTransition.opaciteSortante,
         duration: dureeTransitionDernierPliMs,
         easing,
         useNativeDriver: false,
       }),
       Animated.timing(translationSortante, {
-        toValue: DECALAGE_SORTANT,
+        toValue: ciblesTransition.translationSortante,
         duration: dureeTransitionDernierPliMs,
         easing,
         useNativeDriver: false,
