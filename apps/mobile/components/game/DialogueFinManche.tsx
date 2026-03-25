@@ -1,5 +1,4 @@
-// Dialogue anime de fin de manche : affiche les scores avec animation de comptage
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   Easing,
@@ -12,90 +11,123 @@ import {
 
 import { ANIMATIONS_DIALOGUE_FIN_MANCHE } from "../../constants/animations-visuelles";
 import { COULEURS } from "../../constants/theme";
+import type { ResumeFinManche } from "../../hooks/resume-fin-manche";
 
 interface PropsDialogueFinManche {
-  scoreMancheEquipe1: number;
-  scoreMancheEquipe2: number;
-  scoreEquipe1: number;
-  scoreEquipe2: number;
+  resumeFinManche: ResumeFinManche;
   onContinuer: () => void;
 }
 
 const estWeb = Platform.OS === "web";
 
-/** Hook : anime un nombre de `debut` a `fin` sur `duree` ms, demarre apres `delai` ms */
 function useCompteurAnime(
   debut: number,
   fin: number,
+  demarrer: boolean,
   delai: number,
   duree: number,
 ): number {
   const [valeur, setValeur] = useState(debut);
-  const debutRef = useRef(0);
 
   useEffect(() => {
+    setValeur(debut);
+
+    if (!demarrer) return undefined;
+
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const debutAnimation = { courant: 0 };
     const timeout = setTimeout(() => {
-      debutRef.current = Date.now();
-      const interval = setInterval(() => {
-        const progression = Math.min((Date.now() - debutRef.current) / duree, 1);
-        // Ease-out cubique
+      debutAnimation.courant = Date.now();
+      interval = setInterval(() => {
+        const progression = Math.min((Date.now() - debutAnimation.courant) / duree, 1);
         const eased = 1 - Math.pow(1 - progression, 3);
         setValeur(Math.round(debut + (fin - debut) * eased));
-        if (progression >= 1) clearInterval(interval);
+        if (progression >= 1 && interval) {
+          clearInterval(interval);
+          interval = null;
+        }
       }, 16);
-      return () => clearInterval(interval);
     }, delai);
-    return () => clearTimeout(timeout);
-  }, [debut, fin, delai, duree]);
+
+    return () => {
+      clearTimeout(timeout);
+      if (interval) clearInterval(interval);
+    };
+  }, [debut, fin, demarrer, delai, duree]);
 
   return valeur;
 }
 
+function animerEntreeBloc(animation: Animated.Value, duree: number) {
+  animation.setValue(0);
+  Animated.timing(animation, {
+    toValue: 1,
+    duration: duree,
+    easing: Easing.out(Easing.cubic),
+    useNativeDriver: true,
+  }).start();
+}
+
 export function DialogueFinManche({
-  scoreMancheEquipe1,
-  scoreMancheEquipe2,
-  scoreEquipe1,
-  scoreEquipe2,
+  resumeFinManche,
   onContinuer,
 }: PropsDialogueFinManche) {
-  // Scores avant cette manche
-  const ancienScore1 = scoreEquipe1 - scoreMancheEquipe1;
-  const ancienScore2 = scoreEquipe2 - scoreMancheEquipe2;
+  const [afficherVerdict, setAfficherVerdict] = useState(false);
+  const [afficherDetails, setAfficherDetails] = useState(false);
+  const [afficherCapot, setAfficherCapot] = useState(false);
+  const [afficherTotal, setAfficherTotal] = useState(false);
+  const [afficherBouton, setAfficherBouton] = useState(false);
 
-  // Compteurs animes
+  const animOverlay = useRef(new Animated.Value(0)).current;
+  const animPanneau = useRef(new Animated.Value(0)).current;
+  const animVerdict = useRef(new Animated.Value(0)).current;
+  const animDetails = useRef(new Animated.Value(0)).current;
+  const animCapot = useRef(new Animated.Value(0)).current;
+  const animTotal = useRef(new Animated.Value(0)).current;
+  const animBouton = useRef(new Animated.Value(0)).current;
+  const animEclair1 = useRef(new Animated.Value(0)).current;
+  const animEclair2 = useRef(new Animated.Value(0)).current;
+
+  const delaiAffichageTotal = useMemo(
+    () =>
+      resumeFinManche.estCapot
+        ? ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiCapot +
+          ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeAnimationCapot
+        : ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiSectionTotal,
+    [resumeFinManche.estCapot],
+  );
+
+  const delaiAffichageBouton = useMemo(
+    () =>
+      delaiAffichageTotal +
+      ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiComptage +
+      ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeComptage +
+      ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiBoutonApresComptage,
+    [delaiAffichageTotal],
+  );
+
   const compteur1 = useCompteurAnime(
-    ancienScore1,
-    scoreEquipe1,
+    resumeFinManche.scoreAvantEquipe1,
+    resumeFinManche.scoreApresEquipe1,
+    afficherTotal,
     ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiComptage,
     ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeComptage,
   );
   const compteur2 = useCompteurAnime(
-    ancienScore2,
-    scoreEquipe2,
+    resumeFinManche.scoreAvantEquipe2,
+    resumeFinManche.scoreApresEquipe2,
+    afficherTotal,
     ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiComptage,
     ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeComptage,
   );
 
-  // --- Animations Animated ---
-  const animPanneau = useRef(new Animated.Value(0)).current;
-  const animScoresManche = useRef(new Animated.Value(0)).current;
-  const animSectionTotal = useRef(new Animated.Value(0)).current;
-  const animBouton = useRef(new Animated.Value(0)).current;
-  const animOverlay = useRef(new Animated.Value(0)).current;
-
-  // Animations d'eclair dore pendant le comptage
-  const animEclair1 = useRef(new Animated.Value(0)).current;
-  const animEclair2 = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
-    // Overlay fondu
     Animated.timing(animOverlay, {
       toValue: 1,
       duration: ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeFonduOverlay,
       useNativeDriver: true,
     }).start();
 
-    // Panneau : scale + fade
     Animated.spring(animPanneau, {
       toValue: 1,
       delay: ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiEntreePanneau,
@@ -104,77 +136,92 @@ export function DialogueFinManche({
       useNativeDriver: true,
     }).start();
 
-    // Scores de la manche : slide up + fade
-    Animated.timing(animScoresManche, {
-      toValue: 1,
-      delay: ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiScoresManche,
-      duration: ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeApparitionManche,
-      easing: Easing.out(Easing.back(1.2)),
-      useNativeDriver: true,
-    }).start();
+    const timeouts = [
+      setTimeout(() => {
+        setAfficherVerdict(true);
+        animerEntreeBloc(
+          animVerdict,
+          ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeApparitionVerdict,
+        );
+      }, ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiVerdict),
+      setTimeout(() => {
+        setAfficherDetails(true);
+        animerEntreeBloc(
+          animDetails,
+          ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeApparitionDetails,
+        );
+      }, ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiDetails),
+      setTimeout(() => {
+        if (!resumeFinManche.estCapot) return;
+        setAfficherCapot(true);
+        animerEntreeBloc(animCapot, ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeAnimationCapot);
+      }, ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiCapot),
+      setTimeout(() => {
+        setAfficherTotal(true);
+        animerEntreeBloc(animTotal, ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeApparitionTotal);
+      }, delaiAffichageTotal),
+      setTimeout(() => {
+        setAfficherBouton(true);
+        animerEntreeBloc(
+          animBouton,
+          ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeApparitionBouton,
+        );
+      }, delaiAffichageBouton),
+    ];
 
-    // Section total : fade
-    Animated.timing(animSectionTotal, {
-      toValue: 1,
-      delay: ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiSectionTotal,
-      duration: ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeApparitionTotal,
-      useNativeDriver: true,
-    }).start();
+    return () => {
+      for (const timeout of timeouts) clearTimeout(timeout);
+    };
+  }, [
+    animBouton,
+    animCapot,
+    animDetails,
+    animOverlay,
+    animPanneau,
+    animTotal,
+    animVerdict,
+    delaiAffichageBouton,
+    delaiAffichageTotal,
+    resumeFinManche.estCapot,
+  ]);
 
-    // Eclairs dores pendant le comptage
-    const demarrerEclair = (anim: Animated.Value) =>
+  useEffect(() => {
+    if (!afficherTotal) return undefined;
+
+    const demarrerEclair = (animation: Animated.Value) =>
       Animated.sequence([
-        Animated.timing(anim, {
+        Animated.timing(animation, {
           toValue: 1,
           duration: ANIMATIONS_DIALOGUE_FIN_MANCHE.dureePicEclair,
           useNativeDriver: true,
         }),
-        Animated.timing(anim, {
+        Animated.timing(animation, {
           toValue: 0.3,
           duration:
             ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeComptage -
             ANIMATIONS_DIALOGUE_FIN_MANCHE.dureePicEclair,
           useNativeDriver: true,
         }),
-        Animated.timing(anim, {
+        Animated.timing(animation, {
           toValue: 0,
           duration: ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeSortieEclair,
           useNativeDriver: true,
         }),
       ]);
 
-    Animated.parallel([
-      Animated.delay(ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiComptage).start === undefined
-        ? Animated.timing(new Animated.Value(0), {
-            toValue: 0,
-            duration: 0,
-            useNativeDriver: true,
-          })
-        : Animated.timing(new Animated.Value(0), {
-            toValue: 0,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-    ]);
-
-    // Lancer les eclairs avec delai
-    setTimeout(() => {
-      if (scoreMancheEquipe1 > 0) demarrerEclair(animEclair1).start();
-      if (scoreMancheEquipe2 > 0) demarrerEclair(animEclair2).start();
+    const timeout = setTimeout(() => {
+      if (resumeFinManche.scoreMancheEquipe1 > 0) demarrerEclair(animEclair1).start();
+      if (resumeFinManche.scoreMancheEquipe2 > 0) demarrerEclair(animEclair2).start();
     }, ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiComptage);
 
-    // Bouton : fade in
-    Animated.timing(animBouton, {
-      toValue: 1,
-      delay: ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiBouton,
-      duration: ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeApparitionBouton,
-      useNativeDriver: true,
-    }).start();
-  }, []);
-
-  // Equipe gagnante de la manche (pour le style dore)
-  const equipe1Gagne = scoreMancheEquipe1 > scoreMancheEquipe2;
-  const equipe2Gagne = scoreMancheEquipe2 > scoreMancheEquipe1;
+    return () => clearTimeout(timeout);
+  }, [
+    afficherTotal,
+    animEclair1,
+    animEclair2,
+    resumeFinManche.scoreMancheEquipe1,
+    resumeFinManche.scoreMancheEquipe2,
+  ]);
 
   return (
     <Animated.View style={[styles.overlay, { opacity: animOverlay }]}>
@@ -187,135 +234,196 @@ export function DialogueFinManche({
               {
                 scale: animPanneau.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [0.8, 1],
+                  outputRange: [0.82, 1],
                 }),
               },
             ],
           },
         ]}
       >
-        {/* Titre */}
         <Text style={styles.titre}>Fin de manche</Text>
 
-        {/* Points de la manche : slide in */}
-        <Animated.View
-          style={{
-            opacity: animScoresManche,
-            transform: [
+        {afficherVerdict ? (
+          <Animated.View
+            style={[
+              styles.blocVerdict,
               {
-                translateY: animScoresManche.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [15, 0],
-                }),
+                opacity: animVerdict,
+                transform: [
+                  {
+                    translateY: animVerdict.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [10, 0],
+                    }),
+                  },
+                ],
               },
-            ],
-          }}
-        >
-          <View style={styles.blocManche}>
-            <LigneScoreManche
-              label="Vous"
-              points={scoreMancheEquipe1}
-              estGagnant={equipe1Gagne}
-            />
-            <LigneScoreManche
-              label="Adversaires"
-              points={scoreMancheEquipe2}
-              estGagnant={equipe2Gagne}
-            />
-          </View>
-        </Animated.View>
+            ]}
+          >
+            <Text style={styles.texteVerdict}>{resumeFinManche.messageVerdict}</Text>
+          </Animated.View>
+        ) : null}
 
-        <View style={styles.separateur} />
-
-        {/* Score total : fade in puis comptage */}
-        <Animated.View style={{ opacity: animSectionTotal }}>
-          <Text style={styles.sousTitre}>Score total</Text>
-
-          {/* Equipe 1 */}
-          <View style={styles.ligneTotal}>
-            <Text style={styles.equipe}>Vous</Text>
-            <View style={styles.scoreConteneur}>
-              <Animated.View
-                style={[
-                  styles.eclairScore,
+        {afficherDetails ? (
+          <Animated.View
+            style={[
+              styles.blocSection,
+              {
+                opacity: animDetails,
+                transform: [
                   {
-                    opacity: animEclair1,
-                    transform: [
-                      {
-                        scaleX: animEclair1.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0.5, 1.3],
-                        }),
-                      },
-                    ],
+                    translateY: animDetails.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [12, 0],
+                    }),
                   },
-                ]}
-              />
-              <Text style={styles.score}>{compteur1}</Text>
-            </View>
-          </View>
+                ],
+              },
+            ]}
+          >
+            <TextePointsManche
+              testID="points-manche-nous"
+              texte={`Vous +${resumeFinManche.scoreMancheEquipe1}`}
+              estMisEnAvant={resumeFinManche.equipeGagnanteManche === "equipe1"}
+            />
+            <TextePointsManche
+              testID="points-manche-eux"
+              texte={`Adversaires +${resumeFinManche.scoreMancheEquipe2}`}
+              estMisEnAvant={resumeFinManche.equipeGagnanteManche === "equipe2"}
+            />
+          </Animated.View>
+        ) : null}
 
-          {/* Equipe 2 */}
-          <View style={styles.ligneTotal}>
-            <Text style={styles.equipe}>Adversaires</Text>
-            <View style={styles.scoreConteneur}>
-              <Animated.View
-                style={[
-                  styles.eclairScore,
+        {afficherCapot ? (
+          <Animated.View
+            testID="animation-capot"
+            style={[
+              styles.capot,
+              resumeFinManche.equipeCapot === "equipe1"
+                ? styles.capotNous
+                : styles.capotEux,
+              {
+                opacity: animCapot,
+                transform: [
                   {
-                    opacity: animEclair2,
-                    transform: [
-                      {
-                        scaleX: animEclair2.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0.5, 1.3],
-                        }),
-                      },
-                    ],
+                    scale: animCapot.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.96, 1],
+                    }),
                   },
-                ]}
-              />
-              <Text style={styles.score}>{compteur2}</Text>
-            </View>
-          </View>
-        </Animated.View>
+                ],
+              },
+            ]}
+          >
+            <Text style={styles.capotTitre}>Capot</Text>
+            <Text style={styles.capotTexte}>
+              {resumeFinManche.equipeCapot === "equipe1"
+                ? "Vous prenez tous les plis"
+                : "Les adversaires prennent tous les plis"}
+            </Text>
+          </Animated.View>
+        ) : null}
 
-        {/* Bouton Continuer : fade in a la fin */}
-        <Animated.View style={{ opacity: animBouton }}>
-          <Pressable style={styles.bouton} onPress={onContinuer}>
-            <Text style={styles.texteBouton}>Continuer</Text>
-          </Pressable>
-        </Animated.View>
+        {afficherTotal ? (
+          <>
+            <View style={styles.separateur} />
+            <Animated.View
+              style={[
+                styles.blocSection,
+                {
+                  opacity: animTotal,
+                  transform: [
+                    {
+                      translateY: animTotal.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [12, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              <Text style={styles.sousTitre}>Score total</Text>
+
+              <LigneScoreTotal
+                label="Vous"
+                score={compteur1}
+                animationEclair={animEclair1}
+              />
+              <LigneScoreTotal
+                label="Adversaires"
+                score={compteur2}
+                animationEclair={animEclair2}
+              />
+            </Animated.View>
+          </>
+        ) : null}
+
+        {afficherBouton ? (
+          <Animated.View style={{ opacity: animBouton }}>
+            <Pressable style={styles.bouton} onPress={onContinuer}>
+              <Text style={styles.texteBouton}>Continuer</Text>
+            </Pressable>
+          </Animated.View>
+        ) : null}
       </Animated.View>
     </Animated.View>
   );
 }
 
-// --- Sous-composant : ligne de score de manche ---
-
-function LigneScoreManche({
-  label,
-  points,
-  estGagnant,
+function TextePointsManche({
+  estMisEnAvant,
+  testID,
+  texte,
 }: {
-  label: string;
-  points: number;
-  estGagnant: boolean;
+  estMisEnAvant: boolean;
+  testID: string;
+  texte: string;
 }) {
   return (
-    <View style={styles.ligneManche}>
-      <Text style={[styles.equipe, estGagnant && styles.equipeGagnante]}>{label}</Text>
-      <View style={styles.pointsConteneur}>
-        <Text style={[styles.pointsValeur, estGagnant && styles.pointsGagnant]}>
-          +{points}
-        </Text>
-        <Text style={[styles.pointsUnite, estGagnant && styles.pointsGagnant]}>pts</Text>
+    <Text
+      testID={testID}
+      style={[styles.textePointsManche, estMisEnAvant && styles.textePointsMisEnAvant]}
+    >
+      {texte}
+    </Text>
+  );
+}
+
+function LigneScoreTotal({
+  animationEclair,
+  label,
+  score,
+}: {
+  animationEclair: Animated.Value;
+  label: string;
+  score: number;
+}) {
+  return (
+    <View style={styles.ligneTotal}>
+      <Text style={styles.equipe}>{label}</Text>
+      <View style={styles.scoreConteneur}>
+        <Animated.View
+          style={[
+            styles.eclairScore,
+            {
+              opacity: animationEclair,
+              transform: [
+                {
+                  scaleX: animationEclair.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.5, 1.3],
+                  }),
+                },
+              ],
+            },
+          ]}
+        />
+        <Text style={styles.score}>{score}</Text>
       </View>
     </View>
   );
 }
-
-// --- Styles ---
 
 const styles = StyleSheet.create({
   overlay: {
@@ -334,7 +442,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: estWeb ? 36 : 26,
     paddingVertical: estWeb ? 28 : 22,
-    minWidth: estWeb ? 320 : 270,
+    minWidth: estWeb ? 340 : 286,
     gap: estWeb ? 10 : 8,
     borderWidth: 2,
     borderColor: COULEURS.accent,
@@ -349,42 +457,59 @@ const styles = StyleSheet.create({
     fontSize: estWeb ? 24 : 20,
     fontWeight: "bold",
     textAlign: "center",
-    marginBottom: 6,
     letterSpacing: 0.5,
   },
-  blocManche: {
-    gap: estWeb ? 8 : 6,
-  },
-  ligneManche: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  blocVerdict: {
     alignItems: "center",
+    justifyContent: "center",
+    minHeight: estWeb ? 34 : 30,
   },
-  pointsConteneur: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    gap: 4,
-  },
-  pointsValeur: {
+  texteVerdict: {
     color: COULEURS.accent,
     fontSize: estWeb ? 22 : 18,
     fontWeight: "bold",
+    textAlign: "center",
   },
-  pointsUnite: {
-    color: COULEURS.accent,
-    fontSize: estWeb ? 13 : 11,
-    fontWeight: "600",
-    opacity: 0.8,
+  blocSection: {
+    gap: estWeb ? 8 : 6,
   },
-  pointsGagnant: {
-    color: "#ffd700",
-  },
-  equipe: {
+  textePointsManche: {
     color: COULEURS.textePrincipal,
-    fontSize: estWeb ? 16 : 14,
+    fontSize: estWeb ? 17 : 15,
+    textAlign: "center",
   },
-  equipeGagnante: {
-    fontWeight: "bold",
+  textePointsMisEnAvant: {
+    color: "#ffd700",
+    fontWeight: "700",
+  },
+  capot: {
+    borderRadius: 14,
+    paddingVertical: estWeb ? 12 : 10,
+    paddingHorizontal: estWeb ? 16 : 12,
+    alignItems: "center",
+    gap: 2,
+  },
+  capotNous: {
+    backgroundColor: "rgba(212, 160, 23, 0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 215, 0, 0.35)",
+  },
+  capotEux: {
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.18)",
+  },
+  capotTitre: {
+    color: COULEURS.textePrincipal,
+    fontSize: estWeb ? 18 : 16,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+  },
+  capotTexte: {
+    color: COULEURS.texteSecondaire,
+    fontSize: estWeb ? 14 : 12,
+    textAlign: "center",
   },
   separateur: {
     height: 1,
@@ -404,6 +529,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginVertical: 2,
+  },
+  equipe: {
+    color: COULEURS.textePrincipal,
+    fontSize: estWeb ? 16 : 14,
   },
   scoreConteneur: {
     position: "relative",

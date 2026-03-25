@@ -25,6 +25,7 @@ function creerEtat(): EtatJeu {
     pointsEquipe2: 0,
     scoreMancheEquipe1: 0,
     scoreMancheEquipe2: 0,
+    resumeFinManche: null,
     cartesJouables: [],
     estTourHumain: false,
     joueurActif: "nord",
