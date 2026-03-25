@@ -1,3 +1,4 @@
+import { getCartesJouables } from "@belote/game-logic";
 import { act, renderHook } from "@testing-library/react-native";
 
 import { useControleurJeu } from "../hooks/useControleurJeu";
@@ -207,5 +208,96 @@ describe("useControleurJeu - redistribution", () => {
     await viderFileEvenements();
 
     expect(mockLancerDistribution).toHaveBeenCalledTimes(2);
+  });
+
+  it("relance le ramassage du premier pli meme apres plusieurs redistributions consecutives", async () => {
+    mockDeciderBot.mockImplementation((vueBot) => {
+      if (vueBot.phaseJeu === "jeu") {
+        const cartesJouables = getCartesJouables(
+          vueBot.maMain,
+          vueBot.pliEnCours,
+          vueBot.couleurAtout!,
+          vueBot.positionPartenaire,
+        );
+
+        return { type: "JOUER_CARTE" as const, carte: cartesJouables[0] };
+      }
+
+      return { type: "PASSER" as const };
+    });
+    mockLancerAnimationJeuCarte.mockImplementation(
+      (_carte, _joueur, onTerminee?: () => void) => {
+        if (onTerminee) {
+          setTimeout(onTerminee, 0);
+        }
+      },
+    );
+    mockGlisserCarteRetournee.mockImplementation(
+      (_carte, _xDepart, _yDepart, _preneur, onTerminee?: () => void) => {
+        if (onTerminee) {
+          setTimeout(onTerminee, 0);
+        }
+      },
+    );
+    mockLancerAnimationRamassagePli.mockImplementation(
+      (_cartes, _gagnant, onTerminee?: () => void, onDebutRamassage?: () => void) => {
+        setTimeout(() => {
+          onDebutRamassage?.();
+          onTerminee?.();
+        }, 0);
+      },
+    );
+
+    const { result } = renderHook(() =>
+      useControleurJeu({
+        difficulte: "facile",
+        scoreObjectif: 1000,
+        largeurEcran: 1280,
+        hauteurEcran: 720,
+      }),
+    );
+
+    const passerJusquaRedistribution = async () => {
+      act(() => {
+        result.current.passer();
+      });
+
+      await viderFileEvenements();
+
+      act(() => {
+        result.current.passer();
+      });
+
+      await viderFileEvenements();
+    };
+
+    await viderFileEvenements();
+
+    await passerJusquaRedistribution();
+    await passerJusquaRedistribution();
+    await passerJusquaRedistribution();
+    await passerJusquaRedistribution();
+
+    expect(result.current.etatJeu.phaseEncheres).toBe("encheres1");
+    expect(result.current.etatJeu.estTourHumain).toBe(true);
+
+    act(() => {
+      result.current.prendre();
+    });
+
+    await viderFileEvenements(30);
+
+    expect(result.current.etatJeu.phaseUI).toBe("jeu");
+    expect(result.current.etatJeu.estTourHumain).toBe(true);
+    expect(result.current.etatJeu.cartesJouables.length).toBeGreaterThan(0);
+
+    act(() => {
+      result.current.jouerCarte(result.current.etatJeu.cartesJouables[0]);
+    });
+
+    await viderFileEvenements(30);
+
+    expect(result.current.etatJeu.historiquePlis.length).toBe(1);
+    expect(mockLancerAnimationRamassagePli).toHaveBeenCalledTimes(1);
   });
 });

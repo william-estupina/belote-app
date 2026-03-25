@@ -220,5 +220,55 @@ describe("useAnimations", () => {
       expect(carteApres).toBeDefined();
       expect(carteApres!.segment).toBe(1);
     });
+
+    it("rejoue le ramassage pour une meme carte rehydratee sur un cycle suivant", () => {
+      const { result } = renderHook(() => useAnimations());
+
+      const ajouterCarteGelee = () => {
+        result.current.ajouterCartesGelees([
+          {
+            id: "pli-est-pique-as",
+            carte: CARTE_TEST,
+            depart: { x: 0.58, y: 0.47, rotation: 8, echelle: 0.9 },
+            arrivee: { x: 0.58, y: 0.47, rotation: 8, echelle: 0.9 },
+            faceVisible: true,
+            duree: 0,
+            segment: 0,
+          },
+        ]);
+      };
+
+      act(() => {
+        ajouterCarteGelee();
+        result.current.lancerAnimationRamassagePli(
+          [{ joueur: "est", carte: CARTE_TEST }],
+          "nord",
+        );
+        jest.runAllTimers();
+      });
+
+      act(() => {
+        result.current.surAnimationTerminee("pli-est-pique-as");
+        result.current.surAnimationTerminee("pli-est-pique-as");
+      });
+
+      expect(result.current.cartesEnVol).toHaveLength(0);
+
+      act(() => {
+        ajouterCarteGelee();
+        result.current.lancerAnimationRamassagePli(
+          [{ joueur: "est", carte: CARTE_TEST }],
+          "nord",
+        );
+        jest.runAllTimers();
+      });
+
+      const carteApresSecondCycle = result.current.cartesEnVol.find(
+        (carte) => carte.id === "pli-est-pique-as",
+      );
+
+      expect(carteApresSecondCycle).toBeDefined();
+      expect(carteApresSecondCycle!.segment).toBe(1);
+    });
   });
 });
