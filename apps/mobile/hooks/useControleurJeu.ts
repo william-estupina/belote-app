@@ -159,7 +159,7 @@ export function useControleurJeu({
 
   // État de jeu exposé à l'UI
   const [etatJeu, setEtatJeu] = useState<EtatJeu>({
-    phaseUI: "inactif",
+    phaseUI: "distribution",
     mainJoueur: [],
     nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
     pliEnCours: [],
@@ -682,12 +682,22 @@ export function useControleurJeu({
     [animations, extraireEtatUI, jouerBotSiNecessaire],
   );
 
+  const lancerNouvellePartie = useCallback(
+    (acteur: Actor<typeof machineBelote>) => {
+      animationDistribEnCours.current = true;
+      acteur.send({ type: "DEMARRER", scoreObjectif });
+      lancerDistributionAnimee(acteur.getSnapshot().context);
+    },
+    [scoreObjectif, lancerDistributionAnimee],
+  );
+
   // --- Souscrire aux changements d'état de la machine ---
   useEffect(() => {
     estDemonte.current = false;
 
     const acteur = createActor(machineBelote);
     acteurRef.current = acteur;
+    animationDistribEnCours.current = true;
 
     acteur.subscribe((snapshot) => {
       if (estDemonte.current) return;
@@ -792,6 +802,7 @@ export function useControleurJeu({
     });
 
     acteur.start();
+    lancerNouvellePartie(acteur);
 
     return () => {
       estDemonte.current = true;
@@ -807,23 +818,6 @@ export function useControleurJeu({
   }, []);
 
   // --- Actions exposées à l'UI ---
-
-  /** Démarrer une nouvelle partie */
-  const demarrerPartie = useCallback(() => {
-    const acteur = acteurRef.current;
-    if (!acteur) return;
-
-    // Marquer l'animation AVANT d'envoyer l'événement pour que
-    // la souscription ne mette pas à jour les mains prématurément
-    animationDistribEnCours.current = true;
-
-    acteur.send({ type: "DEMARRER", scoreObjectif });
-
-    // Lancer l'animation de distribution
-    const snap = acteur.getSnapshot();
-    const ctx = snap.context;
-    lancerDistributionAnimee(ctx);
-  }, [scoreObjectif, lancerDistributionAnimee]);
 
   /** Le joueur humain joue une carte */
   const jouerCarte = useCallback(
@@ -954,43 +948,10 @@ export function useControleurJeu({
     const acteur = acteurRef.current;
     if (!acteur) return;
 
+    animationDistribEnCours.current = true;
     acteur.send({ type: "RECOMMENCER" });
-
-    // Réinitialiser l'état UI
-    setEtatJeu((prev) => ({
-      ...prev,
-      phaseUI: "inactif",
-      mainJoueur: [],
-      nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
-      pliEnCours: [],
-      couleurAtout: null,
-      carteRetournee: null,
-      scoreEquipe1: 0,
-      scoreEquipe2: 0,
-      pointsEquipe1: 0,
-      pointsEquipe2: 0,
-      scoreMancheEquipe1: 0,
-      scoreMancheEquipe2: 0,
-      cartesJouables: [],
-      estTourHumain: false,
-      phaseEncheres: null,
-      indexPreneur: null,
-      historiquePlis: [],
-      historiqueEncheres: [],
-      plisEquipe1: 0,
-      plisEquipe2: 0,
-      annonceBelote: null,
-      cartesRestantesPaquet: 0,
-      indexDonneur: 1,
-      nbCartesAnticipeesJoueur: 0,
-      triMainDiffere: false,
-      dernierPliVisible: null,
-      precedentDernierPliVisible: null,
-      transitionDernierPliActive: false,
-      dureeTransitionDernierPliMs: 0,
-      cleTransitionDernierPli: 0,
-    }));
-  }, []);
+    lancerNouvellePartie(acteur);
+  }, [lancerNouvellePartie]);
 
   // --- Phase 3 restante : tri et finalisation après distribution restante ---
   const lancerPhase3Restante = useCallback(
@@ -1209,7 +1170,6 @@ export function useControleurJeu({
     nbCartesActivesDistribution: animDistribution.nbCartesActives,
     distributionEnCours: animDistribution.enCours,
     // Actions
-    demarrerPartie,
     jouerCarte,
     prendre,
     annoncer,
