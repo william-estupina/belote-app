@@ -1,5 +1,3 @@
-import type { PositionJoueur } from "@belote/shared-types";
-
 import { ADVERSAIRE, POSITIONS_MAINS, RATIO_LARGEUR_CARTE } from "../constants/layout";
 import {
   obtenirCibleDistributionAtlas,
@@ -17,7 +15,7 @@ describe("distributionLayoutAtlas", () => {
     });
   });
 
-  it.each<PositionJoueur>(["nord", "ouest", "est"])(
+  it.each(["nord", "ouest", "est"])(
     "reduit les cartes de distribution pour %s afin de matcher la main adverse",
     (position) => {
       expect(obtenirCibleDistributionAtlas(position).echelleArrivee).toBeCloseTo(
@@ -27,14 +25,14 @@ describe("distributionLayoutAtlas", () => {
     },
   );
 
-  it.each<PositionJoueur>(["ouest", "est"])(
+  it.each(["ouest", "est"])(
     "tourne les cartes laterales a 90 degres pour %s",
     (position) => {
       expect(obtenirCibleDistributionAtlas(position).rotationArrivee).toBe(90);
     },
   );
 
-  it.each<[number, PositionJoueur]>([
+  it.each([
     [0, "est"],
     [1, "sud"],
     [2, "ouest"],
@@ -43,7 +41,7 @@ describe("distributionLayoutAtlas", () => {
     expect(obtenirPremierServi(indexDonneur)).toBe(attendu);
   });
 
-  it.each<[number, PositionJoueur[]]>([
+  it.each([
     [0, ["est", "nord", "ouest", "sud"]],
     [1, ["sud", "est", "nord", "ouest"]],
     [2, ["ouest", "sud", "est", "nord"]],
@@ -55,41 +53,10 @@ describe("distributionLayoutAtlas", () => {
     },
   );
 
-  it("place l'origine de distribution plus bas quand le donneur est sud", () => {
-    const origine = obtenirOrigineDistribution(0);
-
-    expect(origine.x).toBeCloseTo(0.5, 5);
-    expect(origine.y).toBeGreaterThan(0.45);
-    expect(Math.abs(origine.y - POSITIONS_MAINS.sud.y)).toBeLessThan(
-      Math.abs(0.45 - POSITIONS_MAINS.sud.y),
-    );
-  });
-
-  it("place l'origine de distribution pres du cote ouest quand le donneur est ouest", () => {
-    const origine = obtenirOrigineDistribution(1);
-
-    expect(origine.x).toBeLessThan(0.5);
-    expect(Math.abs(origine.x - POSITIONS_MAINS.ouest.x)).toBeLessThan(
-      Math.abs(0.5 - POSITIONS_MAINS.ouest.x),
-    );
-  });
-
-  it("place l'origine de distribution pres du cote nord quand le donneur est nord", () => {
-    const origine = obtenirOrigineDistribution(2);
-
-    expect(origine.x).toBeCloseTo(0.5, 5);
-    expect(origine.y).toBeLessThan(0.45);
-    expect(Math.abs(origine.y - POSITIONS_MAINS.nord.y)).toBeLessThan(
-      Math.abs(0.45 - POSITIONS_MAINS.nord.y),
-    );
-  });
-
-  it("place l'origine de distribution pres du cote est quand le donneur est est", () => {
-    const origine = obtenirOrigineDistribution(3);
-
-    expect(origine.x).toBeGreaterThan(0.5);
-    expect(Math.abs(origine.x - POSITIONS_MAINS.est.x)).toBeLessThan(
-      Math.abs(0.5 - POSITIONS_MAINS.est.x),
-    );
+  it("retourne le point fixe central quel que soit l'index donneur", () => {
+    for (let i = 0; i < 4; i++) {
+      const origine = obtenirOrigineDistribution(i);
+      expect(origine).toEqual({ x: 0.5, y: 0.45 });
+    }
   });
 });

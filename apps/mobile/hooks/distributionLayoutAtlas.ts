@@ -17,22 +17,9 @@ export interface CibleDistributionAtlas {
 }
 
 const ECHELLE_MAIN_ADVERSE = ADVERSAIRE.ratioLargeurCarte / RATIO_LARGEUR_CARTE;
-const FACTEUR_RAPPROCHEMENT_DONNEUR = 0.55;
-
 function normaliserIndexJoueur(indexJoueur: number): number {
   const totalJoueurs = POSITIONS_JOUEUR.length;
   return ((indexJoueur % totalJoueurs) + totalJoueurs) % totalJoueurs;
-}
-
-function interpolerPoint(
-  depart: PointNormalise,
-  arrivee: PointNormalise,
-  facteur: number,
-): PointNormalise {
-  return {
-    x: depart.x + (arrivee.x - depart.x) * facteur,
-    y: depart.y + (arrivee.y - depart.y) * facteur,
-  };
 }
 
 export function obtenirPremierServi(indexDonneur: number): PositionJoueur {
@@ -53,15 +40,11 @@ export function obtenirOrdreDistribution(indexDonneur: number): PositionJoueur[]
   );
 }
 
-export function obtenirOrigineDistribution(indexDonneur: number): PointNormalise {
-  const positionDonneur = POSITIONS_JOUEUR[normaliserIndexJoueur(indexDonneur)];
-  const pointDonneur = POSITIONS_MAINS[positionDonneur];
-  const origineCentrale: PointNormalise = {
+export function obtenirOrigineDistribution(_indexDonneur: number): PointNormalise {
+  return {
     x: ANIMATIONS.distribution.originX,
     y: ANIMATIONS.distribution.originY,
   };
-
-  return interpolerPoint(origineCentrale, pointDonneur, FACTEUR_RAPPROCHEMENT_DONNEUR);
 }
 
 export function obtenirCibleDistributionAtlas(
