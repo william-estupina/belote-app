@@ -94,25 +94,33 @@ export default function PlateauJeu() {
             </View>
           )}
 
-          {/* Mains des adversaires (dos des cartes) */}
-          <MainAdversaire
-            nbCartes={etatJeu.nbCartesAdversaires.nord}
-            position="nord"
-            largeurEcran={largeur}
-            hauteurEcran={hauteur}
-          />
-          <MainAdversaire
-            nbCartes={etatJeu.nbCartesAdversaires.ouest}
-            position="ouest"
-            largeurEcran={largeur}
-            hauteurEcran={hauteur}
-          />
-          <MainAdversaire
-            nbCartes={etatJeu.nbCartesAdversaires.est}
-            position="est"
-            largeurEcran={largeur}
-            hauteurEcran={hauteur}
-          />
+          {/* Mains des adversaires (dos des cartes) — masquées pendant la distribution
+              car le canvas Atlas gère le rendu des dos de carte à leur place */}
+          {!distributionEnCours && (
+            <>
+              <MainAdversaire
+                nbCartes={etatJeu.nbCartesAdversaires.nord}
+                position="nord"
+                largeurEcran={largeur}
+                hauteurEcran={hauteur}
+                atlas={atlas}
+              />
+              <MainAdversaire
+                nbCartes={etatJeu.nbCartesAdversaires.ouest}
+                position="ouest"
+                largeurEcran={largeur}
+                hauteurEcran={hauteur}
+                atlas={atlas}
+              />
+              <MainAdversaire
+                nbCartes={etatJeu.nbCartesAdversaires.est}
+                position="est"
+                largeurEcran={largeur}
+                hauteurEcran={hauteur}
+                atlas={atlas}
+              />
+            </>
+          )}
 
           {/* Avatars des joueurs — identité, enchères et indicateur preneur */}
           {(["sud", "nord", "ouest", "est"] as const).map((pos) => (
@@ -224,7 +232,6 @@ export default function PlateauJeu() {
               cartesRestantes={etatJeu.cartesRestantesPaquet}
               largeurEcran={largeur}
               hauteurEcran={hauteur}
-              indexDonneur={etatJeu.indexDonneur}
             />
           )}
 

@@ -1,15 +1,17 @@
 import { memo } from "react";
 import { StyleSheet, View } from "react-native";
 
-import { RATIO_ASPECT_CARTE, RATIO_LARGEUR_CARTE } from "../../constants/layout";
-import { obtenirOrigineDistribution } from "../../hooks/distributionLayoutAtlas";
+import {
+  ANIMATIONS,
+  RATIO_ASPECT_CARTE,
+  RATIO_LARGEUR_CARTE,
+} from "../../constants/layout";
 import { CarteDos } from "./Carte";
 
 interface PropsPaquetCentral {
   cartesRestantes: number;
   largeurEcran: number;
   hauteurEcran: number;
-  indexDonneur: number;
 }
 
 /**
@@ -21,16 +23,14 @@ export const PaquetCentral = memo(function PaquetCentral({
   cartesRestantes,
   largeurEcran,
   hauteurEcran,
-  indexDonneur,
 }: PropsPaquetCentral) {
   if (cartesRestantes <= 0) return null;
 
   const nbCouches = Math.min(5, Math.ceil(cartesRestantes / 6));
   const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE * 0.85);
   const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
-  const origineDistribution = obtenirOrigineDistribution(indexDonneur);
-  const centreX = largeurEcran * origineDistribution.x - largeurCarte / 2;
-  const centreY = hauteurEcran * origineDistribution.y - hauteurCarte / 2;
+  const centreX = largeurEcran * ANIMATIONS.distribution.originX - largeurCarte / 2;
+  const centreY = hauteurEcran * ANIMATIONS.distribution.originY - hauteurCarte / 2;
 
   return (
     <View
