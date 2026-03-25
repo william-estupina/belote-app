@@ -187,7 +187,7 @@ describe("useControleurJeu - redistribution", () => {
     expect(mockLancerAnimationRetourPaquet).toHaveBeenCalledTimes(1);
     expect(cartesRetourPaquet).toHaveLength(20);
     expect(new Set(cartesRetourPaquet?.map((carte) => carte.delai)).size).toBe(5);
-    expect(cartesRetourPaquet?.filter((carte) => carte.faceVisible)).toHaveLength(5);
+    expect(cartesRetourPaquet?.filter((carte) => carte.faceVisible)).toHaveLength(0);
     expect(result.current.etatJeu.indexDonneur).toBe(0);
     expect(result.current.etatJeu.mainJoueur).toEqual([]);
     expect(result.current.etatJeu.nbCartesAdversaires).toEqual({

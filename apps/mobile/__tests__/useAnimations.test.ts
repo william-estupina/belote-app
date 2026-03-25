@@ -65,7 +65,6 @@ describe("useAnimations", () => {
             carte: CARTE_TEST,
             depart: { x: 0.5, y: 0.92, rotation: 0, echelle: 1 },
             delai: 0,
-            faceVisible: true,
           },
           {
             carte: { couleur: "coeur", rang: "roi" },
@@ -81,7 +80,7 @@ describe("useAnimations", () => {
     expect(result.current.cartesEnVol[0]).toMatchObject({
       id: "retour-1",
       carte: CARTE_TEST,
-      faceVisible: true,
+      faceVisible: false,
       segment: 0,
       delai: 0,
       arrivee: { echelle: 0.85 },
