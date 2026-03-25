@@ -12,7 +12,7 @@ export interface EntreeResumeFinManche {
 
 export interface ResumeFinManche {
   verdict: VerdictFinManche;
-  messageVerdict: "Contrat rempli !" | "Vous etes dedans" | "Ils sont dedans";
+  messageVerdict: "Contrat rempli !" | "Vous êtes dedans" | "Ils sont dedans";
   equipePreneur: IdEquipe;
   equipeGagnanteManche: IdEquipe | null;
   estContratRempli: boolean;
@@ -61,7 +61,7 @@ export function construireResumeFinManche(
     verdict === "contrat-rempli"
       ? "Contrat rempli !"
       : verdict === "dedans-nous"
-        ? "Vous etes dedans"
+        ? "Vous êtes dedans"
         : "Ils sont dedans";
 
   return {

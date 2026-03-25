@@ -28,7 +28,7 @@ describe("construireResumeFinManche", () => {
       scoreMancheEquipe2: 162,
     });
 
-    expect(resume.messageVerdict).toBe("Vous etes dedans");
+    expect(resume.messageVerdict).toBe("Vous êtes dedans");
     expect(resume.verdict).toBe("dedans-nous");
     expect(resume.estContratRempli).toBe(false);
     expect(resume.estChute).toBe(true);
