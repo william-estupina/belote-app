@@ -17,6 +17,7 @@ export type CarteDuPli = { joueur: PositionJoueur; carte: Carte };
 export interface CarteRetourPaquet {
   carte: Carte;
   depart: CarteEnVol["depart"];
+  delai?: number;
 }
 
 function arrondirPosition(valeur: number): number {
@@ -296,7 +297,7 @@ export function useAnimations() {
       }
 
       const { distribution } = ANIMATIONS;
-      const nouvellesCartes: CarteEnVol[] = cartes.map(({ carte, depart }, index) => {
+      const nouvellesCartes: CarteEnVol[] = cartes.map(({ carte, depart, delai }) => {
         compteurId.current += 1;
         return {
           id: `retour-${compteurId.current}`,
@@ -309,7 +310,7 @@ export function useAnimations() {
             echelle: 0.5,
           },
           faceVisible: false,
-          delai: index * distribution.delaiEntreCartesRetourPaquet,
+          delai: delai ?? 0,
           duree: distribution.dureeRetourPaquet,
           segment: 0,
           easing: "inout-cubic",

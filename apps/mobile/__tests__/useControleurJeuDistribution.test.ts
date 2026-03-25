@@ -147,8 +147,16 @@ describe("useControleurJeu - redistribution", () => {
 
   it("deplace le dealer et attend la fin du rappel des mains avant de relancer la distribution", async () => {
     let terminerRetourPaquet: (() => void) | undefined;
+    let cartesRetourPaquet:
+      | Array<{
+          carte: { couleur: string; rang: string };
+          depart: { x: number; y: number; rotation: number; echelle: number };
+          delai?: number;
+        }>
+      | undefined;
     mockLancerAnimationRetourPaquet.mockImplementation(
-      (_cartes, onTerminee?: () => void) => {
+      (cartes, onTerminee?: () => void) => {
+        cartesRetourPaquet = cartes;
         terminerRetourPaquet = onTerminee;
       },
     );
@@ -177,7 +185,15 @@ describe("useControleurJeu - redistribution", () => {
     await viderFileEvenements();
 
     expect(mockLancerAnimationRetourPaquet).toHaveBeenCalledTimes(1);
+    expect(cartesRetourPaquet).toHaveLength(20);
+    expect(new Set(cartesRetourPaquet?.map((carte) => carte.delai)).size).toBe(5);
     expect(result.current.etatJeu.indexDonneur).toBe(0);
+    expect(result.current.etatJeu.mainJoueur).toEqual([]);
+    expect(result.current.etatJeu.nbCartesAdversaires).toEqual({
+      nord: 0,
+      est: 0,
+      ouest: 0,
+    });
     expect(mockLancerDistribution).toHaveBeenCalledTimes(1);
 
     act(() => {

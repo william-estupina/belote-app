@@ -98,7 +98,7 @@ export const ANIMATIONS = {
     // Distribution restante -> slide carte retournee
     dureeSlideRetournee: ralentirDureeAnimationMajeure(accelererDureeAnimation(600)), // duree du slide vers main preneur (ms)
     dureeRetourPaquet: ralentirDureeAnimationMajeure(accelererDureeAnimation(900)), // duree du rappel des mains vers le paquet (ms)
-    delaiEntreCartesRetourPaquet: accelererDureeAnimation(60), // decalage entre cartes pour rendre la redistribution lisible (ms)
+    delaiEntreVaguesRetourPaquet: accelererDureeAnimation(240), // decalage entre chaque vague de 4 cartes (ms)
     pauseApresRetourPaquet: accelererDureeAnimation(220), // pause avant de relancer la nouvelle distribution (ms)
     // Origine (centre du tapis)
     originX: 0.5,

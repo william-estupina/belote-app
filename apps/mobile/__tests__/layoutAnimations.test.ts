@@ -8,7 +8,7 @@ describe("ANIMATIONS.distribution", () => {
     expect(ANIMATIONS.distribution.pauseAvantTri).toBe(150);
     expect(ANIMATIONS.distribution.dureeSlideRetournee).toBe(360);
     expect(ANIMATIONS.distribution.dureeRetourPaquet).toBe(540);
-    expect(ANIMATIONS.distribution.delaiEntreCartesRetourPaquet).toBe(30);
+    expect(ANIMATIONS.distribution.delaiEntreVaguesRetourPaquet).toBe(120);
     expect(ANIMATIONS.distribution.pauseApresRetourPaquet).toBe(110);
     expect(ANIMATIONS.jeuCarte.duree).toBe(240);
     expect(ANIMATIONS.ramassagePli.duree).toBe(360);

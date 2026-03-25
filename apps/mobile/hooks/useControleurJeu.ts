@@ -585,9 +585,9 @@ export function useControleurJeu({
       return [];
     }
 
-    const cartesRetour: CarteRetourPaquet[] = [];
     const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
     const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
+    const delaiEntreVagues = ANIMATIONS.distribution.delaiEntreVaguesRetourPaquet;
 
     const dispositionSud = calculerDispositionMainJoueur({
       mode: "eventail",
@@ -598,11 +598,11 @@ export function useControleurJeu({
       hauteurCarte,
     });
 
-    for (const [index, carte] of etatVisible.mainJoueur.entries()) {
+    const cartesSud = etatVisible.mainJoueur.map((carte, index) => {
       const positionCarte = dispositionSud.cartes[index];
-      if (!positionCarte) continue;
+      if (!positionCarte) return null;
 
-      cartesRetour.push({
+      return {
         carte,
         depart: {
           ...calculerPointAncrageCarteMainJoueurNormalisee({
@@ -616,32 +616,76 @@ export function useControleurJeu({
           rotation: positionCarte.angle,
           echelle: 1,
         },
-      });
-    }
+      };
+    });
 
-    let indexCarteFactice = 0;
-    for (const position of ["nord", "ouest", "est"] as const) {
-      const nbCartes = etatVisible.nbCartesAdversaires[position];
-      const cibles = calculerCiblesEventailAdversaire(
-        position,
+    const cartesParPosition = {
+      sud: cartesSud,
+      ouest: calculerCiblesEventailAdversaire(
+        "ouest",
         0,
-        nbCartes,
-        nbCartes,
+        etatVisible.nbCartesAdversaires.ouest,
+        etatVisible.nbCartesAdversaires.ouest,
         largeurEcran,
         hauteurEcran,
-      );
+      ).map((cible, index) => ({
+        carte: creerCarteFactice(index),
+        depart: {
+          x: cible.arrivee.x,
+          y: cible.arrivee.y,
+          rotation: cible.rotationArrivee,
+          echelle: ECHELLE_MAIN_ADVERSE,
+        },
+      })),
+      nord: calculerCiblesEventailAdversaire(
+        "nord",
+        0,
+        etatVisible.nbCartesAdversaires.nord,
+        etatVisible.nbCartesAdversaires.nord,
+        largeurEcran,
+        hauteurEcran,
+      ).map((cible, index) => ({
+        carte: creerCarteFactice(8 + index),
+        depart: {
+          x: cible.arrivee.x,
+          y: cible.arrivee.y,
+          rotation: cible.rotationArrivee,
+          echelle: ECHELLE_MAIN_ADVERSE,
+        },
+      })),
+      est: calculerCiblesEventailAdversaire(
+        "est",
+        0,
+        etatVisible.nbCartesAdversaires.est,
+        etatVisible.nbCartesAdversaires.est,
+        largeurEcran,
+        hauteurEcran,
+      ).map((cible, index) => ({
+        carte: creerCarteFactice(16 + index),
+        depart: {
+          x: cible.arrivee.x,
+          y: cible.arrivee.y,
+          rotation: cible.rotationArrivee,
+          echelle: ECHELLE_MAIN_ADVERSE,
+        },
+      })),
+    } satisfies Record<PositionJoueur, Array<Omit<CarteRetourPaquet, "delai"> | null>>;
 
-      for (const cible of cibles) {
-        cartesRetour.push({
-          carte: creerCarteFactice(indexCarteFactice),
-          depart: {
-            x: cible.arrivee.x,
-            y: cible.arrivee.y,
-            rotation: cible.rotationArrivee,
-            echelle: ECHELLE_MAIN_ADVERSE,
-          },
-        });
-        indexCarteFactice += 1;
+    const nbVagues = Math.max(
+      cartesParPosition.sud.length,
+      cartesParPosition.ouest.length,
+      cartesParPosition.nord.length,
+      cartesParPosition.est.length,
+    );
+
+    const cartesRetour: CarteRetourPaquet[] = [];
+    for (let indexVague = 0; indexVague < nbVagues; indexVague += 1) {
+      const delai = indexVague * delaiEntreVagues;
+
+      for (const position of ["sud", "ouest", "nord", "est"] as const) {
+        const carte = cartesParPosition[position][indexVague];
+        if (!carte) continue;
+        cartesRetour.push({ ...carte, delai });
       }
     }
 
@@ -741,6 +785,8 @@ export function useControleurJeu({
       setEtatJeu((prev) => ({
         ...prev,
         phaseUI: "distribution",
+        mainJoueur: [],
+        nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
         indexDonneur: contexte.indexDonneur,
         joueurActif: POSITIONS_JOUEUR[contexte.indexJoueurActif],
         phaseEncheres: null,
