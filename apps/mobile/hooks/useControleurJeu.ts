@@ -211,6 +211,7 @@ export function useControleurJeu({
   const animationDistribEnCours = useRef(false);
   const animationPliEnCours = useRef(false);
   const nbPlisVus = useRef(0);
+  const nbRedistributionsVues = useRef(0);
   const timeoutsControleurRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   // Ref pour appeler lancerDistributionRestanteAnimee depuis les callbacks déclarés avant
@@ -704,6 +705,14 @@ export function useControleurJeu({
 
       const etatMachine = snapshot.value as string;
       const contexte = snapshot.context;
+      const redistributionDetectee =
+        contexte.nombreRedistributions > nbRedistributionsVues.current;
+      nbRedistributionsVues.current = contexte.nombreRedistributions;
+
+      if (redistributionDetectee && !animationDistribEnCours.current) {
+        lancerDistributionAnimee(contexte);
+        return;
+      }
 
       // Mettre à jour l'état UI — mais ne pas écraser les mains pendant l'animation
       const nouvelEtat = extraireEtatUI(contexte, etatMachine);
