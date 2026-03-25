@@ -166,5 +166,5 @@ Nouvelles props : `nbCartesAdversaires` (transmis depuis `PlateauJeu`).
 - `useAtlasCartes`
 - Les constantes `ADVERSAIRE` dans `layout.ts`
 - La logique dans `useControleurJeu` (`nbCartesAdversaires`, callbacks)
-- `distributionLayoutAtlas.ts` (`calculerCiblesEventailAdversaire` reutilise tel quel)
+- `distributionLayoutAtlas.ts` (`calculerCiblesEventailAdversaire` reutilise tel quel, seul changement : export de `ECHELLE_MAIN_ADVERSE`)
 - `distributionAtlas.ts` (fonctions de calcul de sprites et Bezier)
