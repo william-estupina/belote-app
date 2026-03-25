@@ -604,6 +604,8 @@ export function useControleurJeu({
 
       return {
         carte,
+        flipDe: 180,
+        flipVers: 0,
         depart: {
           ...calculerPointAncrageCarteMainJoueurNormalisee({
             x: positionCarte.x,

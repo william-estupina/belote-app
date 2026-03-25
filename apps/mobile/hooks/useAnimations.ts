@@ -19,6 +19,8 @@ export interface CarteRetourPaquet {
   depart: CarteEnVol["depart"];
   delai?: number;
   faceVisible?: boolean;
+  flipDe?: number;
+  flipVers?: number;
 }
 
 function arrondirPosition(valeur: number): number {
@@ -299,7 +301,7 @@ export function useAnimations() {
 
       const { distribution } = ANIMATIONS;
       const nouvellesCartes: CarteEnVol[] = cartes.map(
-        ({ carte, depart, delai, faceVisible = false }) => {
+        ({ carte, depart, delai, faceVisible = false, flipDe, flipVers }) => {
           compteurId.current += 1;
           return {
             id: `retour-${compteurId.current}`,
@@ -312,6 +314,8 @@ export function useAnimations() {
               echelle: 0.85,
             },
             faceVisible,
+            flipDe,
+            flipVers,
             delai: delai ?? 0,
             duree: distribution.dureeRetourPaquet,
             segment: 0,

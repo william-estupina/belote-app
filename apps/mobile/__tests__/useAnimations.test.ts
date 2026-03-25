@@ -65,6 +65,8 @@ describe("useAnimations", () => {
             carte: CARTE_TEST,
             depart: { x: 0.5, y: 0.92, rotation: 0, echelle: 1 },
             delai: 0,
+            flipDe: 180,
+            flipVers: 0,
           },
           {
             carte: { couleur: "coeur", rang: "roi" },
@@ -84,6 +86,8 @@ describe("useAnimations", () => {
       segment: 0,
       delai: 0,
       arrivee: { echelle: 0.85 },
+      flipDe: 180,
+      flipVers: 0,
     });
     expect(result.current.cartesEnVol[1]).toMatchObject({
       id: "retour-2",
@@ -91,6 +95,8 @@ describe("useAnimations", () => {
       segment: 0,
       delai: ANIMATIONS.distribution.delaiEntreVaguesRetourPaquet,
       arrivee: { echelle: 0.85 },
+      flipDe: undefined,
+      flipVers: undefined,
     });
 
     act(() => {

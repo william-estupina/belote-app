@@ -188,6 +188,9 @@ describe("useControleurJeu - redistribution", () => {
     expect(cartesRetourPaquet).toHaveLength(20);
     expect(new Set(cartesRetourPaquet?.map((carte) => carte.delai)).size).toBe(5);
     expect(cartesRetourPaquet?.filter((carte) => carte.faceVisible)).toHaveLength(0);
+    expect(
+      cartesRetourPaquet?.filter((carte) => carte.flipDe === 180 && carte.flipVers === 0),
+    ).toHaveLength(5);
     expect(result.current.etatJeu.indexDonneur).toBe(0);
     expect(result.current.etatJeu.mainJoueur).toEqual([]);
     expect(result.current.etatJeu.nbCartesAdversaires).toEqual({
