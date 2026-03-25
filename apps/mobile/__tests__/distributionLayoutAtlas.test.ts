@@ -15,7 +15,7 @@ describe("distributionLayoutAtlas", () => {
     });
   });
 
-  it.each(["nord", "ouest", "est"])(
+  it.each(["nord", "ouest", "est"] as const)(
     "reduit les cartes de distribution pour %s afin de matcher la main adverse",
     (position) => {
       expect(obtenirCibleDistributionAtlas(position).echelleArrivee).toBeCloseTo(
@@ -25,7 +25,7 @@ describe("distributionLayoutAtlas", () => {
     },
   );
 
-  it.each(["ouest", "est"])(
+  it.each(["ouest", "est"] as const)(
     "tourne les cartes laterales a 90 degres pour %s",
     (position) => {
       expect(obtenirCibleDistributionAtlas(position).rotationArrivee).toBe(90);
