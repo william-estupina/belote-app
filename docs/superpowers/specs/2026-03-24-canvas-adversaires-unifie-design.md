@@ -15,7 +15,7 @@ Cette bascule provoque un flash visible (changement de couleur des dos de cartes
 
 Remplacer ces deux systemes par un **Canvas Skia unique et permanent** (`CanvasAdversaires`) qui dessine les dos de cartes adversaires dans toutes les phases — distribution, encheres, jeu. Zero bascule de vue, zero flash.
 
-Bonus : gain de performance — 1 draw call au lieu de 24 Canvas individuels pendant le jeu.
+Bonus : gain de performance — 1 draw call au lieu de jusqu'a 24 Canvas individuels pendant le jeu.
 
 ## Hors scope
 
@@ -47,6 +47,8 @@ interface PropsCanvasAdversaires {
 }
 ```
 
+Note : `distributionEnCours` n'est PAS utilise par le worklet (qui se base uniquement sur les progressions et `donneesWorklet`). Il sert uniquement de garde pour le `useEffect` de recalcul d'eventail (Section 2) : pendant la distribution, c'est `useAnimationsDistribution` qui controle les donnees worklet, pas le `useEffect`.
+
 **Pool de sprites :** Max 24 sprites (8 par adversaire, distribution 3+5).
 
 **Worklet RSXform :** Meme logique que `DistributionCanvas` actuel :
@@ -66,10 +68,12 @@ Quand `nbCartesAdversaires` change (un bot joue une carte), les positions d'even
 **Mecanisme :**
 
 1. Un `useEffect` dans `CanvasAdversaires` reagit aux changements de `nbCartesAdversaires`
-2. Il recalcule les positions d'eventail pour les 3 adversaires via `calculerCiblesEventailAdversaire` (fonction existante dans `distributionLayoutAtlas.ts`)
-3. Les resultats (position normalisee, rotation, echelle) sont ecrits dans `donneesWorklet.value` aux indices correspondants, avec les champs depart = arrivee (pas d'interpolation)
-4. Les progressions sont forcees a 1 pour ces cartes
-5. Le worklet lit les nouvelles donnees au frame suivant — repositionnement instantane
+2. Si le total est 0 (reset entre manches), il met `nbCartesActives.value = 0` et sort — le worklet ne dessine rien
+3. Sinon, il recalcule les positions d'eventail pour les 3 adversaires via `calculerCiblesEventailAdversaire` (fonction existante dans `distributionLayoutAtlas.ts`)
+4. Les resultats (position normalisee, rotation) sont ecrits dans `donneesWorklet.value` aux indices correspondants, avec depart = arrivee (pas d'interpolation). L'echelle est fixee a `ECHELLE_MAIN_ADVERSE` (constante existante dans `distributionLayoutAtlas.ts`)
+5. Les progressions sont forcees a 1 pour ces cartes
+6. `nbCartesActives.value` est mis a jour au total
+7. Le worklet lit les nouvelles donnees au frame suivant — repositionnement instantane
 
 **Gestion des indices apres distribution :**
 
@@ -80,6 +84,10 @@ Pendant la distribution, les indices dans `donneesWorklet` sont attribues par `u
 - Indices n1+n2..n1+n2+n3-1 : cartes est
 
 `nbCartesActives.value` est mis a jour au total.
+
+**Condition de garde :** Le `useEffect` ne reecrit PAS les positions pendant la distribution (guard sur `distributionEnCours`). Il ne prend la main que quand la distribution est terminee ou quand `nbCartesAdversaires` change en dehors de la distribution.
+
+**Deuxieme distribution (restante apres encheres) :** Quand `lancerDistribution` est appele une seconde fois (pour les 3 cartes restantes), il reecrit entierement `donneesWorklet` avec toutes les cartes (existantes a leur position d'eventail + nouvelles en vol). Les cartes deja en place dans le canvas sont naturellement remplacees par les nouvelles donnees — pas de conflit.
 
 ---
 
@@ -129,6 +137,8 @@ Rend trois couches :
 
 Nouvelles props : `nbCartesAdversaires` (transmis depuis `PlateauJeu`).
 
+**Modification du early-return :** Actuellement `CoucheAnimation` retourne `null` quand `cartesEnVol.length === 0 && !aDistributionAtlas`. Ce guard doit etre supprime car `CanvasAdversaires` doit rester monte en permanence. Le composant rend toujours `CanvasAdversaires` ; `DistributionCanvasSud` et les `CarteAnimee` sont rendus conditionnellement comme avant.
+
 **`PlateauJeu.tsx` :**
 
 - Supprime les 3 `<MainAdversaire>` et le guard `{!distributionEnCours && (...)}`
@@ -139,14 +149,15 @@ Nouvelles props : `nbCartesAdversaires` (transmis depuis `PlateauJeu`).
 
 ## Fichiers impactes
 
-| Fichier                                                 | Action                                                                                       |
-| ------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `CanvasAdversaires.tsx`                                 | **Nouveau** — Canvas Skia unique drawAtlas pour les 3 mains adversaires                      |
-| `DistributionCanvas.tsx` -> `DistributionCanvasSud.tsx` | **Renomme** — ne gere plus que les cartes sud en vol                                         |
-| `MainAdversaire.tsx`                                    | **Supprime**                                                                                 |
-| `CoucheAnimation.tsx`                                   | Rend `CanvasAdversaires` + `DistributionCanvasSud` + `CarteAnimee`                           |
-| `PlateauJeu.tsx`                                        | Supprime les 3 `<MainAdversaire>`, passe `nbCartesAdversaires` a `CoucheAnimation`           |
-| `useAnimationsDistribution.ts`                          | Separe la sortie en `cartesAtlasAdversaires` / `cartesAtlasSud`, expose les bornes d'indices |
+| Fichier                                                 | Action                                                                                                                                   |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `CanvasAdversaires.tsx`                                 | **Nouveau** — Canvas Skia unique drawAtlas pour les 3 mains adversaires                                                                  |
+| `DistributionCanvas.tsx` -> `DistributionCanvasSud.tsx` | **Renomme** — ne gere plus que les cartes sud en vol                                                                                     |
+| `MainAdversaire.tsx`                                    | **Supprime**                                                                                                                             |
+| `CoucheAnimation.tsx`                                   | Rend `CanvasAdversaires` + `DistributionCanvasSud` + `CarteAnimee`                                                                       |
+| `PlateauJeu.tsx`                                        | Supprime les 3 `<MainAdversaire>`, passe `nbCartesAdversaires` a `CoucheAnimation`                                                       |
+| `useAnimationsDistribution.ts`                          | Separe la sortie en `cartesAtlasAdversaires` / `cartesAtlasSud`, expose les bornes d'indices                                             |
+| `Carte.tsx`                                             | Inchange — `CarteDosAtlas` n'est plus utilise par les adversaires mais reste pour d'autres usages (ex: `ZoneCarteRetournee`, `PilePlis`) |
 
 ## Ce qui ne change pas
 
