@@ -1190,10 +1190,10 @@ export function useControleurJeu({
     surAnimationTerminee: animations.surAnimationTerminee,
     // Distribution Atlas
     atlas,
-    cartesAtlasDistribution: animDistribution.cartesAtlas,
-    progressionsDistribution: animDistribution.progressions,
-    donneesWorkletDistribution: animDistribution.donneesWorklet,
-    nbCartesActivesDistribution: animDistribution.nbCartesActives,
+    cartesAtlasDistribution: animDistribution.cartesAtlasAdversaires,
+    progressionsDistribution: animDistribution.progressionsAdv,
+    donneesWorkletDistribution: animDistribution.donneesWorkletAdv,
+    nbCartesActivesDistribution: animDistribution.nbCartesActivesAdv,
     distributionEnCours: animDistribution.enCours,
     // Actions
     jouerCarte,

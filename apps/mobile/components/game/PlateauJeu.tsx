@@ -94,18 +94,21 @@ export default function PlateauJeu() {
                 position="nord"
                 largeurEcran={largeur}
                 hauteurEcran={hauteur}
+                atlas={atlas}
               />
               <MainAdversaire
                 nbCartes={etatJeu.nbCartesAdversaires.ouest}
                 position="ouest"
                 largeurEcran={largeur}
                 hauteurEcran={hauteur}
+                atlas={atlas}
               />
               <MainAdversaire
                 nbCartes={etatJeu.nbCartesAdversaires.est}
                 position="est"
                 largeurEcran={largeur}
                 hauteurEcran={hauteur}
+                atlas={atlas}
               />
             </>
           )}
