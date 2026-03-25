@@ -17,6 +17,10 @@ export function ralentirTensionAnimationMajeure(tension: number): number {
   return Math.round(tension / FACTEUR_RALENTISSEMENT_ANIMATIONS_MAJEURES);
 }
 
+export function ralentirDelaiPhaseScore(dureeMs: number): number {
+  return Math.round(dureeMs * 1.25);
+}
+
 export const DUREE_PULSE_JOUEUR_ACTIF = accelererDureeAnimation(1000);
 export const DUREE_FONDU_ENTREE_MAIN = accelererDureeAnimation(100);
 
@@ -26,17 +30,27 @@ export const ANIMATIONS_CARTE_RETOURNEE = {
 } as const;
 
 export const ANIMATIONS_DIALOGUE_FIN_MANCHE = {
-  delaiVerdict: ralentirDureeAnimationMajeure(accelererDureeAnimation(600)),
+  delaiVerdict: ralentirDelaiPhaseScore(
+    ralentirDureeAnimationMajeure(accelererDureeAnimation(600)),
+  ),
   dureeApparitionVerdict: ralentirDureeAnimationMajeure(accelererDureeAnimation(300)),
-  delaiDetails: ralentirDureeAnimationMajeure(accelererDureeAnimation(1400)),
+  delaiDetails: ralentirDelaiPhaseScore(
+    ralentirDureeAnimationMajeure(accelererDureeAnimation(1400)),
+  ),
   dureeApparitionDetails: ralentirDureeAnimationMajeure(accelererDureeAnimation(300)),
-  delaiCapot: ralentirDureeAnimationMajeure(accelererDureeAnimation(2200)),
+  delaiCapot: ralentirDelaiPhaseScore(
+    ralentirDureeAnimationMajeure(accelererDureeAnimation(2200)),
+  ),
   dureeAnimationCapot: ralentirDureeAnimationMajeure(accelererDureeAnimation(500)),
-  delaiSectionTotal: ralentirDureeAnimationMajeure(accelererDureeAnimation(2200)),
+  delaiSectionTotal: ralentirDelaiPhaseScore(
+    ralentirDureeAnimationMajeure(accelererDureeAnimation(2200)),
+  ),
   dureeApparitionTotal: ralentirDureeAnimationMajeure(accelererDureeAnimation(300)),
   delaiComptage: ralentirDureeAnimationMajeure(accelererDureeAnimation(250)),
   dureeComptage: 600,
-  delaiBoutonApresComptage: ralentirDureeAnimationMajeure(accelererDureeAnimation(300)),
+  delaiBoutonApresComptage: ralentirDelaiPhaseScore(
+    ralentirDureeAnimationMajeure(accelererDureeAnimation(300)),
+  ),
   dureeApparitionBouton: ralentirDureeAnimationMajeure(accelererDureeAnimation(300)),
   dureeFonduOverlay: ralentirDureeAnimationMajeure(accelererDureeAnimation(200)),
   delaiEntreePanneau: ralentirDureeAnimationMajeure(accelererDureeAnimation(100)),

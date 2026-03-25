@@ -49,6 +49,13 @@ describe("DialogueFinManche", () => {
       jest.advanceTimersByTime(400);
     });
 
+    expect(screen.queryByText("Contrat rempli !")).toBeNull();
+    expect(screen.queryByText("Vous +92")).toBeNull();
+
+    act(() => {
+      jest.advanceTimersByTime(100);
+    });
+
     expect(screen.getByText("Contrat rempli !")).toBeTruthy();
     expect(screen.queryByText("Vous +92")).toBeNull();
 
@@ -56,12 +63,24 @@ describe("DialogueFinManche", () => {
       jest.advanceTimersByTime(500);
     });
 
+    expect(screen.queryByText("Vous +92")).toBeNull();
+
+    act(() => {
+      jest.advanceTimersByTime(100);
+    });
+
     expect(screen.getByText("Vous +92")).toBeTruthy();
     expect(screen.getByText("Adversaires +64")).toBeTruthy();
     expect(screen.queryByText("Score total")).toBeNull();
 
     act(() => {
-      jest.advanceTimersByTime(700);
+      jest.advanceTimersByTime(500);
+    });
+
+    expect(screen.queryByText("Score total")).toBeNull();
+
+    act(() => {
+      jest.advanceTimersByTime(200);
     });
 
     expect(screen.getByText("Score total")).toBeTruthy();
@@ -90,7 +109,7 @@ describe("DialogueFinManche", () => {
     );
 
     act(() => {
-      jest.advanceTimersByTime(1400);
+      jest.advanceTimersByTime(1700);
     });
 
     expect(screen.getByTestId("animation-capot")).toBeTruthy();
