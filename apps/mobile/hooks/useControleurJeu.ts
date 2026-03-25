@@ -604,6 +604,7 @@ export function useControleurJeu({
 
       return {
         carte,
+        faceVisible: true,
         depart: {
           ...calculerPointAncrageCarteMainJoueurNormalisee({
             x: positionCarte.x,

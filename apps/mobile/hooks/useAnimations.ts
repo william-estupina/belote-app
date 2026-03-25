@@ -18,6 +18,7 @@ export interface CarteRetourPaquet {
   carte: Carte;
   depart: CarteEnVol["depart"];
   delai?: number;
+  faceVisible?: boolean;
 }
 
 function arrondirPosition(valeur: number): number {
@@ -297,25 +298,27 @@ export function useAnimations() {
       }
 
       const { distribution } = ANIMATIONS;
-      const nouvellesCartes: CarteEnVol[] = cartes.map(({ carte, depart, delai }) => {
-        compteurId.current += 1;
-        return {
-          id: `retour-${compteurId.current}`,
-          carte,
-          depart,
-          arrivee: {
-            x: ANIMATIONS.distribution.originX,
-            y: ANIMATIONS.distribution.originY,
-            rotation: 0,
-            echelle: 0.5,
-          },
-          faceVisible: false,
-          delai: delai ?? 0,
-          duree: distribution.dureeRetourPaquet,
-          segment: 0,
-          easing: "inout-cubic",
-        };
-      });
+      const nouvellesCartes: CarteEnVol[] = cartes.map(
+        ({ carte, depart, delai, faceVisible = false }) => {
+          compteurId.current += 1;
+          return {
+            id: `retour-${compteurId.current}`,
+            carte,
+            depart,
+            arrivee: {
+              x: ANIMATIONS.distribution.originX,
+              y: ANIMATIONS.distribution.originY,
+              rotation: 0,
+              echelle: 0.85,
+            },
+            faceVisible,
+            delai: delai ?? 0,
+            duree: distribution.dureeRetourPaquet,
+            segment: 0,
+            easing: "inout-cubic",
+          };
+        },
+      );
 
       setCartesEnVol((precedent) => [...precedent, ...nouvellesCartes]);
 
