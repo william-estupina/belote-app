@@ -2,7 +2,7 @@ import type { ActionEnchere, PositionJoueur } from "@belote/shared-types";
 import { POSITIONS_JOUEUR } from "@belote/shared-types";
 import { useCallback, useMemo, useState } from "react";
 import type { LayoutChangeEvent } from "react-native";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 
 import { COULEURS } from "../../constants/theme";
 import { useControleurJeu } from "../../hooks/useControleurJeu";
@@ -15,6 +15,7 @@ import { CoucheAnimation } from "./CoucheAnimation";
 import { DernierPli } from "./DernierPli";
 import { DialogueFinManche } from "./DialogueFinManche";
 import { DialogueFinPartie } from "./DialogueFinPartie";
+import { JetonDealer } from "./JetonDealer";
 import { MainAdversaire } from "./MainAdversaire";
 import { MainJoueur } from "./MainJoueur";
 import { PanneauEncheres } from "./PanneauEncheres";
@@ -41,7 +42,6 @@ export default function PlateauJeu() {
     donneesWorkletDistribution,
     nbCartesActivesDistribution,
     distributionEnCours,
-    demarrerPartie,
     jouerCarte,
     prendre,
     annoncer,
@@ -84,15 +84,6 @@ export default function PlateauJeu() {
         <>
           {/* Bordure décorative */}
           <View style={styles.bordure} />
-
-          {/* Écran d'accueil — bouton Jouer */}
-          {etatJeu.phaseUI === "inactif" && (
-            <View style={styles.centreOverlay}>
-              <Pressable style={styles.boutonJouer} onPress={demarrerPartie}>
-                <Text style={styles.texteBoutonJouer}>Jouer</Text>
-              </Pressable>
-            </View>
-          )}
 
           {/* Mains des adversaires (dos des cartes) — masquées pendant la distribution
               car le canvas Atlas gère le rendu des dos de carte à leur place */}
@@ -139,6 +130,15 @@ export default function PlateauJeu() {
               phaseUI={etatJeu.phaseUI}
             />
           ))}
+
+          {/* Jeton dealer — identifie le donneur */}
+          {etatJeu.phaseUI !== "inactif" && (
+            <JetonDealer
+              positionDonneur={POSITIONS_JOUEUR[etatJeu.indexDonneur]}
+              largeurEcran={largeur}
+              hauteurEcran={hauteur}
+            />
+          )}
 
           {/* Zone du pli au centre */}
           <ZonePli
@@ -326,31 +326,5 @@ const styles = StyleSheet.create({
   indicateursMobile: {
     left: 40,
     top: 4,
-  },
-  centreOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 40,
-  },
-  boutonJouer: {
-    paddingHorizontal: 48,
-    paddingVertical: 16,
-    borderRadius: 12,
-    backgroundColor: "#e8b730",
-    shadowColor: "rgba(212, 160, 23, 0.4)",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  texteBoutonJouer: {
-    color: "#1a1a1a",
-    fontWeight: "bold",
-    fontSize: 22,
   },
 });
