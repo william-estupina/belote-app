@@ -9,6 +9,7 @@ const mockAjouterCartesGelees = jest.fn();
 const mockAnnulerAnimations = jest.fn();
 const mockLancerAnimationJeuCarte = jest.fn();
 const mockLancerAnimationRamassagePli = jest.fn();
+const mockLancerAnimationRetourPaquet = jest.fn();
 const mockGlisserCarteRetournee = jest.fn();
 const mockSurAnimationTerminee = jest.fn();
 const mockAttendreDelaiBot = jest.fn(() => Promise.resolve());
@@ -26,6 +27,7 @@ jest.mock("../hooks/useAnimations", () => ({
     glisserCarteRetournee: mockGlisserCarteRetournee,
     lancerAnimationJeuCarte: mockLancerAnimationJeuCarte,
     lancerAnimationRamassagePli: mockLancerAnimationRamassagePli,
+    lancerAnimationRetourPaquet: mockLancerAnimationRetourPaquet,
     ajouterCartesGelees: mockAjouterCartesGelees,
     annulerAnimations: mockAnnulerAnimations,
   }),
@@ -99,6 +101,9 @@ describe("useControleurJeu - redistribution", () => {
     jest.useFakeTimers();
     jest.clearAllMocks();
     configurerDistributionImmediate();
+    mockLancerAnimationRetourPaquet.mockImplementation(
+      (_cartes, onTerminee?: () => void) => onTerminee?.(),
+    );
   });
 
   afterEach(() => {
@@ -133,6 +138,50 @@ describe("useControleurJeu - redistribution", () => {
 
     act(() => {
       result.current.passer();
+    });
+
+    await viderFileEvenements();
+
+    expect(mockLancerDistribution).toHaveBeenCalledTimes(2);
+  });
+
+  it("deplace le dealer et attend la fin du rappel des mains avant de relancer la distribution", async () => {
+    let terminerRetourPaquet: (() => void) | undefined;
+    mockLancerAnimationRetourPaquet.mockImplementation(
+      (_cartes, onTerminee?: () => void) => {
+        terminerRetourPaquet = onTerminee;
+      },
+    );
+
+    const { result } = renderHook(() =>
+      useControleurJeu({
+        difficulte: "facile",
+        scoreObjectif: 1000,
+        largeurEcran: 1280,
+        hauteurEcran: 720,
+      }),
+    );
+
+    await viderFileEvenements();
+
+    act(() => {
+      result.current.passer();
+    });
+
+    await viderFileEvenements();
+
+    act(() => {
+      result.current.passer();
+    });
+
+    await viderFileEvenements();
+
+    expect(mockLancerAnimationRetourPaquet).toHaveBeenCalledTimes(1);
+    expect(result.current.etatJeu.indexDonneur).toBe(0);
+    expect(mockLancerDistribution).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      terminerRetourPaquet?.();
     });
 
     await viderFileEvenements();

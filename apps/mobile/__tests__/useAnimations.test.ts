@@ -53,6 +53,49 @@ describe("useAnimations", () => {
     expect(result.current.cartesEnVol[0].segment).toBe(0);
   });
 
+  it("cree des cartes retour-* face cachee et appelle le callback de fin", () => {
+    const surFin = jest.fn();
+    const { result } = renderHook(() => useAnimations());
+
+    act(() => {
+      result.current.lancerAnimationRetourPaquet(
+        [
+          {
+            carte: CARTE_TEST,
+            depart: { x: 0.5, y: 0.92, rotation: 0, echelle: 1 },
+          },
+          {
+            carte: { couleur: "coeur", rang: "roi" },
+            depart: { x: 0.1, y: 0.5, rotation: 90, echelle: 0.6 },
+          },
+        ],
+        surFin,
+      );
+    });
+
+    expect(result.current.cartesEnVol).toHaveLength(2);
+    expect(result.current.cartesEnVol[0]).toMatchObject({
+      id: "retour-1",
+      carte: CARTE_TEST,
+      faceVisible: false,
+      segment: 0,
+    });
+    expect(result.current.cartesEnVol[1]).toMatchObject({
+      id: "retour-2",
+      faceVisible: false,
+      segment: 0,
+    });
+
+    act(() => {
+      result.current.surAnimationTerminee("retour-1");
+      result.current.surAnimationTerminee("retour-2");
+      jest.runOnlyPendingTimers();
+    });
+
+    expect(result.current.cartesEnVol).toHaveLength(0);
+    expect(surFin).toHaveBeenCalledTimes(1);
+  });
+
   describe("ramassage in-place", () => {
     it("met a jour les cartes jeu-* existantes pour la convergence (segment 1)", () => {
       const { result } = renderHook(() => useAnimations());

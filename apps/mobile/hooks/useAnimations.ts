@@ -14,6 +14,10 @@ import { planifierRamassagePli } from "./planRamassagePli";
 const POSITIONS_JOUEUR: PositionJoueur[] = ["sud", "ouest", "nord", "est"];
 
 export type CarteDuPli = { joueur: PositionJoueur; carte: Carte };
+export interface CarteRetourPaquet {
+  carte: Carte;
+  depart: CarteEnVol["depart"];
+}
 
 function arrondirPosition(valeur: number): number {
   return Number(valeur.toFixed(3));
@@ -284,6 +288,43 @@ export function useAnimations() {
     [],
   );
 
+  const lancerAnimationRetourPaquet = useCallback(
+    (cartes: ReadonlyArray<CarteRetourPaquet>, onTerminee?: () => void) => {
+      if (cartes.length === 0) {
+        onTerminee?.();
+        return;
+      }
+
+      const { distribution } = ANIMATIONS;
+      const nouvellesCartes: CarteEnVol[] = cartes.map(({ carte, depart }) => {
+        compteurId.current += 1;
+        return {
+          id: `retour-${compteurId.current}`,
+          carte,
+          depart,
+          arrivee: {
+            x: ANIMATIONS.distribution.originX,
+            y: ANIMATIONS.distribution.originY,
+            rotation: 0,
+            echelle: 0.5,
+          },
+          faceVisible: false,
+          duree: distribution.dureeRetourPaquet,
+          segment: 0,
+          easing: "inout-cubic",
+        };
+      });
+
+      setCartesEnVol((precedent) => [...precedent, ...nouvellesCartes]);
+
+      if (onTerminee) {
+        const timeout = setTimeout(onTerminee, distribution.dureeRetourPaquet);
+        timeoutsRef.current.push(timeout);
+      }
+    },
+    [],
+  );
+
   const ajouterCartesGelees = useCallback((cartesGelees: CarteEnVol[]) => {
     setCartesEnVol((precedent) => {
       const idsExistants = new Set(precedent.map((c) => c.id));
@@ -304,6 +345,7 @@ export function useAnimations() {
     glisserCarteRetournee,
     lancerAnimationJeuCarte,
     lancerAnimationRamassagePli,
+    lancerAnimationRetourPaquet,
     ajouterCartesGelees,
     annulerAnimations,
   };

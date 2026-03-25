@@ -97,6 +97,7 @@ export const ANIMATIONS = {
     pauseAvantTri: ralentirDureeAnimationMajeure(accelererDureeAnimation(250)), // pause avant animation de tri (ms)
     // Distribution restante -> slide carte retournee
     dureeSlideRetournee: ralentirDureeAnimationMajeure(accelererDureeAnimation(600)), // duree du slide vers main preneur (ms)
+    dureeRetourPaquet: ralentirDureeAnimationMajeure(accelererDureeAnimation(500)), // duree du rappel des mains vers le paquet (ms)
     // Origine (centre du tapis)
     originX: 0.5,
     originY: 0.45,
