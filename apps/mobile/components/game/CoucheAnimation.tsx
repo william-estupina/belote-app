@@ -13,6 +13,7 @@ export interface CarteEnVol {
   depart: PositionCarte;
   arrivee: PositionCarte;
   faceVisible: boolean;
+  delai?: number;
   duree: number;
   segment: number;
   flipDe?: number;
@@ -88,6 +89,7 @@ export function CoucheAnimation({
           depart={vol.depart}
           arrivee={vol.arrivee}
           faceVisible={vol.faceVisible}
+          delai={vol.delai}
           duree={vol.duree}
           segment={vol.segment}
           atlas={atlas}

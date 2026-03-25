@@ -21,6 +21,7 @@ jest.mock("react-native-reanimated", () => {
     runOnJS: (fonction: (...args: unknown[]) => unknown) => fonction,
     useSharedValue: (valeur: number) => ({ value: valeur }),
     useAnimatedStyle: (calculStyle: () => unknown) => calculStyle(),
+    withDelay: (_delai: number, animation: unknown) => animation,
     withTiming: (
       valeur: number,
       _config: unknown,

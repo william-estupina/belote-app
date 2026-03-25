@@ -296,7 +296,7 @@ export function useAnimations() {
       }
 
       const { distribution } = ANIMATIONS;
-      const nouvellesCartes: CarteEnVol[] = cartes.map(({ carte, depart }) => {
+      const nouvellesCartes: CarteEnVol[] = cartes.map(({ carte, depart }, index) => {
         compteurId.current += 1;
         return {
           id: `retour-${compteurId.current}`,
@@ -309,6 +309,7 @@ export function useAnimations() {
             echelle: 0.5,
           },
           faceVisible: false,
+          delai: index * distribution.delaiEntreCartesRetourPaquet,
           duree: distribution.dureeRetourPaquet,
           segment: 0,
           easing: "inout-cubic",
@@ -318,7 +319,11 @@ export function useAnimations() {
       setCartesEnVol((precedent) => [...precedent, ...nouvellesCartes]);
 
       if (onTerminee) {
-        const timeout = setTimeout(onTerminee, distribution.dureeRetourPaquet);
+        const delaiTotal =
+          (nouvellesCartes[nouvellesCartes.length - 1]?.delai ?? 0) +
+          distribution.dureeRetourPaquet +
+          distribution.pauseApresRetourPaquet;
+        const timeout = setTimeout(onTerminee, delaiTotal);
         timeoutsRef.current.push(timeout);
       }
     },

@@ -1,6 +1,7 @@
 import type { Carte } from "@belote/shared-types";
 import { act, renderHook } from "@testing-library/react-native";
 
+import { ANIMATIONS } from "../constants/layout";
 import { useAnimations } from "../hooks/useAnimations";
 
 const CARTE_TEST: Carte = { couleur: "pique", rang: "as" };
@@ -79,17 +80,30 @@ describe("useAnimations", () => {
       carte: CARTE_TEST,
       faceVisible: false,
       segment: 0,
+      delai: 0,
     });
     expect(result.current.cartesEnVol[1]).toMatchObject({
       id: "retour-2",
       faceVisible: false,
       segment: 0,
+      delai: ANIMATIONS.distribution.delaiEntreCartesRetourPaquet,
     });
 
     act(() => {
+      jest.advanceTimersByTime(
+        ANIMATIONS.distribution.dureeRetourPaquet +
+          ANIMATIONS.distribution.delaiEntreCartesRetourPaquet +
+          ANIMATIONS.distribution.pauseApresRetourPaquet -
+          1,
+      );
+    });
+
+    expect(surFin).not.toHaveBeenCalled();
+
+    act(() => {
+      jest.advanceTimersByTime(1);
       result.current.surAnimationTerminee("retour-1");
       result.current.surAnimationTerminee("retour-2");
-      jest.runOnlyPendingTimers();
     });
 
     expect(result.current.cartesEnVol).toHaveLength(0);

@@ -5,6 +5,7 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withTiming,
 } from "react-native-reanimated";
 
@@ -32,6 +33,7 @@ interface PropsCarteAnimee {
   depart: PositionCarte;
   arrivee: PositionCarte;
   faceVisible: boolean;
+  delai?: number;
   duree: number;
   largeurEcran: number;
   hauteurEcran: number;
@@ -62,6 +64,7 @@ export function CarteAnimee({
   depart,
   arrivee,
   faceVisible,
+  delai = 0,
   duree,
   largeurEcran,
   hauteurEcran,
@@ -121,17 +124,16 @@ export function CarteAnimee({
     };
 
     progres.value = 0;
-    progres.value = withTiming(
-      1,
-      { duration: duree, easing: EASINGS[easing] },
-      (termine) => {
+    progres.value = withDelay(
+      delai,
+      withTiming(1, { duration: duree, easing: EASINGS[easing] }, (termine) => {
         "worklet";
         if (termine) {
           runOnJS(planifierFinAnimation)();
         }
-      },
+      }),
     );
-  }, [progres, duree, easing, segment]);
+  }, [progres, delai, duree, easing, segment]);
 
   // Style du conteneur (position + rotation Z + scale)
   const styleConteneur = useAnimatedStyle(() => {
