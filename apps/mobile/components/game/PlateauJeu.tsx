@@ -94,21 +94,18 @@ export default function PlateauJeu() {
                 position="nord"
                 largeurEcran={largeur}
                 hauteurEcran={hauteur}
-                atlas={atlas}
               />
               <MainAdversaire
                 nbCartes={etatJeu.nbCartesAdversaires.ouest}
                 position="ouest"
                 largeurEcran={largeur}
                 hauteurEcran={hauteur}
-                atlas={atlas}
               />
               <MainAdversaire
                 nbCartes={etatJeu.nbCartesAdversaires.est}
                 position="est"
                 largeurEcran={largeur}
                 hauteurEcran={hauteur}
-                atlas={atlas}
               />
             </>
           )}
@@ -274,12 +271,9 @@ export default function PlateauJeu() {
           )}
 
           {/* Dialogue fin de manche */}
-          {etatJeu.phaseUI === "scoresManche" && (
+          {etatJeu.phaseUI === "scoresManche" && etatJeu.resumeFinManche && (
             <DialogueFinManche
-              scoreMancheEquipe1={etatJeu.scoreMancheEquipe1}
-              scoreMancheEquipe2={etatJeu.scoreMancheEquipe2}
-              scoreEquipe1={etatJeu.scoreEquipe1}
-              scoreEquipe2={etatJeu.scoreEquipe2}
+              resumeFinManche={etatJeu.resumeFinManche}
               onContinuer={continuerApresScore}
             />
           )}

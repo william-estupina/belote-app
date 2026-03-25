@@ -22,6 +22,8 @@ import {
 import { appliquerEtatVerrouillePendantFinPli } from "./etatFinPliVisuel";
 import { ajouterCarteAuPliVisuel } from "./etatPliVisuel";
 import { calculerDureeTotaleRamassagePli } from "./planRamassagePli";
+import type { ResumeFinManche } from "./resume-fin-manche";
+import { construireResumeFinManche } from "./resume-fin-manche";
 import {
   construireTransitionTriMainInitiale,
   DELAI_SUPPLEMENTAIRE_TRI_MAIN_INITIALE_MS,
@@ -65,6 +67,8 @@ export interface EtatJeu {
   /** Score final de la manche (avec 10 de der, capot, chute) */
   scoreMancheEquipe1: number;
   scoreMancheEquipe2: number;
+  /** Resume explicite de la fin de manche pour l UI */
+  resumeFinManche: ResumeFinManche | null;
   /** Cartes jouables par le joueur humain */
   cartesJouables: Carte[];
   /** Est-ce le tour du joueur humain ? */
@@ -171,6 +175,7 @@ export function useControleurJeu({
     pointsEquipe2: 0,
     scoreMancheEquipe1: 0,
     scoreMancheEquipe2: 0,
+    resumeFinManche: null,
     cartesJouables: [],
     estTourHumain: false,
     joueurActif: "sud",
@@ -265,6 +270,17 @@ export function useControleurJeu({
           phaseUI = "inactif";
       }
 
+      const resumeFinManche =
+        etatMachine === "scoresManche" && contexte.indexPreneur !== null
+          ? construireResumeFinManche({
+              indexPreneur: contexte.indexPreneur,
+              scoreEquipe1: contexte.scoreEquipe1,
+              scoreEquipe2: contexte.scoreEquipe2,
+              scoreMancheEquipe1: contexte.scoreMancheEquipe1,
+              scoreMancheEquipe2: contexte.scoreMancheEquipe2,
+            })
+          : null;
+
       return {
         phaseUI,
         mainJoueur: trierMainJoueur(contexte.mains[INDEX_HUMAIN], {
@@ -286,6 +302,7 @@ export function useControleurJeu({
         pointsEquipe2: contexte.pointsEquipe2,
         scoreMancheEquipe1: contexte.scoreMancheEquipe1,
         scoreMancheEquipe2: contexte.scoreMancheEquipe2,
+        resumeFinManche,
         cartesJouables,
         estTourHumain: estHumain,
         joueurActif: position,
