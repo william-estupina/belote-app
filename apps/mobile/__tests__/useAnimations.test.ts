@@ -187,5 +187,38 @@ describe("useAnimations", () => {
       expect(result.current.cartesEnVol).toHaveLength(0);
       expect(onTerminee).toHaveBeenCalledTimes(1);
     });
+
+    it("anime aussi les cartes gelees rehydratees du pli", () => {
+      const { result } = renderHook(() => useAnimations());
+
+      act(() => {
+        result.current.ajouterCartesGelees([
+          {
+            id: "pli-est-pique-as",
+            carte: CARTE_TEST,
+            depart: { x: 0.58, y: 0.47, rotation: 8, echelle: 0.9 },
+            arrivee: { x: 0.58, y: 0.47, rotation: 8, echelle: 0.9 },
+            faceVisible: true,
+            duree: 0,
+            segment: 0,
+          },
+        ]);
+      });
+
+      act(() => {
+        result.current.lancerAnimationRamassagePli(
+          [{ joueur: "est", carte: CARTE_TEST }],
+          "nord",
+        );
+        jest.runAllTimers();
+      });
+
+      const carteApres = result.current.cartesEnVol.find(
+        (carte) => carte.id === "pli-est-pique-as",
+      );
+
+      expect(carteApres).toBeDefined();
+      expect(carteApres!.segment).toBe(1);
+    });
   });
 });

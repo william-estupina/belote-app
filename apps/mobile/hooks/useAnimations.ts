@@ -31,6 +31,10 @@ function estMemeCarte(a: Carte, b: Carte): boolean {
   return a.couleur === b.couleur && a.rang === b.rang;
 }
 
+function estCartePliAnimable(id: string): boolean {
+  return id.startsWith("jeu-") || id.startsWith("pli-");
+}
+
 export function construireCartesGeleesDepuisPli(
   pli: CarteDuPli[],
   cartesEnVol: ReadonlyArray<{ carte: Carte }>,
@@ -213,7 +217,7 @@ export function useAnimations() {
             const correspondance = cartesPli.find(({ carte }) =>
               estMemeCarte(carte, carteEnVol.carte),
             );
-            if (!correspondance || !carteEnVol.id.startsWith("jeu-")) {
+            if (!correspondance || !estCartePliAnimable(carteEnVol.id)) {
               return carteEnVol;
             }
 
@@ -236,7 +240,7 @@ export function useAnimations() {
         // Enregistrer les callbacks de convergence -> glissement
         for (const { carte } of cartesPli) {
           const carteEnVol = cartesEnVolRef.current.find(
-            (c) => c.id.startsWith("jeu-") && estMemeCarte(c.carte, carte),
+            (c) => estCartePliAnimable(c.id) && estMemeCarte(c.carte, carte),
           );
           if (carteEnVol) {
             callbacksFinJeuRef.current.set(carteEnVol.id, () => {
