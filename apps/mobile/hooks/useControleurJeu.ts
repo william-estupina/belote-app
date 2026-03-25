@@ -51,6 +51,7 @@ import { useDelaiBot } from "./useDelaiBot";
 export type PhaseUI =
   | "inactif"
   | "distribution"
+  | "redistribution"
   | "encheres"
   | "jeu"
   | "finPli"
@@ -120,6 +121,8 @@ export interface EtatJeu {
   dureeTransitionDernierPliMs: number;
   /** Clef pour relancer l'animation du widget dernier pli */
   cleTransitionDernierPli: number;
+  /** Conserve temporairement les badges Passe avant le rappel des cartes */
+  afficherActionsEnchereRedistribution: boolean;
 }
 
 interface OptionsControleur {
@@ -171,6 +174,20 @@ function creerCarteFactice(index: number): Carte {
   };
 }
 
+function conserverHistoriqueEncheresAvantRedistribution(etat: EtatJeu) {
+  if (etat.phaseEncheres !== "encheres2" || etat.historiqueEncheres.length >= 8) {
+    return etat.historiqueEncheres;
+  }
+
+  return [
+    ...etat.historiqueEncheres,
+    {
+      type: "PASSER" as const,
+      joueur: POSITIONS_JOUEUR[etat.indexDonneur],
+    },
+  ];
+}
+
 // --- Hook principal ---
 
 export function useControleurJeu({
@@ -217,6 +234,7 @@ export function useControleurJeu({
     transitionDernierPliActive: false,
     dureeTransitionDernierPliMs: 0,
     cleTransitionDernierPli: 0,
+    afficherActionsEnchereRedistribution: false,
   });
   const etatJeuRef = useRef(etatJeu);
   etatJeuRef.current = etatJeu;
@@ -341,6 +359,7 @@ export function useControleurJeu({
         annonceBelote: contexte.annonceBelote,
         indexDonneur: contexte.indexDonneur,
         nbCartesAnticipeesJoueur: contexte.mains[INDEX_HUMAIN].length,
+        afficherActionsEnchereRedistribution: false,
       };
     },
     [],
@@ -727,6 +746,7 @@ export function useControleurJeu({
         transitionDernierPliActive: false,
         dureeTransitionDernierPliMs: 0,
         cleTransitionDernierPli: 0,
+        afficherActionsEnchereRedistribution: false,
       }));
 
       let cartesRecues = 0;
@@ -779,32 +799,56 @@ export function useControleurJeu({
 
   const lancerRedistributionAnimee = useCallback(
     (contexte: ContextePartie) => {
-      animationDistribEnCours.current = true;
       nbPlisVus.current = 0;
-
-      const cartesRetour = construireCartesRetourPaquet();
 
       setEtatJeu((prev) => ({
         ...prev,
-        phaseUI: "distribution",
-        mainJoueur: [],
-        nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
-        indexDonneur: contexte.indexDonneur,
+        phaseUI: "redistribution",
+        indexDonneur: prev.indexDonneur,
         joueurActif: POSITIONS_JOUEUR[contexte.indexJoueurActif],
-        phaseEncheres: null,
+        phaseEncheres: prev.phaseEncheres,
         indexPreneur: null,
         couleurAtout: null,
         carteRetournee: null,
-        historiqueEncheres: [],
+        historiqueEncheres: conserverHistoriqueEncheresAvantRedistribution(prev),
         cartesJouables: [],
         estTourHumain: false,
-        cartesRestantesPaquet: 32,
+        afficherActionsEnchereRedistribution: true,
       }));
 
-      animations.lancerAnimationRetourPaquet(cartesRetour, () => {
+      const timeoutAvantRappel = setTimeout(() => {
         if (estDemonte.current) return;
-        lancerDistributionAnimee(contexte);
-      });
+
+        const cartesRetour = construireCartesRetourPaquet();
+
+        setEtatJeu((prev) => ({
+          ...prev,
+          mainJoueur: [],
+          nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
+          phaseEncheres: null,
+          historiqueEncheres: [],
+          cartesRestantesPaquet: 32,
+          afficherActionsEnchereRedistribution: false,
+        }));
+
+        animations.lancerAnimationRetourPaquet(cartesRetour, () => {
+          if (estDemonte.current) return;
+
+          setEtatJeu((prev) => ({
+            ...prev,
+            indexDonneur: contexte.indexDonneur,
+          }));
+
+          const timeoutApresDealer = setTimeout(() => {
+            if (estDemonte.current) return;
+            lancerDistributionAnimee(contexte);
+          }, ANIMATIONS.redistribution.dureeGlissementDealer);
+
+          timeoutsControleurRef.current.push(timeoutApresDealer);
+        });
+      }, ANIMATIONS.redistribution.pauseAvantRappel);
+
+      timeoutsControleurRef.current.push(timeoutAvantRappel);
     },
     [animations, construireCartesRetourPaquet, lancerDistributionAnimee],
   );

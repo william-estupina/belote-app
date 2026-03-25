@@ -100,6 +100,7 @@ interface PropsAvatarJoueur {
   hauteurEcran: number;
   estActif: boolean;
   actionEnchere: ActionEnchere | null;
+  afficherActionEnchere?: boolean;
   estPreneur: boolean;
   couleurAtout: Couleur | null;
   phaseUI: string;
@@ -117,6 +118,7 @@ export function AvatarJoueur({
   hauteurEcran,
   estActif,
   actionEnchere,
+  afficherActionEnchere,
   estPreneur,
   couleurAtout,
   phaseUI,
@@ -153,7 +155,14 @@ export function AvatarJoueur({
   const coord = POSITIONS_AVATAR[position];
   const left = coord.x * largeurEcran;
   const top = coord.y * hauteurEcran;
-  const badge = determineBadge(phaseUI, actionEnchere, estPreneur, couleurAtout);
+  const actionEnchereVisible = afficherActionEnchere ?? phaseUI === "encheres";
+  const badge = determineBadge(
+    phaseUI,
+    actionEnchere,
+    actionEnchereVisible,
+    estPreneur,
+    couleurAtout,
+  );
 
   return (
     <View
@@ -248,10 +257,11 @@ function BulleAvatar({ position, badge }: { position: PositionJoueur; badge: Bad
 function determineBadge(
   phaseUI: string,
   actionEnchere: ActionEnchere | null,
+  afficherActionEnchere: boolean,
   estPreneur: boolean,
   couleurAtout: Couleur | null,
 ): Badge | null {
-  if (phaseUI === "encheres" && actionEnchere) {
+  if (afficherActionEnchere && actionEnchere) {
     switch (actionEnchere.type) {
       case "PASSER":
         return {

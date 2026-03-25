@@ -1,9 +1,22 @@
 import { getCartesJouables } from "@belote/game-logic";
+import type { Carte, PositionJoueur } from "@belote/shared-types";
 import { act, renderHook } from "@testing-library/react-native";
 
 import { useControleurJeu } from "../hooks/useControleurJeu";
 
-const mockDeciderBot = jest.fn(() => ({ type: "PASSER" as const }));
+interface VueBotTest {
+  maMain: Carte[];
+  positionPartenaire: PositionJoueur;
+  pliEnCours: Array<{ joueur: PositionJoueur; carte: Carte }>;
+  couleurAtout: Carte["couleur"] | null;
+  phaseJeu: "encheres1" | "encheres2" | "jeu";
+}
+
+type ActionBotTest = { type: "PASSER" } | { type: "JOUER_CARTE"; carte: Carte };
+
+const mockDeciderBot = jest.fn<ActionBotTest, [VueBotTest?]>((_vueBot?: VueBotTest) => ({
+  type: "PASSER",
+}));
 const mockLancerDistribution = jest.fn();
 const mockTerminerDistribution = jest.fn();
 const mockAjouterCartesGelees = jest.fn();
@@ -97,6 +110,22 @@ async function viderFileEvenements(iterations = 12): Promise<void> {
   }
 }
 
+async function avancerJusqua(
+  condition: () => boolean,
+  iterationsMax = 20,
+): Promise<void> {
+  for (let index = 0; index < iterationsMax; index += 1) {
+    if (condition()) {
+      return;
+    }
+
+    await act(async () => {
+      jest.runOnlyPendingTimers();
+      await Promise.resolve();
+    });
+  }
+}
+
 describe("useControleurJeu - redistribution", () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -146,13 +175,16 @@ describe("useControleurJeu - redistribution", () => {
     expect(mockLancerDistribution).toHaveBeenCalledTimes(2);
   });
 
-  it("deplace le dealer et attend la fin du rappel des mains avant de relancer la distribution", async () => {
+  it("laisse voir les Passe, rappelle les cartes puis deplace le dealer avant la nouvelle distribution", async () => {
     let terminerRetourPaquet: (() => void) | undefined;
     let cartesRetourPaquet:
       | Array<{
           carte: { couleur: string; rang: string };
           depart: { x: number; y: number; rotation: number; echelle: number };
           delai?: number;
+          faceVisible?: boolean;
+          flipDe?: number;
+          flipVers?: number;
         }>
       | undefined;
     mockLancerAnimationRetourPaquet.mockImplementation(
@@ -173,17 +205,28 @@ describe("useControleurJeu - redistribution", () => {
 
     await viderFileEvenements();
 
-    act(() => {
-      result.current.passer();
-    });
-
-    await viderFileEvenements();
+    const indexDonneurAvantRedistribution = result.current.etatJeu.indexDonneur;
 
     act(() => {
       result.current.passer();
     });
 
-    await viderFileEvenements();
+    await avancerJusqua(() => result.current.etatJeu.phaseEncheres === "encheres2");
+
+    act(() => {
+      result.current.passer();
+    });
+
+    await avancerJusqua(() => result.current.etatJeu.phaseUI === "redistribution");
+
+    expect(mockLancerAnimationRetourPaquet).toHaveBeenCalledTimes(0);
+    expect(result.current.etatJeu.historiqueEncheres).toHaveLength(8);
+    expect(result.current.etatJeu.indexDonneur).toBe(indexDonneurAvantRedistribution);
+    expect(mockLancerDistribution).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
 
     expect(mockLancerAnimationRetourPaquet).toHaveBeenCalledTimes(1);
     expect(cartesRetourPaquet).toHaveLength(20);
@@ -192,26 +235,36 @@ describe("useControleurJeu - redistribution", () => {
     expect(
       cartesRetourPaquet?.filter((carte) => carte.flipDe === 180 && carte.flipVers === 0),
     ).toHaveLength(5);
-    expect(result.current.etatJeu.indexDonneur).toBe(0);
+    expect(result.current.etatJeu.historiqueEncheres).toHaveLength(0);
     expect(result.current.etatJeu.mainJoueur).toEqual([]);
     expect(result.current.etatJeu.nbCartesAdversaires).toEqual({
       nord: 0,
       est: 0,
       ouest: 0,
     });
-    expect(mockLancerDistribution).toHaveBeenCalledTimes(1);
+    expect(result.current.etatJeu.indexDonneur).toBe(indexDonneurAvantRedistribution);
 
     act(() => {
       terminerRetourPaquet?.();
     });
 
-    await viderFileEvenements();
+    expect(result.current.etatJeu.indexDonneur).toBe(0);
+    expect(mockLancerDistribution).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      jest.runOnlyPendingTimers();
+      await Promise.resolve();
+    });
 
     expect(mockLancerDistribution).toHaveBeenCalledTimes(2);
   });
 
   it("relance le ramassage du premier pli meme apres plusieurs redistributions consecutives", async () => {
-    mockDeciderBot.mockImplementation((vueBot) => {
+    mockDeciderBot.mockImplementation((vueBot?: VueBotTest) => {
+      if (!vueBot) {
+        return { type: "PASSER" as const };
+      }
+
       if (vueBot.phaseJeu === "jeu") {
         const cartesJouables = getCartesJouables(
           vueBot.maMain,

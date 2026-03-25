@@ -9,6 +9,7 @@ describe("visibiliteEncheres", () => {
   it.each<PhaseUI>([
     "inactif",
     "distribution",
+    "redistribution",
     "jeu",
     "finPli",
     "scoresManche",

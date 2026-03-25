@@ -8,7 +8,12 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { DECALAGE_NOM, POSITIONS_AVATAR, TAILLE_AVATAR } from "../../constants/layout";
+import {
+  ANIMATIONS,
+  DECALAGE_NOM,
+  POSITIONS_AVATAR,
+  TAILLE_AVATAR,
+} from "../../constants/layout";
 
 const estWeb = Platform.OS === "web";
 const TAILLE_JETON = estWeb ? 28 : 24;
@@ -52,7 +57,10 @@ export const JetonDealer = memo(function JetonDealer({
       return;
     }
 
-    const config = { duration: 500, easing: Easing.inOut(Easing.ease) };
+    const config = {
+      duration: ANIMATIONS.redistribution.dureeGlissementDealer,
+      easing: Easing.inOut(Easing.ease),
+    };
     animLeft.value = withTiming(pos.left, config);
     animTop.value = withTiming(pos.top, config);
   }, [pos.left, pos.top, animLeft, animTop]);

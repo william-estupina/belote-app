@@ -124,6 +124,11 @@ export default function PlateauJeu() {
                 etatJeu.joueurActif === pos
               }
               actionEnchere={derniereActionParJoueur.get(pos) ?? null}
+              afficherActionEnchere={
+                etatJeu.phaseUI === "encheres" ||
+                (etatJeu.phaseUI === "redistribution" &&
+                  etatJeu.afficherActionsEnchereRedistribution)
+              }
               estPreneur={positionPreneur === pos}
               couleurAtout={etatJeu.couleurAtout}
               phaseUI={etatJeu.phaseUI}

@@ -46,6 +46,7 @@ function creerEtat(): EtatJeu {
     transitionDernierPliActive: false,
     dureeTransitionDernierPliMs: 0,
     cleTransitionDernierPli: 0,
+    afficherActionsEnchereRedistribution: false,
   };
 }
 

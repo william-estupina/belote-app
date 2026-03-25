@@ -113,6 +113,11 @@ export const ANIMATIONS = {
     duree: ralentirDureeAnimationMajeure(300), // duree du mouvement de ramassage (ms)
     delaiAvant: accelererDureeAnimation(800), // pause avant ramassage pour voir le pli (ms)
   },
+  // Redistribution : pause apres le dernier passe -> rappel des cartes -> glissement dealer
+  redistribution: {
+    pauseAvantRappel: accelererDureeAnimation(300),
+    dureeGlissementDealer: 500,
+  },
   // Delai des bots (phase jeu)
   delaiBot: {
     min: 250, // delai minimum (ms)
