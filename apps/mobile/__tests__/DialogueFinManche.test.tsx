@@ -1,4 +1,5 @@
 import { act, render, screen } from "@testing-library/react-native";
+import { StyleSheet } from "react-native";
 
 import { DialogueFinManche } from "../components/game/DialogueFinManche";
 
@@ -94,5 +95,20 @@ describe("DialogueFinManche", () => {
 
     expect(screen.getByTestId("animation-capot")).toBeTruthy();
     expect(screen.getByText("Capot")).toBeTruthy();
+  });
+
+  it("garde un panneau de hauteur fixe des l'ouverture", () => {
+    render(
+      <DialogueFinManche
+        resumeFinManche={RESUME_CONTRAT_REMPLI}
+        onContinuer={jest.fn()}
+      />,
+    );
+
+    const stylePanneau = StyleSheet.flatten(
+      screen.getByTestId("dialogue-fin-manche-panneau").props.style,
+    );
+
+    expect(stylePanneau.minHeight).toBe(320);
   });
 });

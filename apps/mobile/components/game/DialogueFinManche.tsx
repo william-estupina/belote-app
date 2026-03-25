@@ -226,6 +226,7 @@ export function DialogueFinManche({
   return (
     <Animated.View style={[styles.overlay, { opacity: animOverlay }]}>
       <Animated.View
+        testID="dialogue-fin-manche-panneau"
         style={[
           styles.panneau,
           {
@@ -443,6 +444,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: estWeb ? 36 : 26,
     paddingVertical: estWeb ? 28 : 22,
     minWidth: estWeb ? 340 : 286,
+    minHeight: estWeb ? 360 : 320,
     gap: estWeb ? 10 : 8,
     borderWidth: 2,
     borderColor: COULEURS.accent,
