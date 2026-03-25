@@ -1,10 +1,10 @@
-import type { ActionEnchere, PositionJoueur } from "@belote/shared-types";
 import { POSITIONS_JOUEUR } from "@belote/shared-types";
 import { useCallback, useMemo, useState } from "react";
 import type { LayoutChangeEvent } from "react-native";
 import { Platform, StyleSheet, View } from "react-native";
 
 import { COULEURS } from "../../constants/theme";
+import { construireDerniereActionParJoueur } from "../../hooks/derniere-action-enchere";
 import { useControleurJeu } from "../../hooks/useControleurJeu";
 import { doitAfficherDernierPli } from "../../hooks/visibiliteDernierPli";
 import { doitAfficherUIEncheres } from "../../hooks/visibiliteEncheres";
@@ -67,12 +67,11 @@ export default function PlateauJeu() {
 
   // Dernière action d'enchère par joueur (pour les badges sur les avatars)
   const derniereActionParJoueur = useMemo(() => {
-    const map = new Map<PositionJoueur, ActionEnchere>();
-    for (const action of etatJeu.historiqueEncheres) {
-      map.set(action.joueur, action);
-    }
-    return map;
-  }, [etatJeu.historiqueEncheres]);
+    return construireDerniereActionParJoueur(
+      etatJeu.historiqueEncheres,
+      etatJeu.phaseEncheres,
+    );
+  }, [etatJeu.historiqueEncheres, etatJeu.phaseEncheres]);
 
   // Position du preneur
   const positionPreneur =
