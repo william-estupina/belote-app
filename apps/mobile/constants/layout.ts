@@ -97,9 +97,9 @@ export const ANIMATIONS = {
     pauseAvantTri: ralentirDureeAnimationMajeure(accelererDureeAnimation(250)), // pause avant animation de tri (ms)
     // Distribution restante -> slide carte retournee
     dureeSlideRetournee: ralentirDureeAnimationMajeure(accelererDureeAnimation(600)), // duree du slide vers main preneur (ms)
-    dureeRetourPaquet: ralentirDureeAnimationMajeure(accelererDureeAnimation(900)), // duree du rappel des mains vers le paquet (ms)
-    delaiEntreVaguesRetourPaquet: accelererDureeAnimation(240), // decalage entre chaque vague de 4 cartes (ms)
-    pauseApresRetourPaquet: accelererDureeAnimation(220), // pause avant de relancer la nouvelle distribution (ms)
+    dureeRetourPaquet: ralentirDureeAnimationMajeure(1000), // duree du rappel des mains vers le paquet (ms)
+    delaiEntreVaguesRetourPaquet: accelererDureeAnimation(720), // decalage entre chaque vague de 4 cartes (ms)
+    pauseApresRetourPaquet: accelererDureeAnimation(600), // pause avant de relancer la nouvelle distribution (ms)
     // Origine (centre du tapis)
     originX: 0.5,
     originY: 0.45,
@@ -115,13 +115,13 @@ export const ANIMATIONS = {
   },
   // Delai des bots (phase jeu)
   delaiBot: {
-    min: 500, // delai minimum (ms)
-    max: 1000, // delai maximum (ms)
+    min: 250, // delai minimum (ms)
+    max: 500, // delai maximum (ms)
   },
   // Delai des bots (phase encheres - plus lent pour que le joueur suive)
   delaiEncheres: {
-    min: 2000, // delai minimum (ms)
-    max: 3000, // delai maximum (ms)
+    min: 1000, // delai minimum (ms)
+    max: 1500, // delai maximum (ms)
   },
   // Pause apres la distribution pour montrer la carte retournee avant les encheres
   pauseAvantEncheres: ralentirDureeAnimationMajeure(accelererDureeAnimation(1500)), // ms
