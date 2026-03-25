@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { Animated, Easing, Platform, StyleSheet, Text, View } from "react-native";
 
 import { DUREE_PULSE_JOUEUR_ACTIF } from "../../constants/animations-visuelles";
+import { DECALAGE_NOM, POSITIONS_AVATAR, TAILLE_AVATAR } from "../../constants/layout";
 
 const SYMBOLES_COULEUR: Record<Couleur, string> = {
   coeur: "\u2665",
@@ -31,13 +32,6 @@ const NOMS_JOUEUR: Record<PositionJoueur, string> = {
   nord: "Nord",
   ouest: "Ouest",
   est: "Est",
-};
-
-const POSITIONS_AVATAR: Record<PositionJoueur, { x: number; y: number }> = {
-  sud: { x: 0.28, y: 0.71 },
-  nord: { x: 0.62, y: 0.17 },
-  ouest: { x: 0.095, y: 0.5 },
-  est: { x: 0.905, y: 0.5 },
 };
 
 interface ProfilAvatar {
@@ -95,10 +89,8 @@ const PROFILS_AVATAR: Record<PositionJoueur, ProfilAvatar> = {
 };
 
 const estWeb = Platform.OS === "web";
-const TAILLE_AVATAR = estWeb ? 68 : 58;
 const RAYON_AVATAR = estWeb ? 18 : 16;
 const LARGEUR_NOM = estWeb ? 96 : 88;
-const DECALAGE_NOM = estWeb ? 8 : 6;
 const LARGEUR_BULLE_MIN = estWeb ? 84 : 74;
 const TAILLE_QUEUE = estWeb ? 10 : 8;
 

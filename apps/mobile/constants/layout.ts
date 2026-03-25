@@ -1,3 +1,6 @@
+import type { PositionJoueur } from "@belote/shared-types";
+import { Platform } from "react-native";
+
 import {
   accelererDureeAnimation,
   ralentirDureeAnimationMajeure,
@@ -134,3 +137,16 @@ export const POSITIONS_MAINS = {
   ouest: { x: 0.02, y: 0.5 },
   est: { x: 0.98, y: 0.5 },
 } as const;
+
+const estWeb = Platform.OS === "web";
+
+// --- Avatars ---
+export const POSITIONS_AVATAR: Record<PositionJoueur, { x: number; y: number }> = {
+  sud: { x: 0.28, y: 0.71 },
+  nord: { x: 0.62, y: 0.17 },
+  ouest: { x: 0.095, y: 0.5 },
+  est: { x: 0.905, y: 0.5 },
+};
+
+export const TAILLE_AVATAR = estWeb ? 68 : 58;
+export const DECALAGE_NOM = estWeb ? 8 : 6;
