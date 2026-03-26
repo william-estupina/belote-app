@@ -20,6 +20,7 @@ Plan d'implementation dans `PROMPT.md`, progression dans `AVANCEMENT.md`.
 - Si l'utilisateur fait ensuite des retours, ajuster avec un nouveau commit ou remplacer le commit precedent selon le besoin
 - Ne jamais melanger logique metier pure et UI
 - `game-logic` et `bot-engine` n'importent jamais React ou React Native
+- Pour les postures de collaboration et modes de reponse specifiques, voir `comportement.md`
 
 ## Stack technique
 
@@ -63,6 +64,7 @@ pnpm --filter @belote/mobile test:e2e        # parcours web
 
 ## Lire aussi
 
+- `comportement.md`
 - `apps/mobile/AGENTS.md`
 - `packages/game-logic/AGENTS.md`
 - `packages/bot-engine/AGENTS.md`
