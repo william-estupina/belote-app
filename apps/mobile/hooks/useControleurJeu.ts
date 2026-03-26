@@ -815,6 +815,7 @@ export function useControleurJeu({
         indexPreneur: null,
         couleurAtout: null,
         carteRetournee: null,
+        cartesRestantesPaquet: 1,
         historiqueEncheres: conserverHistoriqueEncheresAvantRedistribution(prev),
         cartesJouables: [],
         estTourHumain: false,
@@ -832,7 +833,7 @@ export function useControleurJeu({
           nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
           phaseEncheres: null,
           historiqueEncheres: [],
-          cartesRestantesPaquet: 32,
+          cartesRestantesPaquet: 1,
           afficherActionsEnchereRedistribution: false,
         }));
 
@@ -841,6 +842,7 @@ export function useControleurJeu({
 
           setEtatJeu((prev) => ({
             ...prev,
+            cartesRestantesPaquet: 32,
             indexDonneur: contexte.indexDonneur,
           }));
 

@@ -246,12 +246,14 @@ describe("useControleurJeu - redistribution", () => {
       est: 0,
       ouest: 0,
     });
+    expect(result.current.etatJeu.cartesRestantesPaquet).toBe(1);
     expect(result.current.etatJeu.indexDonneur).toBe(indexDonneurAvantRedistribution);
 
     act(() => {
       terminerRetourPaquet?.();
     });
 
+    expect(result.current.etatJeu.cartesRestantesPaquet).toBe(32);
     expect(result.current.etatJeu.indexDonneur).toBe(0);
     expect(mockLancerDistribution).toHaveBeenCalledTimes(1);
 

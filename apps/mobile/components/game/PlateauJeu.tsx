@@ -70,7 +70,11 @@ export default function PlateauJeu() {
     etatJeu.phaseUI === "encheres" ||
     etatJeu.phaseUI === "redistribution";
   const cartesPaquetVisibles =
-    etatJeu.phaseUI === "distribution" ? etatJeu.cartesRestantesPaquet : 12;
+    etatJeu.phaseUI === "encheres"
+      ? 12
+      : etatJeu.phaseUI === "redistribution"
+        ? Math.max(etatJeu.cartesRestantesPaquet, 1)
+        : etatJeu.cartesRestantesPaquet;
   const carteRetourneeReserve =
     etatJeu.phaseUI === "encheres" ? etatJeu.carteRetournee : null;
 
