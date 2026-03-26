@@ -2,6 +2,36 @@ import { render, screen } from "@testing-library/react-native";
 
 import { JetonDealer } from "../components/game/JetonDealer";
 
+jest.mock("@shopify/react-native-skia", () => {
+  const React = require("react") as typeof import("react");
+  const { View } = require("react-native") as typeof import("react-native");
+
+  const Passthrough = ({ children }: { children?: React.ReactNode }) =>
+    React.createElement(View, null, children);
+  const Noop = () => null;
+
+  return {
+    Canvas: Passthrough,
+    Circle: Noop,
+    Group: Passthrough,
+    Path: Noop,
+    RadialGradient: Noop,
+    Blur: Noop,
+    vec: (x: number, y: number) => ({ x, y }),
+    Skia: {
+      Path: {
+        Make: () => ({
+          addArc: jest.fn(),
+          close: jest.fn(),
+          moveTo: jest.fn(),
+          lineTo: jest.fn(),
+          toSVGString: jest.fn(() => ""),
+        }),
+      },
+    },
+  };
+});
+
 jest.mock("react-native-reanimated", () => {
   const React = require("react") as typeof import("react");
   const { View } = require("react-native") as typeof import("react-native");
