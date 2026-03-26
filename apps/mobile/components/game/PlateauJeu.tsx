@@ -18,10 +18,9 @@ import { DialogueFinPartie } from "./DialogueFinPartie";
 import { JetonDealer } from "./JetonDealer";
 import { MainJoueur } from "./MainJoueur";
 import { PanneauEncheres } from "./PanneauEncheres";
-import { PaquetCentral } from "./PaquetCentral";
 import { PilePlis } from "./PilePlis";
+import { ReserveCentrale } from "./ReserveCentrale";
 import { TableauScores } from "./TableauScores";
-import { ZoneCarteRetournee } from "./ZoneCarteRetournee";
 import { ZonePli } from "./ZonePli";
 
 const estWeb = Platform.OS === "web";
@@ -66,7 +65,14 @@ export default function PlateauJeu() {
     etatJeu.phaseUI,
     distributionEnCours ?? false,
   );
-  const afficherCarteRetournee = etatJeu.phaseUI === "encheres";
+  const afficherReserveCentrale =
+    etatJeu.phaseUI === "distribution" ||
+    etatJeu.phaseUI === "encheres" ||
+    etatJeu.phaseUI === "redistribution";
+  const cartesPaquetVisibles =
+    etatJeu.phaseUI === "distribution" ? etatJeu.cartesRestantesPaquet : 12;
+  const carteRetourneeReserve =
+    etatJeu.phaseUI === "encheres" ? etatJeu.carteRetournee : null;
 
   // Dernière action d'enchère par joueur (pour les badges sur les avatars)
   const derniereActionParJoueur = useMemo(() => {
@@ -197,24 +203,16 @@ export default function PlateauJeu() {
           />
 
           {/* Carte retournée visible pendant les enchères */}
-          {afficherCarteRetournee && etatJeu.carteRetournee && (
-            <ZoneCarteRetournee
-              carte={etatJeu.carteRetournee}
-              largeurEcran={largeur}
-              hauteurEcran={hauteur}
-              atlas={atlas}
-            />
-          )}
+          <ReserveCentrale
+            afficherPaquet={afficherReserveCentrale}
+            cartesPaquetVisibles={cartesPaquetVisibles}
+            carteRetournee={carteRetourneeReserve}
+            largeurEcran={largeur}
+            hauteurEcran={hauteur}
+            atlas={atlas}
+          />
 
           {/* Paquet central empilé (visible pendant la distribution) */}
-          {etatJeu.phaseUI === "distribution" && (
-            <PaquetCentral
-              cartesRestantes={etatJeu.cartesRestantesPaquet}
-              largeurEcran={largeur}
-              hauteurEcran={hauteur}
-            />
-          )}
-
           {/* Couche d'animation (cartes en vol) */}
           <CoucheAnimation
             cartesEnVol={cartesEnVol}
