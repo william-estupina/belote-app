@@ -76,6 +76,31 @@ describe("ReserveCentrale", () => {
     expect(screen.getByTestId("reserve-carte-retournee")).toBeTruthy();
   });
 
+  it("place le paquet a gauche et la carte retournee a droite du paquet", () => {
+    render(
+      <ReserveCentrale
+        afficherPaquet={true}
+        cartesPaquetVisibles={12}
+        carteRetournee={{ couleur: "coeur", rang: "as" }}
+        largeurEcran={1000}
+        hauteurEcran={700}
+        atlas={atlas as never}
+      />,
+    );
+
+    const largeurCarte = 1000 * RATIO_LARGEUR_CARTE * 0.85;
+    const stylePaquet = StyleSheet.flatten(
+      screen.getByTestId("reserve-paquet").props.style,
+    );
+    const styleCarteRetournee = StyleSheet.flatten(
+      screen.getByTestId("reserve-carte-retournee").props.style,
+    );
+
+    expect(stylePaquet.left).toBe(0);
+    expect(stylePaquet.width).toBeCloseTo(largeurCarte, 4);
+    expect(styleCarteRetournee.left).toBeCloseTo(largeurCarte + 6, 4);
+  });
+
   it("garde le paquet exactement au meme endroit avec ou sans carte retournee", () => {
     const { rerender } = render(
       <ReserveCentrale

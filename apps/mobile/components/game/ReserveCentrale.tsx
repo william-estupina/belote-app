@@ -100,7 +100,18 @@ export function ReserveCentrale({
       pointerEvents="none"
     >
       {afficherPaquet && (
-        <View testID="reserve-paquet" style={styles.paquet}>
+        <View
+          testID="reserve-paquet"
+          style={[
+            styles.paquet,
+            {
+              left: 0,
+              top: 0,
+              width: largeurCarte,
+              height: hauteurCarte,
+            },
+          ]}
+        >
           {Array.from({ length: nbCouches }).map((_, index) => (
             <View
               key={index}
@@ -124,7 +135,8 @@ export function ReserveCentrale({
           style={[
             styles.carteRetournee,
             {
-              marginLeft: espacement,
+              left: largeurCarte + espacement,
+              top: 0,
               width: largeurCarte,
               height: hauteurCarte,
             },
@@ -150,18 +162,16 @@ export function ReserveCentrale({
 const styles = StyleSheet.create({
   conteneur: {
     position: "absolute",
-    flexDirection: "row",
-    alignItems: "center",
     zIndex: 30,
   },
   paquet: {
-    position: "relative",
+    position: "absolute",
   },
   carteEmpilee: {
     position: "absolute",
   },
   carteRetournee: {
-    position: "relative",
+    position: "absolute",
   },
   faceCarteRetournee: {
     position: "absolute",
