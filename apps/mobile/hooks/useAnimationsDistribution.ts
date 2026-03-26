@@ -408,27 +408,19 @@ export function useAnimationsDistribution(
       }
 
       // Planifier les callbacks et masquer les cartes sud arrivées dans l'atlas.
+      // Chaque paquet sud est masqué dans l'Atlas au moment de son arrivée
+      // (dans le même setTimeout que onPaquetArrive) pour éviter le double rendu
+      // entre le canvas Atlas (sprite brut) et MainJoueur (CarteFaceAtlas avec ombres).
       let delaiFinDistributionMs = 0;
       let indexDebutPaquetSud = 0;
-      const indicesSudArrivees: { debut: number; fin: number }[] = [];
 
       for (const paquet of paquetsCallback) {
         const delaisPool = paquet.estSud ? delaisCartesSud : delaisCartesAdv;
         const delaiCarte = delaisPool[paquet.indexDerniereCartePool];
 
-        // Masquage uniquement pour "sud" (pas les adversaires)
-        if (paquet.estSud && indicesSudArrivees.length > 0) {
-          const indicesToHide = [...indicesSudArrivees];
-          const timeout = setTimeout(() => {
-            for (const range of indicesToHide) {
-              for (let i = range.debut; i <= range.fin; i++) {
-                progressionsSud[i].value = 2;
-              }
-            }
-            options?.onPaquetDepart?.(paquet.position, paquet.cartes);
-          }, paquet.delaiDepartMs);
-          timeoutsCallbacksRef.current.push(timeout);
-        } else if (options?.onPaquetDepart) {
+        // onPaquetDepart — notifier le contrôleur (sans masquage Atlas, qui est
+        // désormais géré à l'arrivée de chaque paquet sud)
+        if (options?.onPaquetDepart) {
           const timeout = setTimeout(() => {
             options.onPaquetDepart?.(paquet.position, paquet.cartes);
           }, paquet.delaiDepartMs);
@@ -440,17 +432,27 @@ export function useAnimationsDistribution(
           delaiFinDistributionMs = Math.max(delaiFinDistributionMs, delaiArriveeMs);
 
           if (paquet.estSud) {
-            indicesSudArrivees.push({
+            // Capturer les indices de ce paquet pour le masquage
+            const indicesAMasquer = {
               debut: indexDebutPaquetSud,
               fin: paquet.indexDerniereCartePool,
-            });
+            };
             indexDebutPaquetSud = paquet.indexDerniereCartePool + 1;
-          }
 
-          const timeout = setTimeout(() => {
-            options?.onPaquetArrive?.(paquet.position, paquet.cartes);
-          }, delaiArriveeMs);
-          timeoutsCallbacksRef.current.push(timeout);
+            // Masquer ce paquet dans l'Atlas ET notifier l'arrivée dans le même tick
+            const timeout = setTimeout(() => {
+              for (let i = indicesAMasquer.debut; i <= indicesAMasquer.fin; i++) {
+                progressionsSud[i].value = 2;
+              }
+              options?.onPaquetArrive?.(paquet.position, paquet.cartes);
+            }, delaiArriveeMs);
+            timeoutsCallbacksRef.current.push(timeout);
+          } else {
+            const timeout = setTimeout(() => {
+              options?.onPaquetArrive?.(paquet.position, paquet.cartes);
+            }, delaiArriveeMs);
+            timeoutsCallbacksRef.current.push(timeout);
+          }
         }
       }
 

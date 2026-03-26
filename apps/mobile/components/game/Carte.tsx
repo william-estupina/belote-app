@@ -117,6 +117,86 @@ const dosStyles = StyleSheet.create({
   },
 });
 
+export function CarteDosAtlas({
+  atlas,
+  largeur,
+  hauteur,
+}: {
+  atlas: AtlasCartes;
+  largeur: number;
+  hauteur: number;
+}) {
+  const { image, largeurCellule, hauteurCellule } = atlas;
+  const sprite = atlas.rectDos();
+  const sprites = useMemo(
+    () => [rect(sprite.x, sprite.y, sprite.width, sprite.height)],
+    [sprite.height, sprite.width, sprite.x, sprite.y],
+  );
+  const echelle =
+    largeurCellule > 0 && hauteurCellule > 0
+      ? Math.min(largeur / largeurCellule, hauteur / hauteurCellule)
+      : 1;
+  const transformations = useRSXformBuffer(1, (valeur) => {
+    "worklet";
+    valeur.set(echelle, 0, 0, 0);
+  });
+
+  if (!image || largeurCellule === 0 || hauteurCellule === 0) {
+    return <CarteDos largeur={largeur} hauteur={hauteur} />;
+  }
+
+  if (Platform.OS === "web") {
+    const sourceSprite =
+      typeof SPRITE_SHEET_SOURCE === "string"
+        ? { uri: SPRITE_SHEET_SOURCE }
+        : SPRITE_SHEET_SOURCE;
+
+    return (
+      <View
+        style={[
+          faceAtlasStyles.conteneur,
+          {
+            width: largeur,
+            height: hauteur,
+            overflow: "hidden",
+            borderRadius: RAYON_COIN,
+          },
+        ]}
+      >
+        <Image
+          source={sourceSprite}
+          style={{
+            position: "absolute",
+            width: image.width() * echelle,
+            height: image.height() * echelle,
+            transform: [
+              { translateX: -sprite.x * echelle },
+              { translateY: -sprite.y * echelle },
+            ],
+          }}
+          resizeMode="stretch"
+        />
+      </View>
+    );
+  }
+
+  return (
+    <View
+      style={[
+        faceAtlasStyles.conteneur,
+        {
+          width: largeur,
+          height: hauteur,
+        },
+      ]}
+    >
+      <Canvas style={{ width: largeur, height: hauteur }} pointerEvents="none">
+        <Atlas image={image} sprites={sprites} transforms={transformations} />
+      </Canvas>
+    </View>
+  );
+}
+
 export function CarteFaceAtlas({
   atlas,
   carte,

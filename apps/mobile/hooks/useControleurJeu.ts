@@ -555,6 +555,11 @@ export function useControleurJeu({
         );
 
         animationDistribEnCours.current = false;
+        // Masquer les cartes sud dans l'Atlas avant de démonter le canvas,
+        // pour éviter un flash dû au double rendu (Atlas + MainJoueur).
+        for (const p of animDistribution.progressionsSud) {
+          p.value = 2;
+        }
         animDistribution.terminerDistribution();
 
         setEtatJeu((prev) => ({
@@ -1208,6 +1213,9 @@ export function useControleurJeu({
         const ctx = snap.context;
 
         animationDistribEnCours.current = false;
+        for (const p of animDistribution.progressionsSud) {
+          p.value = 2;
+        }
         animDistribution.terminerDistribution();
 
         setEtatJeu((prev) => ({
