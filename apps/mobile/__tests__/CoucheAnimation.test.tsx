@@ -31,8 +31,8 @@ jest.mock("../components/game/DistributionCanvasSud", () => {
 });
 
 describe("CoucheAnimation", () => {
-  it("affiche les cartes en vol sur la couche d'animation", () => {
-    const props = {
+  const creerProps = () =>
+    ({
       cartesEnVol: [
         {
           id: "jeu-1",
@@ -52,10 +52,26 @@ describe("CoucheAnimation", () => {
       progressionsAdv: [],
       donneesWorkletAdv: { value: [] },
       nbCartesActivesAdv: { value: 0 },
-    } as unknown as ComponentProps<typeof CoucheAnimation>;
+    }) as unknown as ComponentProps<typeof CoucheAnimation>;
+
+  it("affiche les cartes en vol sur la couche d'animation", () => {
+    const { getByTestId } = render(<CoucheAnimation {...creerProps()} />);
+
+    expect(getByTestId("carte-animee")).toBeTruthy();
+  });
+
+  it("ne monte pas le canvas adversaires quand aucune carte statique n'est visible", () => {
+    const { queryByTestId } = render(<CoucheAnimation {...creerProps()} />);
+
+    expect(queryByTestId("canvas-adversaires")).toBeNull();
+  });
+
+  it("monte le canvas adversaires quand une main adverse est visible", () => {
+    const props = creerProps();
+    props.nbCartesAdversaires = { nord: 5, est: 0, ouest: 0 };
 
     const { getByTestId } = render(<CoucheAnimation {...props} />);
 
-    expect(getByTestId("carte-animee")).toBeTruthy();
+    expect(getByTestId("canvas-adversaires")).toBeTruthy();
   });
 });

@@ -51,10 +51,14 @@ jest.mock("../hooks/useAnimationsDistribution", () => ({
   useAnimationsDistribution: () => ({
     lancerDistribution: mockLancerDistribution,
     terminerDistribution: mockTerminerDistribution,
-    cartesAtlas: [],
-    progressions: [],
-    donneesWorklet: { value: [] },
-    nbCartesActives: { value: 0 },
+    cartesAtlasAdversaires: [],
+    cartesAtlasSud: [],
+    progressionsAdv: [],
+    donneesWorkletAdv: { value: [] },
+    nbCartesActivesAdv: { value: 0 },
+    progressionsSud: [],
+    donneesWorkletSud: { value: [] },
+    nbCartesActivesSud: { value: 0 },
     enCours: false,
   }),
 }));

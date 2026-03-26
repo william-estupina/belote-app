@@ -65,6 +65,11 @@ export function CoucheAnimation({
     progressionsSud &&
     donneesWorkletSud &&
     nbCartesActivesSud;
+  const afficherCanvasAdversaires =
+    (distributionEnCours ?? false) ||
+    nbCartesAdversaires.nord > 0 ||
+    nbCartesAdversaires.est > 0 ||
+    nbCartesAdversaires.ouest > 0;
 
   return (
     <View
@@ -79,17 +84,19 @@ export function CoucheAnimation({
       pointerEvents="none"
     >
       {/* Canvas adversaires permanent (zIndex bas) */}
-      <CanvasAdversaires
-        atlas={atlas}
-        largeurEcran={largeurEcran}
-        hauteurEcran={hauteurEcran}
-        nbCartesAdversaires={nbCartesAdversaires}
-        cartesAtlasAdversaires={cartesAtlasAdversaires}
-        progressions={progressionsAdv}
-        donneesWorklet={donneesWorkletAdv}
-        nbCartesActives={nbCartesActivesAdv}
-        distributionEnCours={distributionEnCours ?? false}
-      />
+      {afficherCanvasAdversaires && (
+        <CanvasAdversaires
+          atlas={atlas}
+          largeurEcran={largeurEcran}
+          hauteurEcran={hauteurEcran}
+          nbCartesAdversaires={nbCartesAdversaires}
+          cartesAtlasAdversaires={cartesAtlasAdversaires}
+          progressions={progressionsAdv}
+          donneesWorklet={donneesWorkletAdv}
+          nbCartesActives={nbCartesActivesAdv}
+          distributionEnCours={distributionEnCours ?? false}
+        />
+      )}
 
       {/* Canvas sud éphémère — uniquement pendant la distribution (zIndex haut) */}
       {aDistributionSud && (
