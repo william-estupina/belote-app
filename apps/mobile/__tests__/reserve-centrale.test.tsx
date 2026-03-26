@@ -1,6 +1,8 @@
 import { render, screen } from "@testing-library/react-native";
+import { StyleSheet } from "react-native";
 
 import { ReserveCentrale } from "../components/game/ReserveCentrale";
+import { ANIMATIONS, RATIO_LARGEUR_CARTE } from "../constants/layout";
 
 jest.mock("../components/game/Carte", () => {
   const React = require("react") as typeof import("react");
@@ -72,6 +74,44 @@ describe("ReserveCentrale", () => {
 
     expect(screen.getByTestId("reserve-paquet")).toBeTruthy();
     expect(screen.getByTestId("reserve-carte-retournee")).toBeTruthy();
+  });
+
+  it("garde le paquet exactement au meme endroit avec ou sans carte retournee", () => {
+    const { rerender } = render(
+      <ReserveCentrale
+        afficherPaquet={true}
+        cartesPaquetVisibles={32}
+        carteRetournee={null}
+        largeurEcran={1000}
+        hauteurEcran={700}
+        atlas={atlas as never}
+      />,
+    );
+
+    const styleSansCarte = StyleSheet.flatten(
+      screen.getByTestId("reserve-centrale").props.style,
+    );
+
+    rerender(
+      <ReserveCentrale
+        afficherPaquet={true}
+        cartesPaquetVisibles={12}
+        carteRetournee={{ couleur: "coeur", rang: "as" }}
+        largeurEcran={1000}
+        hauteurEcran={700}
+        atlas={atlas as never}
+      />,
+    );
+
+    const styleAvecCarte = StyleSheet.flatten(
+      screen.getByTestId("reserve-centrale").props.style,
+    );
+    const largeurCarte = 1000 * RATIO_LARGEUR_CARTE * 0.85;
+    const positionHistoriquePaquet =
+      1000 * ANIMATIONS.distribution.originX - largeurCarte / 2;
+
+    expect(styleSansCarte.left).toBeCloseTo(positionHistoriquePaquet, 4);
+    expect(styleAvecCarte.left).toBeCloseTo(positionHistoriquePaquet, 4);
   });
 
   it("ne rend rien sans paquet ni carte retournee", () => {
