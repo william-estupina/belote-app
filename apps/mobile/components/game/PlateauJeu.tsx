@@ -73,8 +73,9 @@ export default function PlateauJeu() {
     return construireDerniereActionParJoueur(
       etatJeu.historiqueEncheres,
       etatJeu.phaseEncheres,
+      etatJeu.joueurActif,
     );
-  }, [etatJeu.historiqueEncheres, etatJeu.phaseEncheres]);
+  }, [etatJeu.historiqueEncheres, etatJeu.phaseEncheres, etatJeu.joueurActif]);
 
   // Position du preneur
   const positionPreneur =
