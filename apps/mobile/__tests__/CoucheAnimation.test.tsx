@@ -12,12 +12,21 @@ jest.mock("../components/game/CarteAnimee", () => {
   };
 });
 
-jest.mock("../components/game/DistributionCanvas", () => {
+jest.mock("../components/game/CanvasAdversaires", () => {
   const React = require("react") as typeof import("react");
   const { View } = require("react-native") as typeof import("react-native");
 
   return {
-    DistributionCanvas: () => <View testID="distribution-canvas" />,
+    CanvasAdversaires: () => <View testID="canvas-adversaires" />,
+  };
+});
+
+jest.mock("../components/game/DistributionCanvasSud", () => {
+  const React = require("react") as typeof import("react");
+  const { View } = require("react-native") as typeof import("react-native");
+
+  return {
+    DistributionCanvasSud: () => <View testID="distribution-canvas-sud" />,
   };
 });
 
@@ -38,6 +47,11 @@ describe("CoucheAnimation", () => {
       largeurEcran: 1200,
       hauteurEcran: 800,
       onAnimationTerminee: () => {},
+      nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
+      cartesAtlasAdversaires: [],
+      progressionsAdv: [],
+      donneesWorkletAdv: { value: [] },
+      nbCartesActivesAdv: { value: 0 },
     } as unknown as ComponentProps<typeof CoucheAnimation>;
 
     const { getByTestId } = render(<CoucheAnimation {...props} />);

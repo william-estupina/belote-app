@@ -3,7 +3,7 @@ import { render } from "@testing-library/react-native";
 import type { ComponentProps } from "react";
 import type { SharedValue } from "react-native-reanimated";
 
-import { DistributionCanvas } from "../components/game/DistributionCanvas";
+import { DistributionCanvasSud } from "../components/game/DistributionCanvasSud";
 
 type TransformationCapturee = [number, number, number, number];
 
@@ -55,7 +55,7 @@ function creerSharedValue(valeur: number): SharedValue<number> {
 
 function creerCanvasProps(
   progression: number,
-): ComponentProps<typeof DistributionCanvas> {
+): ComponentProps<typeof DistributionCanvasSud> {
   const carte: Carte = { couleur: "pique", rang: "as" };
 
   return {
@@ -64,7 +64,7 @@ function creerCanvasProps(
         width: () => 1336,
         height: () => 1215,
       } as unknown as NonNullable<
-        ComponentProps<typeof DistributionCanvas>["atlas"]["image"]
+        ComponentProps<typeof DistributionCanvasSud>["atlas"]["image"]
       >,
       largeurCellule: 167,
       hauteurCellule: 243,
@@ -95,25 +95,25 @@ function creerCanvasProps(
   };
 }
 
-describe("DistributionCanvas", () => {
+describe("DistributionCanvasSud", () => {
   beforeEach(() => {
     transformationsCapturees.length = 0;
   });
 
   it("cache une carte atlas qui n'a pas encore commence a voler", () => {
-    render(<DistributionCanvas {...creerCanvasProps(-1)} />);
+    render(<DistributionCanvasSud {...creerCanvasProps(-1)} />);
 
     expect(transformationsCapturees[0]).toEqual(TRANSFORMATION_HORS_ECRAN);
   });
 
   it("cache une carte atlas deja arrivee a destination", () => {
-    render(<DistributionCanvas {...creerCanvasProps(2)} />);
+    render(<DistributionCanvasSud {...creerCanvasProps(2)} />);
 
     expect(transformationsCapturees[0]).toEqual(TRANSFORMATION_HORS_ECRAN);
   });
 
   it("laisse visible une carte atlas en cours de vol", () => {
-    render(<DistributionCanvas {...creerCanvasProps(0.5)} />);
+    render(<DistributionCanvasSud {...creerCanvasProps(0.5)} />);
 
     expect(transformationsCapturees[0]).not.toEqual(TRANSFORMATION_HORS_ECRAN);
   });

@@ -1402,12 +1402,17 @@ export function useControleurJeu({
     // Animations
     cartesEnVol: animations.cartesEnVol,
     surAnimationTerminee: animations.surAnimationTerminee,
-    // Distribution Atlas
+    // Distribution Atlas — pool adversaires (CanvasAdversaires)
     atlas,
-    cartesAtlasDistribution: animDistribution.cartesAtlasAdversaires,
-    progressionsDistribution: animDistribution.progressionsAdv,
-    donneesWorkletDistribution: animDistribution.donneesWorkletAdv,
-    nbCartesActivesDistribution: animDistribution.nbCartesActivesAdv,
+    cartesAtlasAdversaires: animDistribution.cartesAtlasAdversaires,
+    progressionsAdv: animDistribution.progressionsAdv,
+    donneesWorkletAdv: animDistribution.donneesWorkletAdv,
+    nbCartesActivesAdv: animDistribution.nbCartesActivesAdv,
+    // Distribution Atlas — pool sud (DistributionCanvasSud)
+    cartesAtlasSud: animDistribution.cartesAtlasSud,
+    progressionsSud: animDistribution.progressionsSud,
+    donneesWorkletSud: animDistribution.donneesWorkletSud,
+    nbCartesActivesSud: animDistribution.nbCartesActivesSud,
     distributionEnCours: animDistribution.enCours,
     // Actions
     jouerCarte,

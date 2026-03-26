@@ -16,7 +16,7 @@ export interface CibleDistributionAtlas {
   echelleArrivee: number;
 }
 
-const ECHELLE_MAIN_ADVERSE = ADVERSAIRE.ratioLargeurCarte / RATIO_LARGEUR_CARTE;
+export const ECHELLE_MAIN_ADVERSE = ADVERSAIRE.ratioLargeurCarte / RATIO_LARGEUR_CARTE;
 function normaliserIndexJoueur(indexJoueur: number): number {
   const totalJoueurs = POSITIONS_JOUEUR.length;
   return ((indexJoueur % totalJoueurs) + totalJoueurs) % totalJoueurs;

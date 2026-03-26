@@ -2,12 +2,12 @@ import { Atlas, Canvas, rect, useRSXformBuffer } from "@shopify/react-native-ski
 import { useMemo } from "react";
 import type { SharedValue } from "react-native-reanimated";
 
-import { RATIO_ASPECT_CARTE, RATIO_LARGEUR_CARTE } from "../../constants/layout";
+import { RATIO_LARGEUR_CARTE } from "../../constants/layout";
 import { interpolerBezierQuadratique } from "../../hooks/distributionAtlas";
 import type { CarteAtlas } from "../../hooks/useAnimationsDistribution";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
 
-interface PropsDistributionCanvas {
+interface PropsDistributionCanvasSud {
   atlas: AtlasCartes;
   cartesAtlas: CarteAtlas[];
   progressions: SharedValue<number>[];
@@ -20,10 +20,10 @@ interface PropsDistributionCanvas {
 const STRIDE = 10;
 
 /**
- * Canvas Skia qui dessine toutes les cartes de distribution en un seul draw call
- * via drawAtlas / useRSXformBuffer.
+ * Canvas Skia éphémère qui dessine les cartes sud en vol pendant la distribution.
+ * Se démonte quand la distribution est terminée.
  */
-export function DistributionCanvas({
+export function DistributionCanvasSud({
   atlas,
   cartesAtlas,
   progressions,
@@ -31,8 +31,7 @@ export function DistributionCanvas({
   nbCartesActives,
   largeurEcran,
   hauteurEcran,
-}: PropsDistributionCanvas) {
-  // Tous les hooks AVANT tout early return
+}: PropsDistributionCanvasSud) {
   const nbCartes = cartesAtlas.length;
 
   // Rectangles source dans la sprite sheet (un par carte)
@@ -46,13 +45,12 @@ export function DistributionCanvas({
 
   // Dimensions de la carte à l'écran
   const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
-  const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
 
-  // Facteur d'échelle sprite sheet → écran (uniforme car on garde le ratio)
+  // Facteur d'échelle sprite sheet → écran
   const scaleBase = atlas.largeurCellule > 0 ? largeurCarte / atlas.largeurCellule : 1;
-  const pivotXCentre = atlas.largeurCellule / 2;
-  const pivotYCentre = atlas.hauteurCellule / 2;
-  const pivotYSud = atlas.hauteurCellule;
+  const pivotX = atlas.largeurCellule / 2;
+  // Pivot bas pour les cartes sud (ancrage pied de carte)
+  const pivotY = atlas.hauteurCellule;
 
   // RSXform buffer — recalculé à chaque frame par Skia worklet
   const transforms = useRSXformBuffer(nbCartes, (val, i) => {
@@ -61,7 +59,7 @@ export function DistributionCanvas({
     const nbActives = nbCartesActives.value;
 
     if (i >= nbActives) {
-      val.set(0, 0, -10000, -10000); // hors écran
+      val.set(0, 0, -10000, -10000);
       return;
     }
 
@@ -72,8 +70,6 @@ export function DistributionCanvas({
     }
 
     const offset = i * STRIDE;
-
-    // Lire les données géométriques depuis le tableau plat
     const departX = donnees[offset];
     const departY = donnees[offset + 1];
     const controleX = donnees[offset + 2];
@@ -85,7 +81,6 @@ export function DistributionCanvas({
     const echDepart = donnees[offset + 8];
     const echArrivee = donnees[offset + 9];
 
-    // Position Bézier quadratique
     const pos = interpolerBezierQuadratique(
       { x: departX, y: departY },
       { x: controleX, y: controleY },
@@ -93,18 +88,13 @@ export function DistributionCanvas({
       t,
     );
 
-    // Interpolation linéaire rotation et échelle
     const rotation = rotDepart + (rotArrivee - rotDepart) * t;
     const echelle = echDepart + (echArrivee - echDepart) * t;
 
     const rotRad = (rotation * Math.PI) / 180;
     const cos = Math.cos(rotRad) * echelle * scaleBase;
     const sin = Math.sin(rotRad) * echelle * scaleBase;
-    const estJoueurSud = cartesAtlas[i]?.joueur === "sud";
-    const pivotX = pivotXCentre;
-    const pivotY = estJoueurSud ? pivotYSud : pivotYCentre;
 
-    // RSXform(scos, ssin, tx, ty)
     const pixelX = pos.x * largeurEcran;
     const pixelY = pos.y * hauteurEcran;
 
@@ -116,7 +106,6 @@ export function DistributionCanvas({
     );
   });
 
-  // Early return APRÈS tous les hooks
   if (!atlas.image || nbCartes === 0) return null;
 
   return (

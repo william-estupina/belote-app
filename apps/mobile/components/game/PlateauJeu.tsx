@@ -16,7 +16,6 @@ import { DernierPli } from "./DernierPli";
 import { DialogueFinManche } from "./DialogueFinManche";
 import { DialogueFinPartie } from "./DialogueFinPartie";
 import { JetonDealer } from "./JetonDealer";
-import { MainAdversaire } from "./MainAdversaire";
 import { MainJoueur } from "./MainJoueur";
 import { PanneauEncheres } from "./PanneauEncheres";
 import { PaquetCentral } from "./PaquetCentral";
@@ -37,10 +36,14 @@ export default function PlateauJeu() {
     cartesEnVol,
     surAnimationTerminee,
     atlas,
-    cartesAtlasDistribution,
-    progressionsDistribution,
-    donneesWorkletDistribution,
-    nbCartesActivesDistribution,
+    cartesAtlasAdversaires,
+    progressionsAdv,
+    donneesWorkletAdv,
+    nbCartesActivesAdv,
+    cartesAtlasSud,
+    progressionsSud,
+    donneesWorkletSud,
+    nbCartesActivesSud,
     distributionEnCours,
     jouerCarte,
     prendre,
@@ -83,34 +86,6 @@ export default function PlateauJeu() {
         <>
           {/* Bordure décorative */}
           <View style={styles.bordure} />
-
-          {/* Mains des adversaires (dos des cartes) — masquées pendant la distribution
-              car le canvas Atlas gère le rendu des dos de carte à leur place */}
-          {!distributionEnCours && (
-            <>
-              <MainAdversaire
-                nbCartes={etatJeu.nbCartesAdversaires.nord}
-                position="nord"
-                largeurEcran={largeur}
-                hauteurEcran={hauteur}
-                atlas={atlas}
-              />
-              <MainAdversaire
-                nbCartes={etatJeu.nbCartesAdversaires.ouest}
-                position="ouest"
-                largeurEcran={largeur}
-                hauteurEcran={hauteur}
-                atlas={atlas}
-              />
-              <MainAdversaire
-                nbCartes={etatJeu.nbCartesAdversaires.est}
-                position="est"
-                largeurEcran={largeur}
-                hauteurEcran={hauteur}
-                atlas={atlas}
-              />
-            </>
-          )}
 
           {/* Avatars des joueurs — identité, enchères et indicateur preneur */}
           {(["sud", "nord", "ouest", "est"] as const).map((pos) => (
@@ -246,10 +221,15 @@ export default function PlateauJeu() {
             hauteurEcran={hauteur}
             onAnimationTerminee={surAnimationTerminee}
             atlas={atlas}
-            cartesAtlasDistribution={cartesAtlasDistribution}
-            progressionsDistribution={progressionsDistribution}
-            donneesWorkletDistribution={donneesWorkletDistribution}
-            nbCartesActivesDistribution={nbCartesActivesDistribution}
+            nbCartesAdversaires={etatJeu.nbCartesAdversaires}
+            cartesAtlasAdversaires={cartesAtlasAdversaires}
+            progressionsAdv={progressionsAdv}
+            donneesWorkletAdv={donneesWorkletAdv}
+            nbCartesActivesAdv={nbCartesActivesAdv}
+            cartesAtlasSud={cartesAtlasSud}
+            progressionsSud={progressionsSud}
+            donneesWorkletSud={donneesWorkletSud}
+            nbCartesActivesSud={nbCartesActivesSud}
             distributionEnCours={distributionEnCours}
           />
 

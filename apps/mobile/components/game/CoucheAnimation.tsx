@@ -4,8 +4,9 @@ import type { SharedValue } from "react-native-reanimated";
 
 import type { CarteAtlas } from "../../hooks/useAnimationsDistribution";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
+import { CanvasAdversaires } from "./CanvasAdversaires";
 import { CarteAnimee, type PositionCarte } from "./CarteAnimee";
-import { DistributionCanvas } from "./DistributionCanvas";
+import { DistributionCanvasSud } from "./DistributionCanvasSud";
 
 export interface CarteEnVol {
   id: string;
@@ -27,10 +28,17 @@ interface PropsCoucheAnimation {
   hauteurEcran: number;
   onAnimationTerminee: (id: string) => void;
   atlas: AtlasCartes;
-  cartesAtlasDistribution?: CarteAtlas[];
-  progressionsDistribution?: SharedValue<number>[];
-  donneesWorkletDistribution?: SharedValue<number[]>;
-  nbCartesActivesDistribution?: SharedValue<number>;
+  nbCartesAdversaires: { nord: number; est: number; ouest: number };
+  // Pool adversaires (CanvasAdversaires — permanent)
+  cartesAtlasAdversaires: CarteAtlas[];
+  progressionsAdv: SharedValue<number>[];
+  donneesWorkletAdv: SharedValue<number[]>;
+  nbCartesActivesAdv: SharedValue<number>;
+  // Pool sud (DistributionCanvasSud — éphémère)
+  cartesAtlasSud?: CarteAtlas[];
+  progressionsSud?: SharedValue<number>[];
+  donneesWorkletSud?: SharedValue<number[]>;
+  nbCartesActivesSud?: SharedValue<number>;
   distributionEnCours?: boolean;
 }
 
@@ -40,23 +48,23 @@ export function CoucheAnimation({
   hauteurEcran,
   onAnimationTerminee,
   atlas,
-  cartesAtlasDistribution,
-  progressionsDistribution,
-  donneesWorkletDistribution,
-  nbCartesActivesDistribution,
+  nbCartesAdversaires,
+  cartesAtlasAdversaires,
+  progressionsAdv,
+  donneesWorkletAdv,
+  nbCartesActivesAdv,
+  cartesAtlasSud,
+  progressionsSud,
+  donneesWorkletSud,
+  nbCartesActivesSud,
   distributionEnCours,
 }: PropsCoucheAnimation) {
-  const aDistributionAtlas =
-    atlas &&
-    cartesAtlasDistribution &&
-    progressionsDistribution &&
-    donneesWorkletDistribution &&
-    nbCartesActivesDistribution &&
-    distributionEnCours;
-
-  if (cartesEnVol.length === 0 && !aDistributionAtlas) {
-    return null;
-  }
+  const aDistributionSud =
+    distributionEnCours &&
+    cartesAtlasSud &&
+    progressionsSud &&
+    donneesWorkletSud &&
+    nbCartesActivesSud;
 
   return (
     <View
@@ -70,13 +78,27 @@ export function CoucheAnimation({
       }}
       pointerEvents="none"
     >
-      {aDistributionAtlas && (
-        <DistributionCanvas
+      {/* Canvas adversaires permanent (zIndex bas) */}
+      <CanvasAdversaires
+        atlas={atlas}
+        largeurEcran={largeurEcran}
+        hauteurEcran={hauteurEcran}
+        nbCartesAdversaires={nbCartesAdversaires}
+        cartesAtlasAdversaires={cartesAtlasAdversaires}
+        progressions={progressionsAdv}
+        donneesWorklet={donneesWorkletAdv}
+        nbCartesActives={nbCartesActivesAdv}
+        distributionEnCours={distributionEnCours ?? false}
+      />
+
+      {/* Canvas sud éphémère — uniquement pendant la distribution (zIndex haut) */}
+      {aDistributionSud && (
+        <DistributionCanvasSud
           atlas={atlas}
-          cartesAtlas={cartesAtlasDistribution}
-          progressions={progressionsDistribution}
-          donneesWorklet={donneesWorkletDistribution}
-          nbCartesActives={nbCartesActivesDistribution}
+          cartesAtlas={cartesAtlasSud}
+          progressions={progressionsSud}
+          donneesWorklet={donneesWorkletSud}
+          nbCartesActives={nbCartesActivesSud}
           largeurEcran={largeurEcran}
           hauteurEcran={hauteurEcran}
         />
