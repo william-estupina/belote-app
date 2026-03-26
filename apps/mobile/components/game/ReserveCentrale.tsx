@@ -46,8 +46,7 @@ export function ReserveCentrale({
   const hauteurCarte = largeurCarte * RATIO_ASPECT_CARTE;
   const espacement = afficherCarteRetournee ? 6 : 0;
   const largeurTotale = largeurCarte * (afficherCarteRetournee ? 2 : 1) + espacement;
-  const ancragePaquetX =
-    largeurEcran * ANIMATIONS.distribution.originX - largeurCarte / 2;
+  const ancragePaquetX = largeurEcran * 0.5 - (largeurCarte * 2 + 6) / 2;
   const nbCouches = Math.min(5, Math.ceil(Math.max(cartesPaquetVisibles, 1) / 6));
 
   const progressionFlip = useSharedValue(afficherCarteRetournee ? 0 : 1);

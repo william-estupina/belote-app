@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react-native";
 import { StyleSheet } from "react-native";
 
 import { ReserveCentrale } from "../components/game/ReserveCentrale";
-import { ANIMATIONS, RATIO_LARGEUR_CARTE } from "../constants/layout";
+import { RATIO_LARGEUR_CARTE } from "../constants/layout";
 
 jest.mock("../components/game/Carte", () => {
   const React = require("react") as typeof import("react");
@@ -107,8 +107,7 @@ describe("ReserveCentrale", () => {
       screen.getByTestId("reserve-centrale").props.style,
     );
     const largeurCarte = 1000 * RATIO_LARGEUR_CARTE * 0.85;
-    const positionHistoriquePaquet =
-      1000 * ANIMATIONS.distribution.originX - largeurCarte / 2;
+    const positionHistoriquePaquet = 1000 * 0.5 - (largeurCarte * 2 + 6) / 2;
 
     expect(styleSansCarte.left).toBeCloseTo(positionHistoriquePaquet, 4);
     expect(styleAvecCarte.left).toBeCloseTo(positionHistoriquePaquet, 4);
