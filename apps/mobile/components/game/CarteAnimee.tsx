@@ -39,13 +39,9 @@ interface PropsCarteAnimee {
   hauteurEcran: number;
   atlas: AtlasCartes;
   onTerminee?: () => void;
-  /** rotateY départ en degrés (0 = dos, 180 = face). Absent = pas de flip. */
   flipDe?: number;
-  /** rotateY arrivée en degrés */
   flipVers?: number;
-  /** Profil d'easing. Défaut: 'out-cubic' */
   easing?: "out-cubic" | "inout-cubic";
-  /** S'incrémente à chaque nouvelle trajectoire pour relancer l'animation */
   segment?: number;
 }
 
@@ -54,11 +50,6 @@ const EASINGS = {
   "inout-cubic": Easing.inOut(Easing.cubic),
 };
 
-/**
- * Carte qui vole entre deux positions avec Reanimated.
- * Supporte optionnellement un flip 3D (rotateY) via deux couches
- * dos/face avec backfaceVisibility: 'hidden'.
- */
 export function CarteAnimee({
   carte,
   depart,
@@ -89,6 +80,8 @@ export function CarteAnimee({
     { x: arrivee.x, y: arrivee.y },
     ANIMATIONS.distribution.arcDistribution.decalagePerpendiculaire,
   );
+  const flipDeVal = flipDe ?? 0;
+  const flipVersVal = flipVers ?? 0;
 
   useEffect(() => {
     return () => {
@@ -135,7 +128,6 @@ export function CarteAnimee({
     );
   }, [progres, delai, duree, easing, segment]);
 
-  // Style du conteneur (position + rotation Z + scale)
   const styleConteneur = useAnimatedStyle(() => {
     const t = progres.value;
     const position = interpolerBezierQuadratique(
@@ -161,7 +153,30 @@ export function CarteAnimee({
     };
   });
 
-  // Sans flip → rendu simple (comportement existant)
+  const styleDos = useAnimatedStyle(() => {
+    const t = progres.value;
+    const rotY = flipDeVal + (flipVersVal - flipDeVal) * t;
+    return {
+      position: "absolute" as const,
+      width: largeurCarte,
+      height: hauteurCarte,
+      backfaceVisibility: "hidden" as const,
+      transform: [{ perspective: 800 }, { rotateY: `${rotY}deg` }],
+    };
+  });
+
+  const styleFace = useAnimatedStyle(() => {
+    const t = progres.value;
+    const rotY = flipDeVal + (flipVersVal - flipDeVal) * t;
+    return {
+      position: "absolute" as const,
+      width: largeurCarte,
+      height: hauteurCarte,
+      backfaceVisibility: "hidden" as const,
+      transform: [{ perspective: 800 }, { rotateY: `${rotY + 180}deg` }],
+    };
+  });
+
   if (!aFlip) {
     return (
       <Animated.View style={styleConteneur}>
@@ -178,36 +193,6 @@ export function CarteAnimee({
       </Animated.View>
     );
   }
-
-  // Avec flip → deux couches superposées avec backfaceVisibility
-  const flipDeVal = flipDe!;
-  const flipVersVal = flipVers!;
-
-  // Style de la couche dos (rotateY de flipDe à flipVers)
-  const styleDos = useAnimatedStyle(() => {
-    const t = progres.value;
-    const rotY = flipDeVal + (flipVersVal - flipDeVal) * t;
-    return {
-      position: "absolute" as const,
-      width: largeurCarte,
-      height: hauteurCarte,
-      backfaceVisibility: "hidden" as const,
-      transform: [{ perspective: 800 }, { rotateY: `${rotY}deg` }],
-    };
-  });
-
-  // Style de la couche face (décalée de 180° par rapport au dos)
-  const styleFace = useAnimatedStyle(() => {
-    const t = progres.value;
-    const rotY = flipDeVal + (flipVersVal - flipDeVal) * t;
-    return {
-      position: "absolute" as const,
-      width: largeurCarte,
-      height: hauteurCarte,
-      backfaceVisibility: "hidden" as const,
-      transform: [{ perspective: 800 }, { rotateY: `${rotY + 180}deg` }],
-    };
-  });
 
   return (
     <Animated.View style={styleConteneur}>

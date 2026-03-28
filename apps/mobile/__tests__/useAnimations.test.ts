@@ -121,7 +121,7 @@ describe("useAnimations", () => {
     expect(surFin).toHaveBeenCalledTimes(1);
   });
 
-  it("anime la revelation de la carte retournee depuis le paquet avant de la retirer", () => {
+  it("anime la revelation de la carte retournee depuis le paquet jusqu'a sa position finale", () => {
     const surFin = jest.fn();
     const { result } = renderHook(() => useAnimations());
 
@@ -139,6 +139,7 @@ describe("useAnimations", () => {
       carte: CARTE_TEST,
       faceVisible: false,
       segment: 0,
+      delai: ANIMATIONS_CARTE_RETOURNEE.delaiFlip,
       depart: {
         x: ANIMATIONS.distribution.originX,
         y: ANIMATIONS.distribution.originY,
@@ -148,38 +149,6 @@ describe("useAnimations", () => {
         y: ANIMATIONS.distribution.originY,
       },
       duree: ANIMATIONS.distribution.dureeSlideRetournee,
-    });
-
-    act(() => {
-      result.current.surAnimationTerminee("revelation-retournee-1");
-    });
-
-    expect(result.current.cartesEnVol).toHaveLength(1);
-    expect(result.current.cartesEnVol[0].segment).toBe(0);
-    expect(surFin).not.toHaveBeenCalled();
-
-    act(() => {
-      jest.advanceTimersByTime(ANIMATIONS_CARTE_RETOURNEE.delaiFlip - 1);
-    });
-
-    expect(result.current.cartesEnVol[0].segment).toBe(0);
-
-    act(() => {
-      jest.advanceTimersByTime(1);
-    });
-
-    expect(result.current.cartesEnVol[0]).toMatchObject({
-      id: "revelation-retournee-1",
-      segment: 1,
-      depart: {
-        x: 0.58,
-        y: ANIMATIONS.distribution.originY,
-      },
-      arrivee: {
-        x: 0.58,
-        y: ANIMATIONS.distribution.originY,
-      },
-      duree: ANIMATIONS_CARTE_RETOURNEE.dureeFlip,
       flipDe: 0,
       flipVers: 180,
     });

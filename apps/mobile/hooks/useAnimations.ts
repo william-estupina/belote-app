@@ -347,12 +347,6 @@ export function useAnimations() {
     (carte: Carte, arrivee: { x: number; y: number }, onTerminee?: () => void) => {
       compteurId.current += 1;
       const id = `revelation-retournee-${compteurId.current}`;
-      const positionFinale = {
-        x: arrivee.x,
-        y: arrivee.y,
-        rotation: 0,
-        echelle: 1,
-      };
 
       setCartesEnVol((precedent) => [
         ...precedent,
@@ -365,43 +359,27 @@ export function useAnimations() {
             rotation: 0,
             echelle: 0.85,
           },
-          arrivee: positionFinale,
+          arrivee: {
+            x: arrivee.x,
+            y: arrivee.y,
+            rotation: 0,
+            echelle: 1,
+          },
           faceVisible: false,
+          delai: ANIMATIONS_CARTE_RETOURNEE.delaiFlip,
           duree: ANIMATIONS.distribution.dureeSlideRetournee,
+          flipDe: 0,
+          flipVers: 180,
           segment: 0,
           easing: "inout-cubic",
         },
       ]);
 
       callbacksFinJeuRef.current.set(id, () => {
-        const timeoutPause = setTimeout(() => {
-          setCartesEnVol((precedent) =>
-            precedent.map((carteEnVol) => {
-              if (carteEnVol.id !== id) {
-                return carteEnVol;
-              }
-
-              return {
-                ...carteEnVol,
-                depart: positionFinale,
-                arrivee: positionFinale,
-                duree: ANIMATIONS_CARTE_RETOURNEE.dureeFlip,
-                flipDe: 0,
-                flipVers: 180,
-                segment: carteEnVol.segment + 1,
-              };
-            }),
-          );
-
-          callbacksFinJeuRef.current.set(id, () => {
-            setCartesEnVol((precedent) =>
-              precedent.filter((carteEnVol) => carteEnVol.id !== id),
-            );
-            onTerminee?.();
-          });
-        }, ANIMATIONS_CARTE_RETOURNEE.delaiFlip);
-
-        timeoutsRef.current.push(timeoutPause);
+        setCartesEnVol((precedent) =>
+          precedent.filter((carteEnVol) => carteEnVol.id !== id),
+        );
+        onTerminee?.();
       });
     },
     [],
