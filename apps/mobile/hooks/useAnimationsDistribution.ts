@@ -407,19 +407,33 @@ export function useAnimationsDistribution(
         progressionsSud[i].value = -1;
       }
 
-      // Planifier les callbacks et masquer les cartes sud arrivées dans l'atlas.
-      // Chaque paquet sud est masqué dans l'Atlas au moment de son arrivée
-      // (dans le même setTimeout que onPaquetArrive) pour éviter le double rendu
-      // entre le canvas Atlas (sprite brut) et MainJoueur (CarteFaceAtlas avec ombres).
+      // Planifier les callbacks.
+      // Les cartes sud restent visibles dans l'Atlas (progression = 1) après leur arrivée.
+      // Le masquage (progression = 2) se fait au départ du paquet sud suivant,
+      // laissant un chevauchement visuel invisible grâce au Shadow Skia identique à MainJoueur.
+      // Le dernier paquet sud est masqué dans le callback de fin.
       let delaiFinDistributionMs = 0;
-      let indexDebutPaquetSud = 0;
+
+      // Indexer les paquets sud et leurs plages dans le pool
+      const paquetsSud: typeof paquetsCallback = [];
+      let indexDebutPaquetSudCourant = 0;
+      const indicesSudParPaquet: { debut: number; fin: number }[] = [];
+
+      for (const paquet of paquetsCallback) {
+        if (paquet.estSud) {
+          indicesSudParPaquet.push({
+            debut: indexDebutPaquetSudCourant,
+            fin: paquet.indexDerniereCartePool,
+          });
+          indexDebutPaquetSudCourant = paquet.indexDerniereCartePool + 1;
+          paquetsSud.push(paquet);
+        }
+      }
 
       for (const paquet of paquetsCallback) {
         const delaisPool = paquet.estSud ? delaisCartesSud : delaisCartesAdv;
         const delaiCarte = delaisPool[paquet.indexDerniereCartePool];
 
-        // onPaquetDepart — notifier le contrôleur (sans masquage Atlas, qui est
-        // désormais géré à l'arrivée de chaque paquet sud)
         if (options?.onPaquetDepart) {
           const timeout = setTimeout(() => {
             options.onPaquetDepart?.(paquet.position, paquet.cartes);
@@ -431,40 +445,43 @@ export function useAnimationsDistribution(
           const delaiArriveeMs = delaiCarte.delai + delaiCarte.duree;
           delaiFinDistributionMs = Math.max(delaiFinDistributionMs, delaiArriveeMs);
 
-          if (paquet.estSud) {
-            // Capturer les indices de ce paquet pour le masquage
-            const indicesAMasquer = {
-              debut: indexDebutPaquetSud,
-              fin: paquet.indexDerniereCartePool,
-            };
-            indexDebutPaquetSud = paquet.indexDerniereCartePool + 1;
-
-            // Masquer ce paquet dans l'Atlas ET notifier l'arrivée dans le même tick
-            const timeout = setTimeout(() => {
-              for (let i = indicesAMasquer.debut; i <= indicesAMasquer.fin; i++) {
-                progressionsSud[i].value = 2;
-              }
-              options?.onPaquetArrive?.(paquet.position, paquet.cartes);
-            }, delaiArriveeMs);
-            timeoutsCallbacksRef.current.push(timeout);
-          } else {
-            const timeout = setTimeout(() => {
-              options?.onPaquetArrive?.(paquet.position, paquet.cartes);
-            }, delaiArriveeMs);
-            timeoutsCallbacksRef.current.push(timeout);
-          }
+          const timeout = setTimeout(() => {
+            options?.onPaquetArrive?.(paquet.position, paquet.cartes);
+          }, delaiArriveeMs);
+          timeoutsCallbacksRef.current.push(timeout);
         }
       }
 
-      // Callback de fin (toutes les animations terminées).
+      // Masquer chaque paquet sud au départ du paquet sud suivant
+      for (let k = 0; k < paquetsSud.length - 1; k++) {
+        const indices = indicesSudParPaquet[k];
+        const delaiMasquage = paquetsSud[k + 1].delaiDepartMs;
+        const timeout = setTimeout(() => {
+          for (let i = indices.debut; i <= indices.fin; i++) {
+            progressionsSud[i].value = 2;
+          }
+        }, delaiMasquage);
+        timeoutsCallbacksRef.current.push(timeout);
+      }
+
+      // Callback de fin : masquer le dernier paquet sud et notifier.
       // Note : setEnCours(false) n'est PAS appelé ici — c'est le contrôleur
       // qui appelle terminerDistribution() après le tri, pour éviter un
       // re-layout intermédiaire avec les cartes non triées.
-      if (options?.onTerminee) {
-        const DELAI_SECURITE_DEMONTAGE = 100;
+      const DELAI_SECURITE_DEMONTAGE = 100;
+      const delaiFinMs = delaiFinDistributionMs + DELAI_SECURITE_DEMONTAGE;
+      const dernierIndicesSud =
+        paquetsSud.length > 0 ? indicesSudParPaquet[paquetsSud.length - 1] : null;
+
+      if (dernierIndicesSud || options?.onTerminee) {
         const timeoutFin = setTimeout(() => {
-          options.onTerminee?.();
-        }, delaiFinDistributionMs + DELAI_SECURITE_DEMONTAGE);
+          if (dernierIndicesSud) {
+            for (let i = dernierIndicesSud.debut; i <= dernierIndicesSud.fin; i++) {
+              progressionsSud[i].value = 2;
+            }
+          }
+          options?.onTerminee?.();
+        }, delaiFinMs);
         timeoutsCallbacksRef.current.push(timeoutFin);
       }
 
