@@ -17,6 +17,13 @@ Deux modifications ciblees, 2 fichiers impactes.
 
 ### 1. Revert du timing de masquage — `useAnimationsDistribution.ts`
 
+**Etats de progression des cartes sud :**
+
+- `-1` = en attente (pas encore en vol)
+- `[0..1]` = en vol (interpolation Bezier)
+- `1` = arrivee (carte visible, position finale)
+- `2` = masquee (cachee de l'Atlas)
+
 Revenir a la logique d'avant `04f145a` :
 
 - Les cartes sud restent visibles dans l'Atlas (`progression = 1`) apres leur arrivee
@@ -30,35 +37,43 @@ Concretement, restaurer le pattern :
 - Au `onPaquetDepart` du paquet sud suivant, masquer les indices accumules (`progression = 2`)
 - Separer a nouveau le masquage Atlas du callback `onPaquetArrive`
 
-### 2. Ajouter DropShadow Skia — `DistributionCanvasSud.tsx`
+**Cas du dernier paquet sud :** le dernier paquet n'a pas de paquet suivant pour declencher son masquage. Ces cartes restent a `progression = 1` dans l'Atlas jusqu'au demontage du canvas. C'est acceptable car le chevauchement avec `MainJoueur` est visuellement identique grace au DropShadow (point 2). Par securite, masquer les indices restants dans le callback `onTerminee`.
 
-Envelopper l'`Atlas` dans un `Group` avec un `DropShadow` Skia qui reproduit exactement les parametres de `faceAtlasStyles.conteneur` :
+### 2. Ajouter Shadow Skia — `DistributionCanvasSud.tsx`
+
+Dans `@shopify/react-native-skia` v2.2.12, le composant est `Shadow` (pas `DropShadow`), importe depuis le package principal. C'est un image filter enfant d'un `Group`.
+
+Envelopper l'`Atlas` dans un `Group` avec un `Shadow` Skia qui reproduit les parametres de `faceAtlasStyles.conteneur` :
 
 ```tsx
-import { Atlas, Canvas, DropShadow, Group, rect, useRSXformBuffer } from "@shopify/react-native-skia";
+import { Atlas, Canvas, Group, Shadow, rect, useRSXformBuffer } from "@shopify/react-native-skia";
 
 // Dans le JSX :
 <Canvas ...>
   <Group>
-    <DropShadow dx={1} dy={2} blur={4} color="rgba(0, 0, 0, 0.35)" />
+    <Shadow dx={1} dy={2} blur={4} color="rgba(0, 0, 0, 0.35)" />
     <Atlas image={atlas.image} sprites={sprites} transforms={transforms} />
   </Group>
 </Canvas>
 ```
 
 Parametres alignes sur `faceAtlasStyles.conteneur` :
-| React Native shadow | Skia DropShadow |
-|---------------------|-----------------|
+| React Native shadow | Skia Shadow |
+|---------------------|-------------|
 | `shadowOffset: { width: 1, height: 2 }` | `dx={1} dy={2}` |
 | `shadowOpacity: 0.35` | `color="rgba(0, 0, 0, 0.35)"` |
 | `shadowRadius: 4` | `blur={4}` |
+
+**Note :** le mapping `shadowRadius` -> `blur` peut ne pas etre exactement 1:1 entre React Native (iOS) et Skia. Commencer avec `blur={4}` et ajuster visuellement sur device si necessaire.
+
+**Note Android :** `faceAtlasStyles.conteneur` inclut `elevation: 5` qui n'a pas d'equivalent Skia. La difference est negligeable car l'elevation Android produit un effet subtil deja approxime par le Shadow Skia.
 
 ### Fichiers modifies
 
 | Fichier                                                 | Modification                                                 |
 | ------------------------------------------------------- | ------------------------------------------------------------ |
 | `apps/mobile/hooks/useAnimationsDistribution.ts`        | Revert timing masquage : masquer au depart du paquet suivant |
-| `apps/mobile/components/game/DistributionCanvasSud.tsx` | Ajouter DropShadow Skia sur l'Atlas                          |
+| `apps/mobile/components/game/DistributionCanvasSud.tsx` | Ajouter Shadow Skia sur l'Atlas                              |
 
 ### Resultat attendu
 
