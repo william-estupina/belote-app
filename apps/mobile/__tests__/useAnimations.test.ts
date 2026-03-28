@@ -121,7 +121,7 @@ describe("useAnimations", () => {
     expect(surFin).toHaveBeenCalledTimes(1);
   });
 
-  it("anime la revelation de la carte retournee depuis le paquet jusqu'a sa position finale", () => {
+  it("anime la revelation de la carte retournee avec soulèvement puis pose retournee", () => {
     const surFin = jest.fn();
     const { result } = renderHook(() => useAnimations());
 
@@ -144,14 +144,28 @@ describe("useAnimations", () => {
         x: ANIMATIONS.distribution.originX,
         y: ANIMATIONS.distribution.originY,
       },
+      duree: expect.any(Number),
+    });
+    expect(result.current.cartesEnVol[0].arrivee.y).toBeLessThan(
+      ANIMATIONS.distribution.originY,
+    );
+
+    act(() => {
+      result.current.surAnimationTerminee("revelation-retournee-1");
+    });
+
+    expect(result.current.cartesEnVol).toHaveLength(1);
+    expect(result.current.cartesEnVol[0]).toMatchObject({
+      id: "revelation-retournee-1",
+      segment: 1,
       arrivee: {
         x: 0.58,
         y: ANIMATIONS.distribution.originY,
       },
-      duree: ANIMATIONS.distribution.dureeSlideRetournee,
       flipDe: 0,
       flipVers: 180,
     });
+    expect(surFin).not.toHaveBeenCalled();
 
     act(() => {
       result.current.surAnimationTerminee("revelation-retournee-1");

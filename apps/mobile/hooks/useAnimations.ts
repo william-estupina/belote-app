@@ -13,6 +13,8 @@ import {
 import { planifierRamassagePli } from "./planRamassagePli";
 
 const POSITIONS_JOUEUR: PositionJoueur[] = ["sud", "ouest", "nord", "est"];
+const DECALAGE_X_SOULEVEMENT_RETOURNEE = 0.012;
+const DECALAGE_Y_SOULEVEMENT_RETOURNEE = 0.05;
 
 export type CarteDuPli = { joueur: PositionJoueur; carte: Carte };
 export interface CarteRetourPaquet {
@@ -347,6 +349,22 @@ export function useAnimations() {
     (carte: Carte, arrivee: { x: number; y: number }, onTerminee?: () => void) => {
       compteurId.current += 1;
       const id = `revelation-retournee-${compteurId.current}`;
+      const positionSoulevee = {
+        x: ANIMATIONS.distribution.originX + DECALAGE_X_SOULEVEMENT_RETOURNEE,
+        y: ANIMATIONS.distribution.originY - DECALAGE_Y_SOULEVEMENT_RETOURNEE,
+        rotation: -6,
+        echelle: 1.04,
+      };
+      const positionFinale = {
+        x: arrivee.x,
+        y: arrivee.y,
+        rotation: 0,
+        echelle: 1,
+      };
+      const dureeSoulevement = Math.max(
+        140,
+        Math.round(ANIMATIONS.distribution.dureeSlideRetournee * 0.35),
+      );
 
       setCartesEnVol((precedent) => [
         ...precedent,
@@ -359,17 +377,10 @@ export function useAnimations() {
             rotation: 0,
             echelle: 0.85,
           },
-          arrivee: {
-            x: arrivee.x,
-            y: arrivee.y,
-            rotation: 0,
-            echelle: 1,
-          },
+          arrivee: positionSoulevee,
           faceVisible: false,
           delai: ANIMATIONS_CARTE_RETOURNEE.delaiFlip,
-          duree: ANIMATIONS.distribution.dureeSlideRetournee,
-          flipDe: 0,
-          flipVers: 180,
+          duree: dureeSoulevement,
           segment: 0,
           easing: "inout-cubic",
         },
@@ -377,9 +388,29 @@ export function useAnimations() {
 
       callbacksFinJeuRef.current.set(id, () => {
         setCartesEnVol((precedent) =>
-          precedent.filter((carteEnVol) => carteEnVol.id !== id),
+          precedent.map((carteEnVol) => {
+            if (carteEnVol.id !== id) {
+              return carteEnVol;
+            }
+
+            return {
+              ...carteEnVol,
+              depart: positionSoulevee,
+              arrivee: positionFinale,
+              duree: ANIMATIONS.distribution.dureeSlideRetournee,
+              flipDe: 0,
+              flipVers: 180,
+              segment: carteEnVol.segment + 1,
+            };
+          }),
         );
-        onTerminee?.();
+
+        callbacksFinJeuRef.current.set(id, () => {
+          setCartesEnVol((precedent) =>
+            precedent.filter((carteEnVol) => carteEnVol.id !== id),
+          );
+          onTerminee?.();
+        });
       });
     },
     [],
