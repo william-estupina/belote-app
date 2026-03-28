@@ -239,6 +239,8 @@ export function useControleurJeu({
   });
   const etatJeuRef = useRef(etatJeu);
   etatJeuRef.current = etatJeu;
+  const dimensionsEcranRef = useRef({ largeur: largeurEcran, hauteur: hauteurEcran });
+  dimensionsEcranRef.current = { largeur: largeurEcran, hauteur: hauteurEcran };
 
   // Timer pour effacer la bulle belote/rebelote
   const timerBeloteRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -621,21 +623,27 @@ export function useControleurJeu({
         }, DELAI_SUPPLEMENTAIRE_TRI_MAIN_INITIALE_MS);
         timeoutsControleurRef.current.push(timeoutTri);
 
-        if (!carteRetournee || largeurEcran <= 0 || hauteurEcran <= 0) {
+        const dimensionsCourantes = dimensionsEcranRef.current;
+
+        if (
+          !carteRetournee ||
+          dimensionsCourantes.largeur <= 0 ||
+          dimensionsCourantes.hauteur <= 0
+        ) {
           finaliserEntreeEncheres();
           return;
         }
 
         const dispositionReserve = calculerDispositionReserveCentrale({
-          largeurEcran,
-          hauteurEcran,
+          largeurEcran: dimensionsCourantes.largeur,
+          hauteurEcran: dimensionsCourantes.hauteur,
         });
 
         animations.lancerAnimationRevelationCarteRetournee(
           carteRetournee,
           {
-            x: dispositionReserve.centreCarteRetournee.x / largeurEcran,
-            y: dispositionReserve.centreCarteRetournee.y / hauteurEcran,
+            x: dispositionReserve.centreCarteRetournee.x / dimensionsCourantes.largeur,
+            y: dispositionReserve.centreCarteRetournee.y / dimensionsCourantes.hauteur,
           },
           finaliserEntreeEncheres,
         );
@@ -643,14 +651,7 @@ export function useControleurJeu({
 
       timeoutsControleurRef.current.push(timeout);
     },
-    [
-      extraireEtatUI,
-      jouerBotSiNecessaire,
-      animDistribution,
-      animations,
-      hauteurEcran,
-      largeurEcran,
-    ],
+    [extraireEtatUI, jouerBotSiNecessaire, animDistribution, animations],
   );
 
   const construireCartesRetourPaquet = useCallback((): CarteRetourPaquet[] => {

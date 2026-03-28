@@ -224,6 +224,54 @@ describe("useControleurJeu - redistribution", () => {
     expect(result.current.etatJeu.carteRetournee).not.toBeNull();
   });
 
+  it("utilise les dimensions mises a jour apres le premier layout pour lancer la revelation", async () => {
+    let terminerRevelationCarteRetournee: (() => void) | undefined;
+    mockLancerAnimationRevelationCarteRetournee.mockImplementation(
+      (_carte: Carte, _arrivee: { x: number; y: number }, onTerminee?: () => void) => {
+        terminerRevelationCarteRetournee = onTerminee;
+      },
+    );
+
+    const { result, rerender } = renderHook(
+      ({ largeurEcran, hauteurEcran }: { largeurEcran: number; hauteurEcran: number }) =>
+        useControleurJeu({
+          difficulte: "facile",
+          scoreObjectif: 1000,
+          largeurEcran,
+          hauteurEcran,
+        }),
+      {
+        initialProps: {
+          largeurEcran: 0,
+          hauteurEcran: 0,
+        },
+      },
+    );
+
+    rerender({
+      largeurEcran: 1280,
+      hauteurEcran: 720,
+    });
+
+    await viderFileEvenements();
+
+    expect(mockLancerAnimationRevelationCarteRetournee).toHaveBeenCalledTimes(1);
+    expect(mockLancerAnimationRevelationCarteRetournee).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        x: expect.any(Number),
+        y: expect.any(Number),
+      }),
+      expect.any(Function),
+    );
+
+    act(() => {
+      terminerRevelationCarteRetournee?.();
+    });
+
+    expect(result.current.etatJeu.phaseEncheres).toBe("encheres1");
+  });
+
   it("laisse voir les Passe, rappelle les cartes puis deplace le dealer avant la nouvelle distribution", async () => {
     let terminerRetourPaquet: (() => void) | undefined;
     let cartesRetourPaquet:
