@@ -1,6 +1,7 @@
 import type { Carte } from "@belote/shared-types";
 import { act, renderHook } from "@testing-library/react-native";
 
+import { ANIMATIONS_CARTE_RETOURNEE } from "../constants/animations-visuelles";
 import { ANIMATIONS } from "../constants/layout";
 import { useAnimations } from "../hooks/useAnimations";
 
@@ -114,6 +115,77 @@ describe("useAnimations", () => {
       jest.advanceTimersByTime(1);
       result.current.surAnimationTerminee("retour-1");
       result.current.surAnimationTerminee("retour-2");
+    });
+
+    expect(result.current.cartesEnVol).toHaveLength(0);
+    expect(surFin).toHaveBeenCalledTimes(1);
+  });
+
+  it("anime la revelation de la carte retournee depuis le paquet avant de la retirer", () => {
+    const surFin = jest.fn();
+    const { result } = renderHook(() => useAnimations());
+
+    act(() => {
+      result.current.lancerAnimationRevelationCarteRetournee(
+        CARTE_TEST,
+        { x: 0.58, y: ANIMATIONS.distribution.originY },
+        surFin,
+      );
+    });
+
+    expect(result.current.cartesEnVol).toHaveLength(1);
+    expect(result.current.cartesEnVol[0]).toMatchObject({
+      id: "revelation-retournee-1",
+      carte: CARTE_TEST,
+      faceVisible: false,
+      segment: 0,
+      depart: {
+        x: ANIMATIONS.distribution.originX,
+        y: ANIMATIONS.distribution.originY,
+      },
+      arrivee: {
+        x: 0.58,
+        y: ANIMATIONS.distribution.originY,
+      },
+      duree: ANIMATIONS.distribution.dureeSlideRetournee,
+    });
+
+    act(() => {
+      result.current.surAnimationTerminee("revelation-retournee-1");
+    });
+
+    expect(result.current.cartesEnVol).toHaveLength(1);
+    expect(result.current.cartesEnVol[0].segment).toBe(0);
+    expect(surFin).not.toHaveBeenCalled();
+
+    act(() => {
+      jest.advanceTimersByTime(ANIMATIONS_CARTE_RETOURNEE.delaiFlip - 1);
+    });
+
+    expect(result.current.cartesEnVol[0].segment).toBe(0);
+
+    act(() => {
+      jest.advanceTimersByTime(1);
+    });
+
+    expect(result.current.cartesEnVol[0]).toMatchObject({
+      id: "revelation-retournee-1",
+      segment: 1,
+      depart: {
+        x: 0.58,
+        y: ANIMATIONS.distribution.originY,
+      },
+      arrivee: {
+        x: 0.58,
+        y: ANIMATIONS.distribution.originY,
+      },
+      duree: ANIMATIONS_CARTE_RETOURNEE.dureeFlip,
+      flipDe: 0,
+      flipVers: 180,
+    });
+
+    act(() => {
+      result.current.surAnimationTerminee("revelation-retournee-1");
     });
 
     expect(result.current.cartesEnVol).toHaveLength(0);

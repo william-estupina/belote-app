@@ -1,23 +1,10 @@
 import type { Carte } from "@belote/shared-types";
-import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
-import Animated, {
-  Easing,
-  interpolate,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withTiming,
-} from "react-native-reanimated";
 
-import { ANIMATIONS_CARTE_RETOURNEE } from "../../constants/animations-visuelles";
-import {
-  ANIMATIONS,
-  RATIO_ASPECT_CARTE,
-  RATIO_LARGEUR_CARTE,
-} from "../../constants/layout";
+import { ANIMATIONS } from "../../constants/layout";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
 import { CarteDos, CarteFaceAtlas } from "./Carte";
+import { calculerDispositionReserveCentrale } from "./reserve-centrale-disposition";
 
 interface PropsReserveCentrale {
   afficherPaquet: boolean;
@@ -42,48 +29,18 @@ export function ReserveCentrale({
     return null;
   }
 
-  const largeurCarte = largeurEcran * RATIO_LARGEUR_CARTE * 0.85;
-  const hauteurCarte = largeurCarte * RATIO_ASPECT_CARTE;
-  const espacement = afficherCarteRetournee ? 6 : 0;
-  const largeurTotale = largeurCarte * (afficherCarteRetournee ? 2 : 1) + espacement;
-  const ancragePaquetX = largeurEcran * 0.5 - (largeurCarte * 2 + 6) / 2;
+  const {
+    largeurCarte,
+    hauteurCarte,
+    espacement,
+    largeurTotaleAvecCarte,
+    ancragePaquetX,
+  } = calculerDispositionReserveCentrale({
+    largeurEcran,
+    hauteurEcran,
+  });
+  const largeurTotale = afficherCarteRetournee ? largeurTotaleAvecCarte : largeurCarte;
   const nbCouches = Math.min(5, Math.ceil(Math.max(cartesPaquetVisibles, 1) / 6));
-
-  const progressionFlip = useSharedValue(afficherCarteRetournee ? 0 : 1);
-
-  useEffect(() => {
-    if (!afficherCarteRetournee) {
-      progressionFlip.value = 1;
-      return;
-    }
-
-    progressionFlip.value = 0;
-    progressionFlip.value = withDelay(
-      ANIMATIONS_CARTE_RETOURNEE.delaiFlip,
-      withTiming(1, {
-        duration: ANIMATIONS_CARTE_RETOURNEE.dureeFlip,
-        easing: Easing.inOut(Easing.ease),
-      }),
-    );
-  }, [afficherCarteRetournee, progressionFlip, carteRetournee]);
-
-  const styleDosCarteRetournee = useAnimatedStyle(() => {
-    const rotationY = interpolate(progressionFlip.value, [0, 0.5, 1], [0, 90, 90]);
-    return {
-      transform: [{ perspective: 800 }, { rotateY: `${rotationY}deg` }],
-      opacity: progressionFlip.value < 0.5 ? 1 : 0,
-      backfaceVisibility: "hidden" as const,
-    };
-  });
-
-  const styleFaceCarteRetournee = useAnimatedStyle(() => {
-    const rotationY = interpolate(progressionFlip.value, [0, 0.5, 1], [-90, -90, 0]);
-    return {
-      transform: [{ perspective: 800 }, { rotateY: `${rotationY}deg` }],
-      opacity: progressionFlip.value >= 0.5 ? 1 : 0,
-      backfaceVisibility: "hidden" as const,
-    };
-  });
 
   return (
     <View
@@ -142,17 +99,14 @@ export function ReserveCentrale({
             },
           ]}
         >
-          <Animated.View style={[styles.faceCarteRetournee, styleDosCarteRetournee]}>
-            <CarteDos largeur={largeurCarte} hauteur={hauteurCarte} />
-          </Animated.View>
-          <Animated.View style={[styles.faceCarteRetournee, styleFaceCarteRetournee]}>
+          <View style={styles.faceCarteRetournee}>
             <CarteFaceAtlas
               atlas={atlas}
               carte={carteRetournee}
               largeur={largeurCarte}
               hauteur={hauteurCarte}
             />
-          </Animated.View>
+          </View>
         </View>
       )}
     </View>

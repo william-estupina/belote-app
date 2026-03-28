@@ -18,6 +18,7 @@ import {
   calculerDispositionMainJoueur,
   calculerPointAncrageCarteMainJoueurNormalisee,
 } from "../components/game/mainJoueurDisposition";
+import { calculerDispositionReserveCentrale } from "../components/game/reserve-centrale-disposition";
 import { ANIMATIONS, RATIO_ASPECT_CARTE, RATIO_LARGEUR_CARTE } from "../constants/layout";
 import {
   calculerCiblesEventailAdversaire,
@@ -545,6 +546,7 @@ export function useControleurJeu({
         const snap = acteur.getSnapshot();
         const etat = snap.value as string;
         const ctx = snap.context;
+        const carteRetournee = ctx.carteRetournee;
         const mainTriee = trierMainJoueur(ctx.mains[INDEX_HUMAIN], {
           couleurPrioritaire: ctx.couleurAtout ?? ctx.carteRetournee?.couleur ?? null,
           couleurAtout: ctx.couleurAtout,
@@ -562,18 +564,44 @@ export function useControleurJeu({
         }
         animDistribution.terminerDistribution();
 
-        setEtatJeu((prev) => ({
-          ...prev,
-          ...extraireEtatUI(ctx, etat),
-          ...transitionTri.etatAvantTri,
-          nbCartesAdversaires: {
-            nord: ctx.mains[2].length,
-            est: ctx.mains[3].length,
-            ouest: ctx.mains[1].length,
-          },
-          cartesRestantesPaquet: 0,
-          nbCartesAnticipeesJoueur: ctx.mains[INDEX_HUMAIN].length,
-        }));
+        const appliquerEtatAvantEncheres = () =>
+          setEtatJeu((prev) => ({
+            ...prev,
+            ...transitionTri.etatAvantTri,
+            phaseUI: "distribution",
+            phaseEncheres: null,
+            carteRetournee: null,
+            nbCartesAdversaires: {
+              nord: ctx.mains[2].length,
+              est: ctx.mains[3].length,
+              ouest: ctx.mains[1].length,
+            },
+            cartesRestantesPaquet: 12,
+            nbCartesAnticipeesJoueur: ctx.mains[INDEX_HUMAIN].length,
+          }));
+
+        const finaliserEntreeEncheres = () => {
+          if (estDemonte.current) return;
+
+          setEtatJeu((prev) => ({
+            ...prev,
+            ...extraireEtatUI(ctx, etat),
+            mainJoueur: mainTriee,
+            triMainDiffere: false,
+            nbCartesAdversaires: {
+              nord: ctx.mains[2].length,
+              est: ctx.mains[3].length,
+              ouest: ctx.mains[1].length,
+            },
+            cartesRestantesPaquet: 12,
+            nbCartesAnticipeesJoueur: ctx.mains[INDEX_HUMAIN].length,
+          }));
+
+          const timeoutBot = setTimeout(() => jouerBotSiNecessaire(), 50);
+          timeoutsControleurRef.current.push(timeoutBot);
+        };
+
+        appliquerEtatAvantEncheres();
 
         const timeoutTri = setTimeout(() => {
           if (estDemonte.current) return;
@@ -593,14 +621,36 @@ export function useControleurJeu({
         }, DELAI_SUPPLEMENTAIRE_TRI_MAIN_INITIALE_MS);
         timeoutsControleurRef.current.push(timeoutTri);
 
-        const estPhaseEncheres = etat === "encheres1" || etat === "encheres2";
-        const delaiAvantBot = estPhaseEncheres ? ANIMATIONS.pauseAvantEncheres : 50;
-        setTimeout(() => jouerBotSiNecessaire(), delaiAvantBot);
+        if (!carteRetournee || largeurEcran <= 0 || hauteurEcran <= 0) {
+          finaliserEntreeEncheres();
+          return;
+        }
+
+        const dispositionReserve = calculerDispositionReserveCentrale({
+          largeurEcran,
+          hauteurEcran,
+        });
+
+        animations.lancerAnimationRevelationCarteRetournee(
+          carteRetournee,
+          {
+            x: dispositionReserve.centreCarteRetournee.x / largeurEcran,
+            y: dispositionReserve.centreCarteRetournee.y / hauteurEcran,
+          },
+          finaliserEntreeEncheres,
+        );
       }, distribution.pauseAvantTri);
 
       timeoutsControleurRef.current.push(timeout);
     },
-    [extraireEtatUI, jouerBotSiNecessaire, animDistribution],
+    [
+      extraireEtatUI,
+      jouerBotSiNecessaire,
+      animDistribution,
+      animations,
+      hauteurEcran,
+      largeurEcran,
+    ],
   );
 
   const construireCartesRetourPaquet = useCallback((): CarteRetourPaquet[] => {

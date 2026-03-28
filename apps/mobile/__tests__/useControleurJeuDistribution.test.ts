@@ -24,6 +24,7 @@ const mockAnnulerAnimations = jest.fn();
 const mockLancerAnimationJeuCarte = jest.fn();
 const mockLancerAnimationRamassagePli = jest.fn();
 const mockLancerAnimationRetourPaquet = jest.fn();
+const mockLancerAnimationRevelationCarteRetournee = jest.fn();
 const mockGlisserCarteRetournee = jest.fn();
 const mockSurAnimationTerminee = jest.fn();
 const mockAttendreDelaiBot = jest.fn(() => Promise.resolve());
@@ -42,6 +43,7 @@ jest.mock("../hooks/useAnimations", () => ({
     lancerAnimationJeuCarte: mockLancerAnimationJeuCarte,
     lancerAnimationRamassagePli: mockLancerAnimationRamassagePli,
     lancerAnimationRetourPaquet: mockLancerAnimationRetourPaquet,
+    lancerAnimationRevelationCarteRetournee: mockLancerAnimationRevelationCarteRetournee,
     ajouterCartesGelees: mockAjouterCartesGelees,
     annulerAnimations: mockAnnulerAnimations,
   }),
@@ -138,6 +140,10 @@ describe("useControleurJeu - redistribution", () => {
     mockLancerAnimationRetourPaquet.mockImplementation(
       (_cartes, onTerminee?: () => void) => onTerminee?.(),
     );
+    mockLancerAnimationRevelationCarteRetournee.mockImplementation(
+      (_carte: Carte, _arrivee: { x: number; y: number }, onTerminee?: () => void) =>
+        onTerminee?.(),
+    );
   });
 
   afterEach(() => {
@@ -177,6 +183,45 @@ describe("useControleurJeu - redistribution", () => {
     await viderFileEvenements();
 
     expect(mockLancerDistribution).toHaveBeenCalledTimes(2);
+  });
+
+  it("revele la carte retournee depuis le paquet avant d'entrer en encheres", async () => {
+    let terminerRevelationCarteRetournee: (() => void) | undefined;
+    mockLancerAnimationRevelationCarteRetournee.mockImplementation(
+      (_carte: Carte, _arrivee: { x: number; y: number }, onTerminee?: () => void) => {
+        terminerRevelationCarteRetournee = onTerminee;
+      },
+    );
+
+    const { result } = renderHook(() =>
+      useControleurJeu({
+        difficulte: "facile",
+        scoreObjectif: 1000,
+        largeurEcran: 1280,
+        hauteurEcran: 720,
+      }),
+    );
+
+    await viderFileEvenements();
+
+    expect(mockLancerAnimationRevelationCarteRetournee).toHaveBeenCalledTimes(1);
+    expect(result.current.etatJeu.phaseUI).toBe("distribution");
+    expect(result.current.etatJeu.phaseEncheres).toBeNull();
+    expect(result.current.etatJeu.carteRetournee).toBeNull();
+    expect(result.current.etatJeu.mainJoueur).toHaveLength(5);
+    expect(result.current.etatJeu.nbCartesAdversaires).toEqual({
+      nord: 5,
+      est: 5,
+      ouest: 5,
+    });
+
+    act(() => {
+      terminerRevelationCarteRetournee?.();
+    });
+
+    expect(result.current.etatJeu.phaseUI).toBe("encheres");
+    expect(result.current.etatJeu.phaseEncheres).toBe("encheres1");
+    expect(result.current.etatJeu.carteRetournee).not.toBeNull();
   });
 
   it("laisse voir les Passe, rappelle les cartes puis deplace le dealer avant la nouvelle distribution", async () => {

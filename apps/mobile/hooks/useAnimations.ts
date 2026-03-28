@@ -2,6 +2,7 @@ import type { Carte, PositionJoueur } from "@belote/shared-types";
 import { useCallback, useRef, useState } from "react";
 
 import type { CarteEnVol } from "../components/game/CoucheAnimation";
+import { ANIMATIONS_CARTE_RETOURNEE } from "../constants/animations-visuelles";
 import {
   ANIMATIONS,
   POSITIONS_MAINS,
@@ -342,6 +343,70 @@ export function useAnimations() {
     [],
   );
 
+  const lancerAnimationRevelationCarteRetournee = useCallback(
+    (carte: Carte, arrivee: { x: number; y: number }, onTerminee?: () => void) => {
+      compteurId.current += 1;
+      const id = `revelation-retournee-${compteurId.current}`;
+      const positionFinale = {
+        x: arrivee.x,
+        y: arrivee.y,
+        rotation: 0,
+        echelle: 1,
+      };
+
+      setCartesEnVol((precedent) => [
+        ...precedent,
+        {
+          id,
+          carte,
+          depart: {
+            x: ANIMATIONS.distribution.originX,
+            y: ANIMATIONS.distribution.originY,
+            rotation: 0,
+            echelle: 0.85,
+          },
+          arrivee: positionFinale,
+          faceVisible: false,
+          duree: ANIMATIONS.distribution.dureeSlideRetournee,
+          segment: 0,
+          easing: "inout-cubic",
+        },
+      ]);
+
+      callbacksFinJeuRef.current.set(id, () => {
+        const timeoutPause = setTimeout(() => {
+          setCartesEnVol((precedent) =>
+            precedent.map((carteEnVol) => {
+              if (carteEnVol.id !== id) {
+                return carteEnVol;
+              }
+
+              return {
+                ...carteEnVol,
+                depart: positionFinale,
+                arrivee: positionFinale,
+                duree: ANIMATIONS_CARTE_RETOURNEE.dureeFlip,
+                flipDe: 0,
+                flipVers: 180,
+                segment: carteEnVol.segment + 1,
+              };
+            }),
+          );
+
+          callbacksFinJeuRef.current.set(id, () => {
+            setCartesEnVol((precedent) =>
+              precedent.filter((carteEnVol) => carteEnVol.id !== id),
+            );
+            onTerminee?.();
+          });
+        }, ANIMATIONS_CARTE_RETOURNEE.delaiFlip);
+
+        timeoutsRef.current.push(timeoutPause);
+      });
+    },
+    [],
+  );
+
   const ajouterCartesGelees = useCallback((cartesGelees: CarteEnVol[]) => {
     setCartesEnVol((precedent) => {
       const idsExistants = new Set(precedent.map((c) => c.id));
@@ -363,6 +428,7 @@ export function useAnimations() {
     lancerAnimationJeuCarte,
     lancerAnimationRamassagePli,
     lancerAnimationRetourPaquet,
+    lancerAnimationRevelationCarteRetournee,
     ajouterCartesGelees,
     annulerAnimations,
   };
