@@ -138,7 +138,8 @@ describe("useControleurJeu - redistribution", () => {
     jest.clearAllMocks();
     configurerDistributionImmediate();
     mockLancerAnimationRetourPaquet.mockImplementation(
-      (_cartes, onTerminee?: () => void) => onTerminee?.(),
+      (_cartes, _arrivee: { x: number; y: number }, onTerminee?: () => void) =>
+        onTerminee?.(),
     );
     mockLancerAnimationRevelationCarteRetournee.mockImplementation(
       (_carte: Carte, _arrivee: { x: number; y: number }, onTerminee?: () => void) =>
@@ -285,7 +286,7 @@ describe("useControleurJeu - redistribution", () => {
         }>
       | undefined;
     mockLancerAnimationRetourPaquet.mockImplementation(
-      (cartes, onTerminee?: () => void) => {
+      (cartes, _arrivee: { x: number; y: number }, onTerminee?: () => void) => {
         cartesRetourPaquet = cartes;
         terminerRetourPaquet = onTerminee;
       },

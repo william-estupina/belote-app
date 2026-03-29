@@ -353,6 +353,48 @@ export function useAnimations() {
     [],
   );
 
+  const lancerAnimationRetourCarteRetournee = useCallback(
+    (
+      carte: Carte,
+      depart: { x: number; y: number; rotation: number; echelle: number },
+      arrivee: { x: number; y: number },
+      onTerminee?: () => void,
+    ) => {
+      compteurId.current += 1;
+      const id = `retour-retournee-${compteurId.current}`;
+
+      const nouvelleCarteEnVol: CarteEnVol = {
+        id,
+        carte,
+        depart,
+        arrivee: {
+          x: arrivee.x,
+          y: arrivee.y,
+          rotation: 0,
+          echelle: 0.85,
+        },
+        faceVisible: true,
+        flipDe: 180,
+        flipVers: 0,
+        delai: 0,
+        duree: ANIMATIONS.redistribution.dureeRetourCarteRetournee,
+        segment: 0,
+        easing: "inout-cubic",
+      };
+
+      setCartesEnVol((precedent) => [...precedent, nouvelleCarteEnVol]);
+
+      if (onTerminee) {
+        const timeout = setTimeout(
+          onTerminee,
+          ANIMATIONS.redistribution.dureeRetourCarteRetournee,
+        );
+        timeoutsRef.current.push(timeout);
+      }
+    },
+    [],
+  );
+
   const lancerAnimationRevelationCarteRetournee = useCallback(
     (carte: Carte, arrivee: { x: number; y: number }, onTerminee?: () => void) => {
       compteurId.current += 1;
@@ -479,6 +521,7 @@ export function useAnimations() {
     lancerAnimationJeuCarte,
     lancerAnimationRamassagePli,
     lancerAnimationRetourPaquet,
+    lancerAnimationRetourCarteRetournee,
     lancerAnimationRevelationCarteRetournee,
     ajouterCartesGelees,
     annulerAnimations,

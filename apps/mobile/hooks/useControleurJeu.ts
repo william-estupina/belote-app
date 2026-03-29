@@ -656,19 +656,20 @@ export function useControleurJeu({
 
   const construireCartesRetourPaquet = useCallback((): CarteRetourPaquet[] => {
     const etatVisible = etatJeuRef.current;
-    if (largeurEcran <= 0 || hauteurEcran <= 0) {
+    const { largeur: larg, hauteur: haut } = dimensionsEcranRef.current;
+    if (larg <= 0 || haut <= 0) {
       return [];
     }
 
-    const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
+    const largeurCarte = Math.round(larg * RATIO_LARGEUR_CARTE);
     const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
     const delaiEntreVagues = ANIMATIONS.distribution.delaiEntreVaguesRetourPaquet;
 
     const dispositionSud = calculerDispositionMainJoueur({
       mode: "eventail",
       nbCartes: etatVisible.mainJoueur.length,
-      largeurEcran,
-      hauteurEcran,
+      largeurEcran: larg,
+      hauteurEcran: haut,
       largeurCarte,
       hauteurCarte,
     });
@@ -685,8 +686,8 @@ export function useControleurJeu({
           ...calculerPointAncrageCarteMainJoueurNormalisee({
             x: positionCarte.x,
             decalageY: positionCarte.decalageY,
-            largeurEcran,
-            hauteurEcran,
+            largeurEcran: larg,
+            hauteurEcran: haut,
             largeurCarte,
             hauteurCarte,
           }),
@@ -703,8 +704,8 @@ export function useControleurJeu({
         0,
         etatVisible.nbCartesAdversaires.ouest,
         etatVisible.nbCartesAdversaires.ouest,
-        largeurEcran,
-        hauteurEcran,
+        larg,
+        haut,
       ).map((cible, index) => ({
         carte: creerCarteFactice(index),
         depart: {
@@ -719,8 +720,8 @@ export function useControleurJeu({
         0,
         etatVisible.nbCartesAdversaires.nord,
         etatVisible.nbCartesAdversaires.nord,
-        largeurEcran,
-        hauteurEcran,
+        larg,
+        haut,
       ).map((cible, index) => ({
         carte: creerCarteFactice(8 + index),
         depart: {
@@ -735,8 +736,8 @@ export function useControleurJeu({
         0,
         etatVisible.nbCartesAdversaires.est,
         etatVisible.nbCartesAdversaires.est,
-        largeurEcran,
-        hauteurEcran,
+        larg,
+        haut,
       ).map((cible, index) => ({
         carte: creerCarteFactice(16 + index),
         depart: {
@@ -767,7 +768,7 @@ export function useControleurJeu({
     }
 
     return cartesRetour;
-  }, [hauteurEcran, largeurEcran]);
+  }, []);
 
   // --- Lancer la distribution avec animation ---
   const lancerDistributionAnimee = useCallback(
@@ -855,6 +856,7 @@ export function useControleurJeu({
 
   const lancerRedistributionAnimee = useCallback(
     (contexte: ContextePartie) => {
+      animationDistribEnCours.current = true;
       nbPlisVus.current = 0;
 
       setEtatJeu((prev) => ({
@@ -888,7 +890,10 @@ export function useControleurJeu({
           afficherActionsEnchereRedistribution: false,
         }));
 
-        animations.lancerAnimationRetourPaquet(cartesRetour, () => {
+        animations.lancerAnimationRetourPaquet(
+          cartesRetour,
+          { x: ANIMATIONS.distribution.originX, y: ANIMATIONS.distribution.originY },
+          () => {
           if (estDemonte.current) return;
 
           setEtatJeu((prev) => ({
@@ -903,7 +908,8 @@ export function useControleurJeu({
           }, ANIMATIONS.redistribution.dureeGlissementDealer);
 
           timeoutsControleurRef.current.push(timeoutApresDealer);
-        });
+        },
+        );
       }, ANIMATIONS.redistribution.pauseAvantRappel);
 
       timeoutsControleurRef.current.push(timeoutAvantRappel);

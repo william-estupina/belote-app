@@ -121,6 +121,49 @@ describe("useAnimations", () => {
     expect(surFin).toHaveBeenCalledTimes(1);
   });
 
+  it("cree une carte retour-retournee-* face visible avec flip et appelle le callback de fin", () => {
+    const surFin = jest.fn();
+    const { result } = renderHook(() => useAnimations());
+
+    const depart = { x: 0.58, y: 0.45, rotation: 0, echelle: 0.85 };
+    const arrivee = { x: 0.38, y: 0.45 };
+
+    act(() => {
+      result.current.lancerAnimationRetourCarteRetournee(
+        CARTE_TEST,
+        depart,
+        arrivee,
+        surFin,
+      );
+    });
+
+    expect(result.current.cartesEnVol).toHaveLength(1);
+    expect(result.current.cartesEnVol[0]).toMatchObject({
+      id: "retour-retournee-1",
+      carte: CARTE_TEST,
+      faceVisible: true,
+      flipDe: 180,
+      flipVers: 0,
+      segment: 0,
+      delai: 0,
+      depart: { x: 0.58, y: 0.45, rotation: 0, echelle: 0.85 },
+      arrivee: { x: 0.38, y: 0.45, rotation: 0, echelle: 0.85 },
+      duree: ANIMATIONS.redistribution.dureeRetourCarteRetournee,
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(ANIMATIONS.redistribution.dureeRetourCarteRetournee - 1);
+    });
+
+    expect(surFin).not.toHaveBeenCalled();
+
+    act(() => {
+      jest.advanceTimersByTime(1);
+    });
+
+    expect(surFin).toHaveBeenCalledTimes(1);
+  });
+
   describe("ramassage in-place", () => {
     it("met a jour les cartes jeu-* existantes pour la convergence (segment 1)", () => {
       const { result } = renderHook(() => useAnimations());
