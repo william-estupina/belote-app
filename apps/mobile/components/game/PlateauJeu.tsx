@@ -76,7 +76,9 @@ export default function PlateauJeu() {
         ? Math.max(etatJeu.cartesRestantesPaquet, 1)
         : etatJeu.cartesRestantesPaquet;
   const carteRetourneeReserve =
-    etatJeu.phaseUI === "encheres" ? etatJeu.carteRetournee : null;
+    etatJeu.phaseUI === "encheres" || etatJeu.phaseUI === "redistribution"
+      ? etatJeu.carteRetournee
+      : null;
 
   // Dernière action d'enchère par joueur (pour les badges sur les avatars)
   const derniereActionParJoueur = useMemo(() => {
