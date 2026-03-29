@@ -5,7 +5,6 @@ import { CarteRevelation } from "../components/game/CarteRevelation";
 import type { AtlasCartes } from "../hooks/useAtlasCartes";
 
 jest.mock("react-native-reanimated", () => {
-  const React = require("react") as typeof import("react");
   const { View } = require("react-native") as typeof import("react-native");
 
   return {
@@ -93,5 +92,128 @@ describe("CarteRevelation", () => {
     expect(surTerminee).toHaveBeenCalledTimes(1);
 
     global.requestAnimationFrame = requestAnimationFrameOriginal;
+  });
+
+  describe("mode inverse", () => {
+    it("se monte sans erreur avec inverse", () => {
+      expect(() =>
+        render(
+          <CarteRevelation
+            inverse
+            carte={CARTE_TEST}
+            departX={100}
+            departY={200}
+            arriveeX={180}
+            arriveeY={220}
+            largeurCarte={80}
+            hauteurCarte={116}
+            atlas={ATLAS_TEST}
+            onTerminee={() => {}}
+          />,
+        ),
+      ).not.toThrow();
+    });
+
+    it("appelle onTerminee apres la fin de l'animation en mode inverse", () => {
+      const surTerminee = jest.fn();
+      const callbacksAnimationFrame: FrameRequestCallback[] = [];
+      const requestAnimationFrameOriginal = global.requestAnimationFrame;
+
+      global.requestAnimationFrame = jest.fn((callback: FrameRequestCallback) => {
+        callbacksAnimationFrame.push(callback);
+        return 1;
+      });
+
+      render(
+        <CarteRevelation
+          inverse
+          carte={CARTE_TEST}
+          departX={100}
+          departY={200}
+          arriveeX={180}
+          arriveeY={220}
+          largeurCarte={80}
+          hauteurCarte={116}
+          atlas={ATLAS_TEST}
+          onTerminee={surTerminee}
+        />,
+      );
+
+      expect(surTerminee).not.toHaveBeenCalled();
+      expect(callbacksAnimationFrame).toHaveLength(1);
+
+      callbacksAnimationFrame[0](16);
+      expect(surTerminee).toHaveBeenCalledTimes(1);
+
+      global.requestAnimationFrame = requestAnimationFrameOriginal;
+    });
+
+    it("position initiale du conteneur correspond a arriveeX/Y en mode inverse", () => {
+      // Mock interpolate retourne output[0], donc p=0 → position initiale.
+      // En inverse, output[0] = arriveeX/Y → left = arriveeX - largeurCarte/2
+      const animated = require("react-native-reanimated");
+      animated.interpolate.mockClear();
+
+      render(
+        <CarteRevelation
+          inverse
+          carte={CARTE_TEST}
+          departX={100}
+          departY={200}
+          arriveeX={180}
+          arriveeY={220}
+          largeurCarte={80}
+          hauteurCarte={116}
+          atlas={ATLAS_TEST}
+          onTerminee={() => {}}
+        />,
+      );
+
+      // useAnimatedStyle est appelé et retourne le style calculé au moment du rendu
+      // interpolate retourne output[0] → en inverse, x = arriveeX
+      // Vérifier que interpolate a été appelé avec arriveeX comme premier élément de output
+      // pour la position X (premier appel pour les positions)
+      const calls = animated.interpolate.mock.calls as unknown[][];
+      const positionXCall = calls.find(
+        (call: unknown[]) =>
+          Array.isArray(call[2]) &&
+          (call[2] as number[])[0] === 180 &&
+          (call[2] as number[])[1] === 100 &&
+          (call[2] as number[])[2] === 100 &&
+          (call[2] as number[])[3] === 100,
+      );
+
+      // En mode inverse, la position X initiale doit commencer à arriveeX
+      expect(positionXCall).toBeDefined();
+    });
+
+    it("styleDos initial a rotY=-90 en mode inverse (roles dos/face echanges)", () => {
+      const animated = require("react-native-reanimated");
+      animated.interpolate.mockClear();
+
+      render(
+        <CarteRevelation
+          inverse
+          carte={CARTE_TEST}
+          departX={100}
+          departY={200}
+          arriveeX={180}
+          arriveeY={220}
+          largeurCarte={80}
+          hauteurCarte={116}
+          atlas={ATLAS_TEST}
+          onTerminee={() => {}}
+        />,
+      );
+
+      // En mode inverse, styleDos utilise la formule de styleFace original :
+      // rotY = interpolate(p, [1,1.5,2], [-90,-90,0], "clamp") → output[0] = -90
+      expect(animated.interpolate).toHaveBeenCalledWith(
+        expect.anything(),
+        [1, 1.5, 2],
+        [-90, -90, 0],
+        "clamp",
+      );
+    });
   });
 });
