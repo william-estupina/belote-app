@@ -98,7 +98,7 @@ export function CarteRevelation({
         animationFrameRef.current = null;
       }
     };
-  }, [progres, dureeSoulevement, dureeFlip, dureePlacement]);
+  }, [progres, inverse, dureeTotale]);
 
   // Position et échelle du conteneur
   const styleConteneur = useAnimatedStyle(() => {
