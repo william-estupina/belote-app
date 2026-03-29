@@ -24,7 +24,6 @@ const mockAnnulerAnimations = jest.fn();
 const mockLancerAnimationJeuCarte = jest.fn();
 const mockLancerAnimationRamassagePli = jest.fn();
 const mockLancerAnimationRetourPaquet = jest.fn();
-const mockLancerAnimationRetourCarteRetournee = jest.fn();
 const mockGlisserCarteRetournee = jest.fn();
 const mockSurAnimationTerminee = jest.fn();
 const mockAttendreDelaiBot = jest.fn(() => Promise.resolve());
@@ -43,7 +42,6 @@ jest.mock("../hooks/useAnimations", () => ({
     lancerAnimationJeuCarte: mockLancerAnimationJeuCarte,
     lancerAnimationRamassagePli: mockLancerAnimationRamassagePli,
     lancerAnimationRetourPaquet: mockLancerAnimationRetourPaquet,
-    lancerAnimationRetourCarteRetournee: mockLancerAnimationRetourCarteRetournee,
     ajouterCartesGelees: mockAjouterCartesGelees,
     annulerAnimations: mockAnnulerAnimations,
   }),
@@ -140,9 +138,6 @@ describe("useControleurJeu - redistribution", () => {
     mockLancerAnimationRetourPaquet.mockImplementation(
       (_cartes, _arrivee: { x: number; y: number }, onTerminee?: () => void) =>
         onTerminee?.(),
-    );
-    mockLancerAnimationRetourCarteRetournee.mockImplementation(
-      (_carte, _depart, _arrivee, onTerminee?: () => void) => onTerminee?.(),
     );
   });
 
