@@ -117,6 +117,7 @@ export const ANIMATIONS = {
   redistribution: {
     pauseAvantRappel: accelererDureeAnimation(300),
     dureeGlissementDealer: 500,
+    dureeRetourCarteRetournee: ralentirDureeAnimationMajeure(500), // duree du retour de la carte retournee vers le paquet (ms)
   },
   // Delai des bots (phase jeu)
   delaiBot: {
