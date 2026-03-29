@@ -6,18 +6,31 @@ import type { SharedValue } from "react-native-reanimated";
 import { DistributionCanvasSud } from "../components/game/DistributionCanvasSud";
 
 type TransformationCapturee = [number, number, number, number];
+type OmbreCapturee = {
+  blur: number;
+  color: string;
+  dx: number;
+  dy: number;
+};
 
 const transformationsCapturees: TransformationCapturee[] = [];
+const ombresCapturees: OmbreCapturee[] = [];
 const TRANSFORMATION_HORS_ECRAN: TransformationCapturee = [0, 0, -10000, -10000];
 
 jest.mock("@shopify/react-native-skia", () => {
   const React = require("react") as typeof import("react");
   const { View } = require("react-native") as typeof import("react-native");
+  const Passthrough = ({ children }: { children?: React.ReactNode }) =>
+    React.createElement(View, null, children);
 
   return {
-    Canvas: ({ children }: { children?: React.ReactNode }) =>
-      React.createElement(View, null, children),
+    Canvas: Passthrough,
     Atlas: () => null,
+    Group: Passthrough,
+    Shadow: (props: OmbreCapturee) => {
+      ombresCapturees.push(props);
+      return null;
+    },
     rect: (x: number, y: number, width: number, height: number) => ({
       x,
       y,
@@ -98,6 +111,7 @@ function creerCanvasProps(
 describe("DistributionCanvasSud", () => {
   beforeEach(() => {
     transformationsCapturees.length = 0;
+    ombresCapturees.length = 0;
   });
 
   it("cache une carte atlas qui n'a pas encore commence a voler", () => {
@@ -116,5 +130,18 @@ describe("DistributionCanvasSud", () => {
     render(<DistributionCanvasSud {...creerCanvasProps(0.5)} />);
 
     expect(transformationsCapturees[0]).not.toEqual(TRANSFORMATION_HORS_ECRAN);
+  });
+
+  it("applique une ombre skia alignee sur les cartes statiques", () => {
+    render(<DistributionCanvasSud {...creerCanvasProps(0.5)} />);
+
+    expect(ombresCapturees).toEqual([
+      {
+        blur: 4,
+        color: "rgba(0, 0, 0, 0.35)",
+        dx: 1,
+        dy: 2,
+      },
+    ]);
   });
 });

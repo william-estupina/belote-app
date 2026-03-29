@@ -1,4 +1,11 @@
-import { Atlas, Canvas, rect, useRSXformBuffer } from "@shopify/react-native-skia";
+import {
+  Atlas,
+  Canvas,
+  Group,
+  rect,
+  Shadow,
+  useRSXformBuffer,
+} from "@shopify/react-native-skia";
 import { useMemo } from "react";
 import type { SharedValue } from "react-native-reanimated";
 
@@ -120,7 +127,10 @@ export function DistributionCanvasSud({
       }}
       pointerEvents="none"
     >
-      <Atlas image={atlas.image} sprites={sprites} transforms={transforms} />
+      <Group>
+        <Shadow dx={1} dy={2} blur={4} color="rgba(0, 0, 0, 0.35)" />
+        <Atlas image={atlas.image} sprites={sprites} transforms={transforms} />
+      </Group>
     </Canvas>
   );
 }
