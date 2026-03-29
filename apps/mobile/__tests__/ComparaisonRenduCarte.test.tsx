@@ -53,14 +53,19 @@ jest.mock("@shopify/react-native-skia", () => {
 });
 
 describe("ComparaisonRenduCarte", () => {
-  it("affiche deux selecteurs independants pour choisir la carte gauche et droite", () => {
+  it("affiche deux selecteurs independants et une colonne de superposition avec bascule", () => {
     render(<EcranDebugCartes />);
 
     expect(screen.getByText("Comparaison des rendus")).toBeTruthy();
     expect(screen.getByText("Main joueur (CarteFaceAtlas)")).toBeTruthy();
     expect(screen.getByText("Atlas distribution (Skia Canvas)")).toBeTruthy();
-    expect(screen.getByTestId("debug-carte-main")).toBeTruthy();
-    expect(screen.getByTestId("debug-carte-atlas")).toBeTruthy();
+    expect(screen.getByText("Superposition")).toBeTruthy();
+    expect(screen.getByText("Rendu affiche : gauche")).toBeTruthy();
+    expect(screen.getByTestId("superposition-bascule")).toBeTruthy();
+    expect(screen.getAllByTestId("debug-carte-main")).toHaveLength(2);
+    expect(screen.getAllByTestId("debug-carte-atlas")).toHaveLength(2);
+    expect(screen.getByTestId("superposition-carte-gauche")).toBeTruthy();
+    expect(screen.getByTestId("superposition-carte-droite")).toBeTruthy();
 
     fireEvent.press(screen.getByTestId("selecteur-carte-gauche-bouton"));
     fireEvent.press(screen.getByText("As de pique"));
@@ -70,6 +75,11 @@ describe("ComparaisonRenduCarte", () => {
 
     expect(screen.getByText("Carte gauche : As de pique")).toBeTruthy();
     expect(screen.getByText("Carte droite : 10 de carreau")).toBeTruthy();
-    expect(screen.getByTestId("debug-carte-main").props.children).toBe("as-pique");
+    expect(screen.getAllByTestId("debug-carte-main")[0].props.children).toBe("as-pique");
+
+    fireEvent.press(screen.getByTestId("superposition-bascule"));
+
+    expect(screen.getByText("Rendu affiche : droite")).toBeTruthy();
+    expect(screen.getByText("Afficher le rendu gauche")).toBeTruthy();
   });
 });
