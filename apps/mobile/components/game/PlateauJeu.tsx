@@ -11,6 +11,7 @@ import { doitAfficherUIEncheres } from "../../hooks/visibiliteEncheres";
 import { useAppStore } from "../../stores/app-store";
 import { AvatarJoueur } from "./AvatarJoueur";
 import { BulleBelote } from "./BulleBelote";
+import { CarteRevelation } from "./CarteRevelation";
 import { CoucheAnimation } from "./CoucheAnimation";
 import { DernierPli } from "./DernierPli";
 import { DialogueFinManche } from "./DialogueFinManche";
@@ -19,6 +20,7 @@ import { JetonDealer } from "./JetonDealer";
 import { MainJoueur } from "./MainJoueur";
 import { PanneauEncheres } from "./PanneauEncheres";
 import { PilePlis } from "./PilePlis";
+import { calculerDispositionReserveCentrale } from "./reserve-centrale-disposition";
 import { ReserveCentrale } from "./ReserveCentrale";
 import { TableauScores } from "./TableauScores";
 import { ZonePli } from "./ZonePli";
@@ -50,6 +52,7 @@ export default function PlateauJeu() {
     passer,
     continuerApresScore,
     recommencer,
+    onRevelationTerminee,
   } = useControleurJeu({
     difficulte: preferences.difficulte,
     scoreObjectif: preferences.scoreObjectif,
@@ -67,6 +70,7 @@ export default function PlateauJeu() {
   );
   const afficherReserveCentrale =
     etatJeu.phaseUI === "distribution" ||
+    etatJeu.phaseUI === "revelationCarte" ||
     etatJeu.phaseUI === "encheres" ||
     etatJeu.phaseUI === "redistribution";
   const cartesPaquetVisibles =
@@ -88,6 +92,11 @@ export default function PlateauJeu() {
       etatJeu.joueurActif,
     );
   }, [etatJeu.historiqueEncheres, etatJeu.phaseEncheres, etatJeu.joueurActif]);
+
+  const dispositionReserve = calculerDispositionReserveCentrale({
+    largeurEcran: largeur,
+    hauteurEcran: hauteur,
+  });
 
   // Position du preneur
   const positionPreneur =
@@ -217,6 +226,23 @@ export default function PlateauJeu() {
             hauteurEcran={hauteur}
             atlas={atlas}
           />
+
+          {/* Animation révélation de la carte retournée */}
+          {etatJeu.phaseUI === "revelationCarte" &&
+            etatJeu.carteRetournee &&
+            largeur > 0 && (
+              <CarteRevelation
+                carte={etatJeu.carteRetournee}
+                departX={dispositionReserve.centrePaquet.x}
+                departY={dispositionReserve.centrePaquet.y}
+                arriveeX={dispositionReserve.centreCarteRetournee.x}
+                arriveeY={dispositionReserve.centreCarteRetournee.y}
+                largeurCarte={dispositionReserve.largeurCarte}
+                hauteurCarte={dispositionReserve.hauteurCarte}
+                atlas={atlas}
+                onTerminee={onRevelationTerminee}
+              />
+            )}
 
           {/* Paquet central empilé (visible pendant la distribution) */}
           {/* Couche d'animation (cartes en vol) */}
