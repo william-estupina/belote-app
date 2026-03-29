@@ -314,6 +314,7 @@ describe("useControleurJeu - redistribution", () => {
       result.current.onRetourCarteRetourneeTerminee();
     });
 
+    expect(result.current.etatJeu.carteRetourneeEnRetour).toBeNull();
     expect(mockLancerAnimationRetourPaquet).toHaveBeenCalledTimes(1);
     expect(cartesRetourPaquet).toHaveLength(20);
     expect(new Set(cartesRetourPaquet?.map((carte) => carte.delai)).size).toBe(5);

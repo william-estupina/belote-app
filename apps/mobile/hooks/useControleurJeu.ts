@@ -894,7 +894,6 @@ export function useControleurJeu({
         const cartesRetour = construireCartesRetourPaquet();
 
         const lancerPhase2 = () => {
-          setEtatJeu((prev) => ({ ...prev, carteRetourneeEnRetour: null }));
           animations.lancerAnimationRetourPaquet(cartesRetour, centrePaquet, () => {
             if (estDemonte.current) return;
 
@@ -914,7 +913,10 @@ export function useControleurJeu({
         };
 
         if (carteRetournee) {
-          onRetourCarteRetourneeRef.current = lancerPhase2;
+          onRetourCarteRetourneeRef.current = () => {
+            setEtatJeu((prev) => ({ ...prev, carteRetourneeEnRetour: null }));
+            lancerPhase2();
+          };
           setEtatJeu((prev) => ({
             ...prev,
             mainJoueur: [],
