@@ -867,7 +867,6 @@ export function useControleurJeu({
         phaseEncheres: prev.phaseEncheres,
         indexPreneur: null,
         couleurAtout: null,
-        carteRetournee: null,
         cartesRestantesPaquet: 1,
         historiqueEncheres: conserverHistoriqueEncheresAvantRedistribution(prev),
         cartesJouables: [],
@@ -878,38 +877,70 @@ export function useControleurJeu({
       const timeoutAvantRappel = setTimeout(() => {
         if (estDemonte.current) return;
 
+        const { largeur, hauteur } = dimensionsEcranRef.current;
+        const disposition = calculerDispositionReserveCentrale({
+          largeurEcran: largeur,
+          hauteurEcran: hauteur,
+        });
+        const centrePaquet = {
+          x: disposition.centrePaquet.x / largeur,
+          y: disposition.centrePaquet.y / hauteur,
+        };
+        const centreCarteRetournee = {
+          x: disposition.centreCarteRetournee.x / largeur,
+          y: disposition.centreCarteRetournee.y / hauteur,
+        };
+
+        const carteRetournee = etatJeuRef.current.carteRetournee;
         const cartesRetour = construireCartesRetourPaquet();
 
+        // Effacer l'état et démarrer l'animation dans le même rendu (React 18 batch)
         setEtatJeu((prev) => ({
           ...prev,
           mainJoueur: [],
           nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
+          carteRetournee: null,
           phaseEncheres: null,
           historiqueEncheres: [],
           cartesRestantesPaquet: 1,
           afficherActionsEnchereRedistribution: false,
         }));
 
-        animations.lancerAnimationRetourPaquet(
-          cartesRetour,
-          { x: ANIMATIONS.distribution.originX, y: ANIMATIONS.distribution.originY },
-          () => {
-          if (estDemonte.current) return;
-
-          setEtatJeu((prev) => ({
-            ...prev,
-            cartesRestantesPaquet: 32,
-            indexDonneur: contexte.indexDonneur,
-          }));
-
-          const timeoutApresDealer = setTimeout(() => {
+        const lancerPhase2 = () => {
+          animations.lancerAnimationRetourPaquet(cartesRetour, centrePaquet, () => {
             if (estDemonte.current) return;
-            lancerDistributionAnimee(contexte);
-          }, ANIMATIONS.redistribution.dureeGlissementDealer);
 
-          timeoutsControleurRef.current.push(timeoutApresDealer);
-        },
-        );
+            setEtatJeu((prev) => ({
+              ...prev,
+              cartesRestantesPaquet: 32,
+              indexDonneur: contexte.indexDonneur,
+            }));
+
+            const timeoutApresDealer = setTimeout(() => {
+              if (estDemonte.current) return;
+              lancerDistributionAnimee(contexte);
+            }, ANIMATIONS.redistribution.dureeGlissementDealer);
+
+            timeoutsControleurRef.current.push(timeoutApresDealer);
+          });
+        };
+
+        if (carteRetournee) {
+          // Phase 1 : carte retournée → paquet
+          animations.lancerAnimationRetourCarteRetournee(
+            carteRetournee,
+            {
+              x: centreCarteRetournee.x,
+              y: centreCarteRetournee.y,
+              rotation: 0,
+              echelle: 0.85,
+            },
+            centrePaquet,
+            lancerPhase2,
+          );
+        } else {
+          lancerPhase2();
+        }
       }, ANIMATIONS.redistribution.pauseAvantRappel);
 
       timeoutsControleurRef.current.push(timeoutAvantRappel);
