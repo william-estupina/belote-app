@@ -93,10 +93,14 @@ export default function PlateauJeu() {
     );
   }, [etatJeu.historiqueEncheres, etatJeu.phaseEncheres, etatJeu.joueurActif]);
 
-  const dispositionReserve = calculerDispositionReserveCentrale({
-    largeurEcran: largeur,
-    hauteurEcran: hauteur,
-  });
+  const dispositionReserve = useMemo(
+    () =>
+      calculerDispositionReserveCentrale({
+        largeurEcran: largeur,
+        hauteurEcran: hauteur,
+      }),
+    [largeur, hauteur],
+  );
 
   // Position du preneur
   const positionPreneur =
