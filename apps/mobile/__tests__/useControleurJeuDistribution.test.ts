@@ -25,7 +25,6 @@ const mockLancerAnimationJeuCarte = jest.fn();
 const mockLancerAnimationRamassagePli = jest.fn();
 const mockLancerAnimationRetourPaquet = jest.fn();
 const mockLancerAnimationRetourCarteRetournee = jest.fn();
-const mockLancerAnimationRevelationCarteRetournee = jest.fn();
 const mockGlisserCarteRetournee = jest.fn();
 const mockSurAnimationTerminee = jest.fn();
 const mockAttendreDelaiBot = jest.fn(() => Promise.resolve());
@@ -45,7 +44,6 @@ jest.mock("../hooks/useAnimations", () => ({
     lancerAnimationRamassagePli: mockLancerAnimationRamassagePli,
     lancerAnimationRetourPaquet: mockLancerAnimationRetourPaquet,
     lancerAnimationRetourCarteRetournee: mockLancerAnimationRetourCarteRetournee,
-    lancerAnimationRevelationCarteRetournee: mockLancerAnimationRevelationCarteRetournee,
     ajouterCartesGelees: mockAjouterCartesGelees,
     annulerAnimations: mockAnnulerAnimations,
   }),
@@ -146,10 +144,6 @@ describe("useControleurJeu - redistribution", () => {
     mockLancerAnimationRetourCarteRetournee.mockImplementation(
       (_carte, _depart, _arrivee, onTerminee?: () => void) => onTerminee?.(),
     );
-    mockLancerAnimationRevelationCarteRetournee.mockImplementation(
-      (_carte: Carte, _arrivee: { x: number; y: number }, onTerminee?: () => void) =>
-        onTerminee?.(),
-    );
   });
 
   afterEach(() => {
@@ -171,6 +165,10 @@ describe("useControleurJeu - redistribution", () => {
 
     await viderFileEvenements();
 
+    act(() => {
+      result.current.onRevelationTerminee();
+    });
+
     expect(mockLancerDistribution).toHaveBeenCalledTimes(1);
     expect(result.current.etatJeu.phaseEncheres).toBe("encheres1");
 
@@ -188,17 +186,14 @@ describe("useControleurJeu - redistribution", () => {
 
     await viderFileEvenements();
 
+    act(() => {
+      result.current.onRevelationTerminee();
+    });
+
     expect(mockLancerDistribution).toHaveBeenCalledTimes(2);
   });
 
-  it("revele la carte retournee depuis le paquet avant d'entrer en encheres", async () => {
-    let terminerRevelationCarteRetournee: (() => void) | undefined;
-    mockLancerAnimationRevelationCarteRetournee.mockImplementation(
-      (_carte: Carte, _arrivee: { x: number; y: number }, onTerminee?: () => void) => {
-        terminerRevelationCarteRetournee = onTerminee;
-      },
-    );
-
+  it("passe en phase revelationCarte apres la distribution, puis en encheres quand la revelation est terminee", async () => {
     const { result } = renderHook(() =>
       useControleurJeu({
         difficulte: "facile",
@@ -210,19 +205,14 @@ describe("useControleurJeu - redistribution", () => {
 
     await viderFileEvenements();
 
-    expect(mockLancerAnimationRevelationCarteRetournee).toHaveBeenCalledTimes(1);
-    expect(result.current.etatJeu.phaseUI).toBe("distribution");
+    // Phase revelationCarte déclenchée
+    expect(result.current.etatJeu.phaseUI).toBe("revelationCarte");
+    expect(result.current.etatJeu.carteRetournee).not.toBeNull();
     expect(result.current.etatJeu.phaseEncheres).toBeNull();
-    expect(result.current.etatJeu.carteRetournee).toBeNull();
-    expect(result.current.etatJeu.mainJoueur).toHaveLength(5);
-    expect(result.current.etatJeu.nbCartesAdversaires).toEqual({
-      nord: 5,
-      est: 5,
-      ouest: 5,
-    });
 
+    // Simuler la fin de l'animation
     act(() => {
-      terminerRevelationCarteRetournee?.();
+      result.current.onRevelationTerminee();
     });
 
     expect(result.current.etatJeu.phaseUI).toBe("encheres");
@@ -230,52 +220,22 @@ describe("useControleurJeu - redistribution", () => {
     expect(result.current.etatJeu.carteRetournee).not.toBeNull();
   });
 
-  it("utilise les dimensions mises a jour apres le premier layout pour lancer la revelation", async () => {
-    let terminerRevelationCarteRetournee: (() => void) | undefined;
-    mockLancerAnimationRevelationCarteRetournee.mockImplementation(
-      (_carte: Carte, _arrivee: { x: number; y: number }, onTerminee?: () => void) => {
-        terminerRevelationCarteRetournee = onTerminee;
-      },
-    );
-
-    const { result, rerender } = renderHook(
-      ({ largeurEcran, hauteurEcran }: { largeurEcran: number; hauteurEcran: number }) =>
+  it("appelle directement finaliserEntreeEncheres si les dimensions sont nulles au moment de la transition", async () => {
+    const { result } = renderHook(
+      ({ largeurEcran, hauteurEcran }) =>
         useControleurJeu({
           difficulte: "facile",
           scoreObjectif: 1000,
           largeurEcran,
           hauteurEcran,
         }),
-      {
-        initialProps: {
-          largeurEcran: 0,
-          hauteurEcran: 0,
-        },
-      },
+      { initialProps: { largeurEcran: 0, hauteurEcran: 0 } },
     );
-
-    rerender({
-      largeurEcran: 1280,
-      hauteurEcran: 720,
-    });
 
     await viderFileEvenements();
 
-    expect(mockLancerAnimationRevelationCarteRetournee).toHaveBeenCalledTimes(1);
-    expect(mockLancerAnimationRevelationCarteRetournee).toHaveBeenCalledWith(
-      expect.any(Object),
-      expect.objectContaining({
-        x: expect.any(Number),
-        y: expect.any(Number),
-      }),
-      expect.any(Function),
-    );
-
-    act(() => {
-      terminerRevelationCarteRetournee?.();
-    });
-
-    expect(result.current.etatJeu.phaseEncheres).toBe("encheres1");
+    // Dimensions nulles : pas de phase revelationCarte, directement encheres
+    expect(result.current.etatJeu.phaseUI).toBe("encheres");
   });
 
   it("laisse voir les Passe, rappelle les cartes puis deplace le dealer avant la nouvelle distribution", async () => {
@@ -307,6 +267,10 @@ describe("useControleurJeu - redistribution", () => {
     );
 
     await viderFileEvenements();
+
+    act(() => {
+      result.current.onRevelationTerminee();
+    });
 
     const indexDonneurAvantRedistribution = result.current.etatJeu.indexDonneur;
 
@@ -427,9 +391,19 @@ describe("useControleurJeu - redistribution", () => {
       });
 
       await viderFileEvenements();
+
+      act(() => {
+        result.current.onRevelationTerminee();
+      });
+
+      await viderFileEvenements();
     };
 
     await viderFileEvenements();
+
+    act(() => {
+      result.current.onRevelationTerminee();
+    });
 
     await passerJusquaRedistribution();
     await passerJusquaRedistribution();

@@ -10,6 +10,7 @@ describe("visibiliteEncheres", () => {
     "inactif",
     "distribution",
     "redistribution",
+    "revelationCarte",
     "jeu",
     "finPli",
     "scoresManche",

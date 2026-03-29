@@ -2,7 +2,6 @@ import type { Carte, PositionJoueur } from "@belote/shared-types";
 import { useCallback, useRef, useState } from "react";
 
 import type { CarteEnVol } from "../components/game/CoucheAnimation";
-import { ANIMATIONS_CARTE_RETOURNEE } from "../constants/animations-visuelles";
 import {
   ANIMATIONS,
   POSITIONS_MAINS,
@@ -13,12 +12,6 @@ import {
 import { planifierRamassagePli } from "./planRamassagePli";
 
 const POSITIONS_JOUEUR: PositionJoueur[] = ["sud", "ouest", "nord", "est"];
-const DECALAGE_X_SOULEVEMENT_RETOURNEE = 0.03;
-const DECALAGE_Y_SOULEVEMENT_RETOURNEE = 0.085;
-const ROTATION_SOULEVEMENT_RETOURNEE = -14;
-const ECHELLE_SOULEVEMENT_RETOURNEE = 1.08;
-const ROTATION_APEX_RETOURNEE = -9;
-const ECHELLE_APEX_RETOURNEE = 1.1;
 
 export type CarteDuPli = { joueur: PositionJoueur; carte: Carte };
 export interface CarteRetourPaquet {
@@ -395,111 +388,6 @@ export function useAnimations() {
     [],
   );
 
-  const lancerAnimationRevelationCarteRetournee = useCallback(
-    (carte: Carte, arrivee: { x: number; y: number }, onTerminee?: () => void) => {
-      compteurId.current += 1;
-      const id = `revelation-retournee-${compteurId.current}`;
-      const positionSoulevee = {
-        x: ANIMATIONS.distribution.originX + DECALAGE_X_SOULEVEMENT_RETOURNEE,
-        y: ANIMATIONS.distribution.originY - DECALAGE_Y_SOULEVEMENT_RETOURNEE,
-        rotation: ROTATION_SOULEVEMENT_RETOURNEE,
-        echelle: ECHELLE_SOULEVEMENT_RETOURNEE,
-      };
-      const positionApex = {
-        x: positionSoulevee.x + 0.008,
-        y: positionSoulevee.y - 0.004,
-        rotation: ROTATION_APEX_RETOURNEE,
-        echelle: ECHELLE_APEX_RETOURNEE,
-      };
-      const positionFinale = {
-        x: arrivee.x,
-        y: arrivee.y,
-        rotation: 0,
-        echelle: 1,
-      };
-      const dureeSoulevement = Math.max(
-        180,
-        Math.round(ANIMATIONS.distribution.dureeSlideRetournee * 0.45),
-      );
-      const dureeFlipAuSommet = Math.max(
-        160,
-        Math.round(ANIMATIONS.distribution.dureeSlideRetournee * 0.4),
-      );
-      const dureePose = Math.max(
-        260,
-        Math.round(ANIMATIONS.distribution.dureeSlideRetournee * 0.8),
-      );
-
-      setCartesEnVol((precedent) => [
-        ...precedent,
-        {
-          id,
-          carte,
-          depart: {
-            x: ANIMATIONS.distribution.originX,
-            y: ANIMATIONS.distribution.originY,
-            rotation: 0,
-            echelle: 0.85,
-          },
-          arrivee: positionSoulevee,
-          faceVisible: false,
-          delai: ANIMATIONS_CARTE_RETOURNEE.delaiFlip,
-          duree: dureeSoulevement,
-          segment: 0,
-          easing: "inout-cubic",
-        },
-      ]);
-
-      callbacksFinJeuRef.current.set(id, () => {
-        setCartesEnVol((precedent) =>
-          precedent.map((carteEnVol) => {
-            if (carteEnVol.id !== id) {
-              return carteEnVol;
-            }
-
-            return {
-              ...carteEnVol,
-              depart: positionSoulevee,
-              arrivee: positionApex,
-              duree: dureeFlipAuSommet,
-              flipDe: 0,
-              flipVers: 110,
-              segment: carteEnVol.segment + 1,
-            };
-          }),
-        );
-
-        callbacksFinJeuRef.current.set(id, () => {
-          setCartesEnVol((precedent) =>
-            precedent.map((carteEnVol) => {
-              if (carteEnVol.id !== id) {
-                return carteEnVol;
-              }
-
-              return {
-                ...carteEnVol,
-                depart: positionApex,
-                arrivee: positionFinale,
-                duree: dureePose,
-                flipDe: 110,
-                flipVers: 180,
-                segment: carteEnVol.segment + 1,
-              };
-            }),
-          );
-
-          callbacksFinJeuRef.current.set(id, () => {
-            setCartesEnVol((precedent) =>
-              precedent.filter((carteEnVol) => carteEnVol.id !== id),
-            );
-            onTerminee?.();
-          });
-        });
-      });
-    },
-    [],
-  );
-
   const ajouterCartesGelees = useCallback((cartesGelees: CarteEnVol[]) => {
     setCartesEnVol((precedent) => {
       const idsExistants = new Set(precedent.map((c) => c.id));
@@ -522,7 +410,6 @@ export function useAnimations() {
     lancerAnimationRamassagePli,
     lancerAnimationRetourPaquet,
     lancerAnimationRetourCarteRetournee,
-    lancerAnimationRevelationCarteRetournee,
     ajouterCartesGelees,
     annulerAnimations,
   };

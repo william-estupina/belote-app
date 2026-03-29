@@ -53,6 +53,7 @@ export type PhaseUI =
   | "inactif"
   | "distribution"
   | "redistribution"
+  | "revelationCarte"
   | "encheres"
   | "jeu"
   | "finPli"
@@ -265,6 +266,7 @@ export function useControleurJeu({
 
   // Ref pour appeler lancerDistributionRestanteAnimee depuis les callbacks déclarés avant
   const distribRestanteRef = useRef<(ctx: ContextePartie) => void>(() => {});
+  const onRevelationTermineeRef = useRef<(() => void) | null>(null);
 
   // --- Extraire l'état UI depuis le contexte XState ---
   const extraireEtatUI = useCallback(
@@ -634,24 +636,17 @@ export function useControleurJeu({
           return;
         }
 
-        const dispositionReserve = calculerDispositionReserveCentrale({
-          largeurEcran: dimensionsCourantes.largeur,
-          hauteurEcran: dimensionsCourantes.hauteur,
-        });
-
-        animations.lancerAnimationRevelationCarteRetournee(
+        onRevelationTermineeRef.current = finaliserEntreeEncheres;
+        setEtatJeu((prev) => ({
+          ...prev,
+          phaseUI: "revelationCarte",
           carteRetournee,
-          {
-            x: dispositionReserve.centreCarteRetournee.x / dimensionsCourantes.largeur,
-            y: dispositionReserve.centreCarteRetournee.y / dimensionsCourantes.hauteur,
-          },
-          finaliserEntreeEncheres,
-        );
+        }));
       }, distribution.pauseAvantTri);
 
       timeoutsControleurRef.current.push(timeout);
     },
-    [extraireEtatUI, jouerBotSiNecessaire, animDistribution, animations],
+    [extraireEtatUI, jouerBotSiNecessaire, animDistribution],
   );
 
   const construireCartesRetourPaquet = useCallback((): CarteRetourPaquet[] => {
@@ -1519,5 +1514,8 @@ export function useControleurJeu({
     passer,
     continuerApresScore,
     recommencer,
+    onRevelationTerminee: useCallback(() => {
+      onRevelationTermineeRef.current?.();
+    }, []),
   };
 }
