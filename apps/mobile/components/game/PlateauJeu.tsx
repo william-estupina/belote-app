@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from "react";
 import type { LayoutChangeEvent } from "react-native";
 import { Platform, StyleSheet, View } from "react-native";
 
+import { ANIMATIONS } from "../../constants/layout";
 import { COULEURS } from "../../constants/theme";
 import { construireDerniereActionParJoueur } from "../../hooks/derniere-action-enchere";
 import { useControleurJeu } from "../../hooks/useControleurJeu";
@@ -53,6 +54,7 @@ export default function PlateauJeu() {
     continuerApresScore,
     recommencer,
     onRevelationTerminee,
+    onRetourCarteRetourneeTerminee,
   } = useControleurJeu({
     difficulte: preferences.difficulte,
     scoreObjectif: preferences.scoreObjectif,
@@ -80,9 +82,7 @@ export default function PlateauJeu() {
         ? Math.max(etatJeu.cartesRestantesPaquet, 1)
         : etatJeu.cartesRestantesPaquet;
   const carteRetourneeReserve =
-    etatJeu.phaseUI === "revelationCarte" ||
-    etatJeu.phaseUI === "encheres" ||
-    etatJeu.phaseUI === "redistribution"
+    etatJeu.phaseUI === "revelationCarte" || etatJeu.phaseUI === "encheres"
       ? etatJeu.carteRetournee
       : null;
   const opaciteCarteRetourneeReserve = etatJeu.phaseUI === "revelationCarte" ? 0 : 1;
@@ -251,6 +251,23 @@ export default function PlateauJeu() {
                 onTerminee={onRevelationTerminee}
               />
             )}
+
+          {/* Animation retour de la carte retournée vers le paquet */}
+          {etatJeu.carteRetourneeEnRetour !== null && largeur > 0 && (
+            <CarteRevelation
+              inverse
+              carte={etatJeu.carteRetourneeEnRetour}
+              departX={dispositionReserve.centrePaquet.x}
+              departY={dispositionReserve.centrePaquet.y}
+              arriveeX={dispositionReserve.centreCarteRetournee.x}
+              arriveeY={dispositionReserve.centreCarteRetournee.y}
+              largeurCarte={dispositionReserve.largeurCarte}
+              hauteurCarte={dispositionReserve.hauteurCarte}
+              atlas={atlas}
+              dureeTotale={ANIMATIONS.redistribution.dureeRetourCarteRetournee}
+              onTerminee={onRetourCarteRetourneeTerminee}
+            />
+          )}
 
           {/* Paquet central empilé (visible pendant la distribution) */}
           {/* Couche d'animation (cartes en vol) */}
