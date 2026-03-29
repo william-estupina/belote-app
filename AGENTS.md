@@ -17,6 +17,7 @@ Plan d'implementation dans `PROMPT.md`, progression dans `AVANCEMENT.md`.
 - Commits : Conventional Commits (`feat:`, `fix:`, `test:`, `chore:`) — scopes : `game-logic`, `bot-engine`, `mobile`, `server`, `shared`, `ci`, `deps`
 - Correction minimale, sure et testable
 - Apres chaque correction de bug ou implementation de feature, faire le commit directement sans attendre une demande explicite
+- Quand une tache a des fichiers associes dans `docs/superpowers/specs/` ou `docs/superpowers/plans/`, les commiter en meme temps que le code correspondant
 - Si l'utilisateur fait ensuite des retours, ajuster avec un nouveau commit ou remplacer le commit precedent selon le besoin
 - Ne jamais melanger logique metier pure et UI
 - `game-logic` et `bot-engine` n'importent jamais React ou React Native
