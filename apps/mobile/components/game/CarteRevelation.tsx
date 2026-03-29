@@ -45,6 +45,7 @@ export function CarteRevelation({
 }: PropsCarteRevelation) {
   // progres : 0 → 1 (soulevement) → 2 (flip) → 3 (placement)
   const progres = useSharedValue(0);
+  const animationFrameRef = useRef<number | null>(null);
 
   const onTermineeRef = useRef(onTerminee);
   useEffect(() => {
@@ -60,10 +61,24 @@ export function CarteRevelation({
         { duration: DUREE_PLACEMENT, easing: Easing.inOut(Easing.cubic) },
         (fini) => {
           "worklet";
-          if (fini) runOnJS(onTermineeRef.current)();
+          if (fini) {
+            runOnJS(() => {
+              animationFrameRef.current = requestAnimationFrame(() => {
+                animationFrameRef.current = null;
+                onTermineeRef.current();
+              });
+            })();
+          }
         },
       ),
     );
+
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
   }, [progres]);
 
   // Position et échelle du conteneur
