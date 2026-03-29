@@ -80,9 +80,12 @@ export default function PlateauJeu() {
         ? Math.max(etatJeu.cartesRestantesPaquet, 1)
         : etatJeu.cartesRestantesPaquet;
   const carteRetourneeReserve =
-    etatJeu.phaseUI === "encheres" || etatJeu.phaseUI === "redistribution"
+    etatJeu.phaseUI === "revelationCarte" ||
+    etatJeu.phaseUI === "encheres" ||
+    etatJeu.phaseUI === "redistribution"
       ? etatJeu.carteRetournee
       : null;
+  const opaciteCarteRetourneeReserve = etatJeu.phaseUI === "revelationCarte" ? 0 : 1;
 
   // Dernière action d'enchère par joueur (pour les badges sur les avatars)
   const derniereActionParJoueur = useMemo(() => {
@@ -226,6 +229,7 @@ export default function PlateauJeu() {
             afficherPaquet={afficherReserveCentrale}
             cartesPaquetVisibles={cartesPaquetVisibles}
             carteRetournee={carteRetourneeReserve}
+            opaciteCarteRetournee={opaciteCarteRetourneeReserve}
             largeurEcran={largeur}
             hauteurEcran={hauteur}
             atlas={atlas}

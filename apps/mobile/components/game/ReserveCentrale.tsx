@@ -10,6 +10,7 @@ interface PropsReserveCentrale {
   afficherPaquet: boolean;
   cartesPaquetVisibles: number;
   carteRetournee: Carte | null;
+  opaciteCarteRetournee?: number;
   largeurEcran: number;
   hauteurEcran: number;
   atlas: AtlasCartes;
@@ -19,6 +20,7 @@ export function ReserveCentrale({
   afficherPaquet,
   cartesPaquetVisibles,
   carteRetournee,
+  opaciteCarteRetournee = 1,
   largeurEcran,
   hauteurEcran,
   atlas,
@@ -96,6 +98,7 @@ export function ReserveCentrale({
               top: 0,
               width: largeurCarte,
               height: hauteurCarte,
+              opacity: opaciteCarteRetournee,
             },
           ]}
         >

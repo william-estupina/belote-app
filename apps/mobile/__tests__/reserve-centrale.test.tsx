@@ -101,6 +101,26 @@ describe("ReserveCentrale", () => {
     expect(styleCarteRetournee.left).toBeCloseTo(largeurCarte + 6, 4);
   });
 
+  it("peut garder la carte retournee montee mais invisible pendant la revelation", () => {
+    render(
+      <ReserveCentrale
+        afficherPaquet={true}
+        cartesPaquetVisibles={12}
+        carteRetournee={{ couleur: "coeur", rang: "as" }}
+        opaciteCarteRetournee={0}
+        largeurEcran={1000}
+        hauteurEcran={700}
+        atlas={atlas as never}
+      />,
+    );
+
+    const styleCarteRetournee = StyleSheet.flatten(
+      screen.getByTestId("reserve-carte-retournee").props.style,
+    );
+
+    expect(styleCarteRetournee.opacity).toBe(0);
+  });
+
   it("garde le paquet exactement au meme endroit avec ou sans carte retournee", () => {
     const { rerender } = render(
       <ReserveCentrale
