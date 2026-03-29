@@ -1,5 +1,5 @@
 import type { Carte } from "@belote/shared-types";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Animated, {
   Easing,
   interpolate,
@@ -46,6 +46,11 @@ export function CarteRevelation({
   // progres : 0 → 1 (soulevement) → 2 (flip) → 3 (placement)
   const progres = useSharedValue(0);
 
+  const onTermineeRef = useRef(onTerminee);
+  useEffect(() => {
+    onTermineeRef.current = onTerminee;
+  });
+
   useEffect(() => {
     progres.value = withSequence(
       withTiming(1, { duration: DUREE_SOULEVEMENT, easing: Easing.out(Easing.ease) }),
@@ -55,11 +60,11 @@ export function CarteRevelation({
         { duration: DUREE_PLACEMENT, easing: Easing.inOut(Easing.cubic) },
         (fini) => {
           "worklet";
-          if (fini) runOnJS(onTerminee)();
+          if (fini) runOnJS(onTermineeRef.current)();
         },
       ),
     );
-  }, [progres, onTerminee]);
+  }, [progres]);
 
   // Position et échelle du conteneur
   const styleConteneur = useAnimatedStyle(() => {
@@ -98,11 +103,13 @@ export function CarteRevelation({
     // flip démarre à phase=1, finit à phase=2
     // rotY : 0° à phase=1, 90° à phase=1.5
     const rotY = interpolate(p, [1, 1.5, 2], [0, 90, 90], "clamp");
+    const opacity = interpolate(p, [0, 1, 1.4, 1.5], [1, 1, 1, 0], "clamp");
     return {
       position: "absolute" as const,
       width: largeurCarte,
       height: hauteurCarte,
       backfaceVisibility: "hidden" as const,
+      opacity,
       transform: [{ perspective: 800 }, { rotateY: `${rotY}deg` }],
     };
   });
@@ -112,11 +119,13 @@ export function CarteRevelation({
     const p = progres.value;
     // Face démarre à -90° (soit 270°), finit à 0°
     const rotY = interpolate(p, [1, 1.5, 2], [-90, -90, 0], "clamp");
+    const opacity = interpolate(p, [1, 1.5, 1.6, 2], [0, 0, 1, 1], "clamp");
     return {
       position: "absolute" as const,
       width: largeurCarte,
       height: hauteurCarte,
       backfaceVisibility: "hidden" as const,
+      opacity,
       transform: [{ perspective: 800 }, { rotateY: `${rotY}deg` }],
     };
   });
