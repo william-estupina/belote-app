@@ -187,8 +187,10 @@ describe("useControleurJeu - redistribution", () => {
     await viderFileEvenements();
 
     act(() => {
-      result.current.onRevelationTerminee();
+      result.current.onRetourCarteRetourneeTerminee();
     });
+
+    await viderFileEvenements();
 
     expect(mockLancerDistribution).toHaveBeenCalledTimes(2);
   });
@@ -295,13 +297,9 @@ describe("useControleurJeu - redistribution", () => {
       jest.runOnlyPendingTimers();
     });
 
-    expect(mockLancerAnimationRetourPaquet).toHaveBeenCalledTimes(1);
-    expect(cartesRetourPaquet).toHaveLength(20);
-    expect(new Set(cartesRetourPaquet?.map((carte) => carte.delai)).size).toBe(5);
-    expect(cartesRetourPaquet?.filter((carte) => carte.faceVisible)).toHaveLength(0);
-    expect(
-      cartesRetourPaquet?.filter((carte) => carte.flipDe === 180 && carte.flipVers === 0),
-    ).toHaveLength(5);
+    // Après pauseAvantRappel : carteRetourneeEnRetour est posée, on attend le callback
+    expect(mockLancerAnimationRetourPaquet).toHaveBeenCalledTimes(0);
+    expect(result.current.etatJeu.carteRetourneeEnRetour).not.toBeNull();
     expect(result.current.etatJeu.historiqueEncheres).toHaveLength(0);
     expect(result.current.etatJeu.mainJoueur).toEqual([]);
     expect(result.current.etatJeu.nbCartesAdversaires).toEqual({
@@ -309,6 +307,20 @@ describe("useControleurJeu - redistribution", () => {
       est: 0,
       ouest: 0,
     });
+    expect(result.current.etatJeu.cartesRestantesPaquet).toBe(1);
+    expect(result.current.etatJeu.indexDonneur).toBe(indexDonneurAvantRedistribution);
+
+    act(() => {
+      result.current.onRetourCarteRetourneeTerminee();
+    });
+
+    expect(mockLancerAnimationRetourPaquet).toHaveBeenCalledTimes(1);
+    expect(cartesRetourPaquet).toHaveLength(20);
+    expect(new Set(cartesRetourPaquet?.map((carte) => carte.delai)).size).toBe(5);
+    expect(cartesRetourPaquet?.filter((carte) => carte.faceVisible)).toHaveLength(0);
+    expect(
+      cartesRetourPaquet?.filter((carte) => carte.flipDe === 180 && carte.flipVers === 0),
+    ).toHaveLength(5);
     expect(result.current.etatJeu.cartesRestantesPaquet).toBe(1);
     expect(result.current.etatJeu.indexDonneur).toBe(indexDonneurAvantRedistribution);
 
@@ -388,6 +400,12 @@ describe("useControleurJeu - redistribution", () => {
 
       act(() => {
         result.current.passer();
+      });
+
+      await viderFileEvenements();
+
+      act(() => {
+        result.current.onRetourCarteRetourneeTerminee();
       });
 
       await viderFileEvenements();

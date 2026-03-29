@@ -73,6 +73,8 @@ export interface EtatJeu {
   couleurAtout: Couleur | null;
   /** Carte retournée (pour les enchères) */
   carteRetournee: Carte | null;
+  /** Carte retournée en cours d'animation de retour vers le paquet (redistribution) */
+  carteRetourneeEnRetour: Carte | null;
   /** Scores cumulés */
   scoreEquipe1: number;
   scoreEquipe2: number;
@@ -209,6 +211,7 @@ export function useControleurJeu({
     pliEnCours: [],
     couleurAtout: null,
     carteRetournee: null,
+    carteRetourneeEnRetour: null,
     scoreEquipe1: 0,
     scoreEquipe2: 0,
     pointsEquipe1: 0,
@@ -267,6 +270,7 @@ export function useControleurJeu({
   // Ref pour appeler lancerDistributionRestanteAnimee depuis les callbacks déclarés avant
   const distribRestanteRef = useRef<(ctx: ContextePartie) => void>(() => {});
   const onRevelationTermineeRef = useRef<(() => void) | null>(null);
+  const onRetourCarteRetourneeRef = useRef<(() => void) | null>(null);
 
   // --- Extraire l'état UI depuis le contexte XState ---
   const extraireEtatUI = useCallback(
@@ -889,19 +893,8 @@ export function useControleurJeu({
         const carteRetournee = etatJeuRef.current.carteRetournee;
         const cartesRetour = construireCartesRetourPaquet();
 
-        // Effacer l'état et démarrer l'animation dans le même rendu (React 18 batch)
-        setEtatJeu((prev) => ({
-          ...prev,
-          mainJoueur: [],
-          nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
-          carteRetournee: null,
-          phaseEncheres: null,
-          historiqueEncheres: [],
-          cartesRestantesPaquet: 1,
-          afficherActionsEnchereRedistribution: false,
-        }));
-
         const lancerPhase2 = () => {
+          setEtatJeu((prev) => ({ ...prev, carteRetourneeEnRetour: null }));
           animations.lancerAnimationRetourPaquet(cartesRetour, centrePaquet, () => {
             if (estDemonte.current) return;
 
@@ -921,19 +914,28 @@ export function useControleurJeu({
         };
 
         if (carteRetournee) {
-          // Phase 1 : carte retournée → paquet
-          animations.lancerAnimationRetourCarteRetournee(
-            carteRetournee,
-            {
-              x: centreCarteRetournee.x,
-              y: centreCarteRetournee.y,
-              rotation: 0,
-              echelle: 0.85,
-            },
-            centrePaquet,
-            lancerPhase2,
-          );
+          onRetourCarteRetourneeRef.current = lancerPhase2;
+          setEtatJeu((prev) => ({
+            ...prev,
+            mainJoueur: [],
+            nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
+            carteRetournee: null,
+            carteRetourneeEnRetour: carteRetournee,
+            phaseEncheres: null,
+            historiqueEncheres: [],
+            cartesRestantesPaquet: 1,
+            afficherActionsEnchereRedistribution: false,
+          }));
         } else {
+          setEtatJeu((prev) => ({
+            ...prev,
+            mainJoueur: [],
+            nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
+            phaseEncheres: null,
+            historiqueEncheres: [],
+            cartesRestantesPaquet: 1,
+            afficherActionsEnchereRedistribution: false,
+          }));
           lancerPhase2();
         }
       }, ANIMATIONS.redistribution.pauseAvantRappel);
@@ -1496,6 +1498,12 @@ export function useControleurJeu({
     fn?.();
   }, []);
 
+  const onRetourCarteRetourneeTerminee = useCallback(() => {
+    const fn = onRetourCarteRetourneeRef.current;
+    onRetourCarteRetourneeRef.current = null;
+    fn?.();
+  }, []);
+
   return {
     etatJeu,
     // Animations
@@ -1521,5 +1529,6 @@ export function useControleurJeu({
     continuerApresScore,
     recommencer,
     onRevelationTerminee,
+    onRetourCarteRetourneeTerminee,
   };
 }

@@ -19,6 +19,7 @@ function creerEtat(): EtatJeu {
     pliEnCours: [],
     couleurAtout: null,
     carteRetournee: null,
+    carteRetourneeEnRetour: null,
     scoreEquipe1: 0,
     scoreEquipe2: 0,
     pointsEquipe1: 0,
