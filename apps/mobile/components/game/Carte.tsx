@@ -1,9 +1,16 @@
 import type { Carte, Couleur } from "@belote/shared-types";
-import { Atlas, Canvas, rect, useRSXformBuffer } from "@shopify/react-native-skia";
+import {
+  Atlas,
+  Canvas,
+  Group,
+  rect,
+  Shadow,
+  useRSXformBuffer,
+} from "@shopify/react-native-skia";
 import { useMemo } from "react";
-import { Image, Platform, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
-import { type AtlasCartes, SPRITE_SHEET_SOURCE } from "../../hooks/useAtlasCartes";
+import type { AtlasCartes } from "../../hooks/useAtlasCartes";
 
 const RAYON_COIN = 6;
 
@@ -145,41 +152,6 @@ export function CarteDosAtlas({
     return <CarteDos largeur={largeur} hauteur={hauteur} />;
   }
 
-  if (Platform.OS === "web") {
-    const sourceSprite =
-      typeof SPRITE_SHEET_SOURCE === "string"
-        ? { uri: SPRITE_SHEET_SOURCE }
-        : SPRITE_SHEET_SOURCE;
-
-    return (
-      <View
-        style={[
-          faceAtlasStyles.conteneur,
-          {
-            width: largeur,
-            height: hauteur,
-            overflow: "hidden",
-            borderRadius: RAYON_COIN,
-          },
-        ]}
-      >
-        <Image
-          source={sourceSprite}
-          style={{
-            position: "absolute",
-            width: image.width() * echelle,
-            height: image.height() * echelle,
-            transform: [
-              { translateX: -sprite.x * echelle },
-              { translateY: -sprite.y * echelle },
-            ],
-          }}
-          resizeMode="stretch"
-        />
-      </View>
-    );
-  }
-
   return (
     <View
       style={[
@@ -191,7 +163,10 @@ export function CarteDosAtlas({
       ]}
     >
       <Canvas style={{ width: largeur, height: hauteur }} pointerEvents="none">
-        <Atlas image={image} sprites={sprites} transforms={transformations} />
+        <Group>
+          <Shadow dx={1} dy={2} blur={4} color="rgba(0, 0, 0, 0.35)" />
+          <Atlas image={image} sprites={sprites} transforms={transformations} />
+        </Group>
       </Canvas>
     </View>
   );
@@ -245,44 +220,6 @@ export function CarteFaceAtlas({
     );
   }
 
-  if (Platform.OS === "web") {
-    const sourceSprite =
-      typeof SPRITE_SHEET_SOURCE === "string"
-        ? { uri: SPRITE_SHEET_SOURCE }
-        : SPRITE_SHEET_SOURCE;
-
-    return (
-      <View
-        style={[
-          faceAtlasStyles.conteneur,
-          {
-            width: largeur,
-            height: hauteur,
-            overflow: "hidden",
-            borderRadius: RAYON_COIN,
-          },
-        ]}
-      >
-        <Image
-          source={sourceSprite}
-          style={{
-            position: "absolute",
-            width: image.width() * echelle,
-            height: image.height() * echelle,
-            transform: [
-              { translateX: -sprite.x * echelle },
-              { translateY: -sprite.y * echelle },
-            ],
-          }}
-          resizeMode="stretch"
-        />
-        {grisee && (
-          <View style={[faceAtlasStyles.overlayGris, { borderRadius: RAYON_COIN }]} />
-        )}
-      </View>
-    );
-  }
-
   return (
     <View
       style={[
@@ -294,7 +231,10 @@ export function CarteFaceAtlas({
       ]}
     >
       <Canvas style={{ width: largeur, height: hauteur }} pointerEvents="none">
-        <Atlas image={image} sprites={sprites} transforms={transformations} />
+        <Group>
+          <Shadow dx={1} dy={2} blur={4} color="rgba(0, 0, 0, 0.35)" />
+          <Atlas image={image} sprites={sprites} transforms={transformations} />
+        </Group>
       </Canvas>
       {grisee && (
         <View style={[faceAtlasStyles.overlayGris, { borderRadius: RAYON_COIN }]} />
@@ -305,12 +245,8 @@ export function CarteFaceAtlas({
 
 const faceAtlasStyles = StyleSheet.create({
   conteneur: {
-    shadowColor: "#000",
-    shadowOffset: { width: 1, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 4,
-    elevation: 5,
     overflow: "hidden",
+    borderRadius: RAYON_COIN,
   },
   overlayGris: {
     position: "absolute",

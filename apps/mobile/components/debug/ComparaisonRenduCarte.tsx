@@ -16,6 +16,14 @@ import { CarteFaceAtlas } from "../game/Carte";
 
 interface PropsComparaisonRenduCarte {
   atlas: AtlasCartes;
+  carteGauche: Carte;
+  carteDroite: Carte;
+  largeurCarte: number;
+  hauteurCarte: number;
+}
+
+interface PropsCarteAtlasDebug {
+  atlas: AtlasCartes;
   carte: Carte;
   largeurCarte: number;
   hauteurCarte: number;
@@ -26,7 +34,7 @@ function CarteAtlasDebug({
   carte,
   largeurCarte,
   hauteurCarte,
-}: PropsComparaisonRenduCarte) {
+}: PropsCarteAtlasDebug) {
   const { image, largeurCellule, hauteurCellule } = atlas;
   const sprite = atlas.rectSource(carte.couleur, carte.rang);
   const sprites = useMemo(
@@ -82,7 +90,8 @@ function CarteAtlasDebug({
 
 export function ComparaisonRenduCarte({
   atlas,
-  carte,
+  carteGauche,
+  carteDroite,
   largeurCarte,
   hauteurCarte,
 }: PropsComparaisonRenduCarte) {
@@ -95,10 +104,10 @@ export function ComparaisonRenduCarte({
 
       <View style={styles.rangee}>
         <View style={styles.colonne}>
-          <Text style={styles.libelle}>Main joueur (React Native / Image web)</Text>
+          <Text style={styles.libelle}>Main joueur (CarteFaceAtlas)</Text>
           <CarteFaceAtlas
             atlas={atlas}
-            carte={carte}
+            carte={carteGauche}
             largeur={largeurCarte}
             hauteur={hauteurCarte}
           />
@@ -108,7 +117,7 @@ export function ComparaisonRenduCarte({
           <Text style={styles.libelle}>Atlas distribution (Skia Canvas)</Text>
           <CarteAtlasDebug
             atlas={atlas}
-            carte={carte}
+            carte={carteDroite}
             largeurCarte={largeurCarte}
             hauteurCarte={hauteurCarte}
           />

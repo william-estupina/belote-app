@@ -1,12 +1,20 @@
+import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { RATIO_ASPECT_CARTE } from "../../constants/layout";
 import { COULEURS, ESPACEMENTS, TYPOGRAPHIE } from "../../constants/theme";
 import { useAtlasCartes } from "../../hooks/useAtlasCartes";
+import {
+  CARTE_DEBUG_DROITE_PAR_DEFAUT,
+  CARTE_DEBUG_GAUCHE_PAR_DEFAUT,
+} from "./cartes-debug";
 import { ComparaisonRenduCarte } from "./ComparaisonRenduCarte";
+import { SelecteurCarteDebug } from "./SelecteurCarteDebug";
 
 export function EcranDebugCartes() {
   const atlas = useAtlasCartes();
+  const [carteGauche, setCarteGauche] = useState(CARTE_DEBUG_GAUCHE_PAR_DEFAUT);
+  const [carteDroite, setCarteDroite] = useState(CARTE_DEBUG_DROITE_PAR_DEFAUT);
   const largeurCarte = 180;
   const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
 
@@ -21,9 +29,25 @@ export function EcranDebugCartes() {
         </Text>
       </View>
 
+      <View style={styles.rangeeSelecteurs}>
+        <SelecteurCarteDebug
+          carte={carteGauche}
+          identifiant="gauche"
+          label="Carte affichee a gauche"
+          onSelection={setCarteGauche}
+        />
+        <SelecteurCarteDebug
+          carte={carteDroite}
+          identifiant="droite"
+          label="Carte affichee a droite"
+          onSelection={setCarteDroite}
+        />
+      </View>
+
       <ComparaisonRenduCarte
         atlas={atlas}
-        carte={{ couleur: "coeur", rang: "7" }}
+        carteGauche={carteGauche}
+        carteDroite={carteDroite}
         largeurCarte={largeurCarte}
         hauteurCarte={hauteurCarte}
       />
@@ -44,6 +68,13 @@ const styles = StyleSheet.create({
   hero: {
     maxWidth: 760,
     gap: ESPACEMENTS.sm,
+  },
+  rangeeSelecteurs: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: ESPACEMENTS.lg,
+    zIndex: 10,
   },
   titre: {
     textAlign: "center",
