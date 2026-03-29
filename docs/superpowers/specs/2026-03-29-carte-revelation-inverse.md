@@ -36,11 +36,13 @@ const x = inverse
   : interpolate(p, [0, 1, 2, 3], [departX, departX, departX, arriveeX]);
 
 // Position y (original : departY → departY-PX → departY-PX → arriveeY)
+// Note inverse : le soulèvement se fait par rapport à la position réelle de départ de la carte
+// (= arriveeY, la zone carte retournée), pas par rapport au paquet (departY).
 const y = inverse
   ? interpolate(
       p,
       [0, 1, 2, 3],
-      [arriveeY, departY - PX_SOULEVEMENT, departY - PX_SOULEVEMENT, departY],
+      [arriveeY, arriveeY - PX_SOULEVEMENT, arriveeY - PX_SOULEVEMENT, departY],
     )
   : interpolate(
       p,
@@ -53,7 +55,9 @@ const echelle = inverse
   ? interpolate(p, [0, 1, 2, 3], [1.0, 1.0, 1.0, 0.85])
   : interpolate(p, [0, 1, 2, 3], [0.85, 1.0, 1.0, 1.0]);
 
-// Rotation : identique dans les deux sens (0 → -5 → -5 → 0)
+// Rotation : identique dans les deux sens (0 → -5 → -5 → 0).
+// En mode inverse, la carte s'incline légèrement au départ (phase de glissement) puis
+// se redresse avant de descendre dans le paquet — cohérent visuellement avec une "pose" de carte.
 ```
 
 Pour le flip, `styleDos` et `styleFace` échangent leurs formules rotY + opacity :
@@ -84,9 +88,16 @@ Ajouter dans `ANIMATIONS.redistribution` :
 dureeRetourCarteRetournee: ralentirDureeAnimationMajeure(500),
 ```
 
-`CarteRevelation` utilisera cette durée pour `DUREE_FLIP` et/ou `DUREE_PLACEMENT` en mode inverse. (Ou une prop `durees` dédiée — voir section Tests.)
+En mode inverse, `CarteRevelation` accepte une prop optionnelle `dureeTotale?: number`. Quand elle est fournie, les 3 durées de phases sont calculées proportionnellement — en utilisant la somme des constantes comme dénominateur (pas de valeur en dur) :
 
-> **Note :** La durée totale de l'animation inverse = `DUREE_SOULEVEMENT + DUREE_FLIP + DUREE_PLACEMENT`. En mode inverse, utiliser `dureeRetourCarteRetournee` comme durée totale en répartissant proportionnellement, ou exposer une prop `dureeTotale` optionnelle sur `CarteRevelation`.
+```ts
+const DUREE_TOTALE_REF = DUREE_SOULEVEMENT + DUREE_FLIP + DUREE_PLACEMENT;
+const dureeSoulevement = Math.round((DUREE_SOULEVEMENT / DUREE_TOTALE_REF) * dureeTotale);
+const dureeFlip = Math.round((DUREE_FLIP / DUREE_TOTALE_REF) * dureeTotale);
+const dureePlacement = dureeTotale - dureeSoulevement - dureeFlip; // absorbe l'arrondi
+```
+
+L'appelant passe `dureeTotale={ANIMATIONS.redistribution.dureeRetourCarteRetournee}`. `dureeTotale` n'est applicable qu'en mode `inverse: true` — en mode normal, la prop est ignorée même si fournie.
 
 ### `apps/mobile/stores/etat-jeu-ui.ts` (ou fichier équivalent)
 
@@ -126,7 +137,7 @@ Ajouter le rendu conditionnel de l'animation inverse, symétrique à la révéla
 
 La carte statique (`carteRetourneeReserve`) disparaît sans flash car `carteRetournee: null` est mis à jour dans le même batch React que `carteRetourneeEnRetour: carte`.
 
-La condition `carteRetourneeReserve` n'a **pas** besoin d'être étendue à `"redistribution"` — c'est `carteRetourneeEnRetour` qui prend le relais.
+**Retirer** `etatJeu.phaseUI === "redistribution"` de la condition `carteRetourneeReserve` — si cette ligne avait été ajoutée par la spec précédente, la supprimer. C'est `carteRetourneeEnRetour` qui prend le relais pour la phase de redistribution.
 
 ### `apps/mobile/hooks/useAnimations.ts`
 
@@ -144,7 +155,15 @@ lancerAnimationRetourPaquet(cartes, arrivee: { x: number; y: number }, onTermine
 
 ### `apps/mobile/hooks/useControleurJeu.ts`
 
-Dans `lancerRedistributionAnimee`, dans le callback du `setTimeout` (après `pauseAvantRappel`) :
+Le pattern suit exactement `onRevelationTerminee` / `onRevelationTermineeRef` déjà en place.
+
+**1. Ajouter un ref pour stocker le callback de fin :**
+
+```ts
+const onRetourCarteRetourneeRef = useRef<(() => void) | null>(null);
+```
+
+**2. Dans `lancerRedistributionAnimee`, dans le callback du `setTimeout` (après `pauseAvantRappel`) :**
 
 ```ts
 const carteRetournee = etatJeuRef.current.carteRetournee;
@@ -160,29 +179,55 @@ const centrePaquet = {
   y: disposition.centrePaquet.y / hauteur,
 };
 
-// Vider les mains + passer la carte en animation (même batch)
-setEtatJeu((prev) => ({
-  ...prev,
-  mainJoueur: [],
-  nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
-  carteRetournee: null,
-  carteRetourneeEnRetour: carteRetournee ?? null,
-  phaseEncheres: null,
-  historiqueEncheres: [],
-  cartesRestantesPaquet: 1,
-  afficherActionsEnchereRedistribution: false,
-}));
-
-// onTerminee de CarteRevelation inverse → phase 2
 const lancerPhase2 = () => {
   setEtatJeu((prev) => ({ ...prev, carteRetourneeEnRetour: null }));
   animations.lancerAnimationRetourPaquet(cartesRetour, centrePaquet, () => {
     // suite existante : cartesRestantesPaquet: 32, glissement dealer, etc.
   });
 };
+
+if (carteRetournee) {
+  // Stocker lancerPhase2 → sera appelé par onRetourCarteRetourneeTerminee depuis PlateauJeu
+  onRetourCarteRetourneeRef.current = lancerPhase2;
+  setEtatJeu((prev) => ({
+    ...prev,
+    mainJoueur: [],
+    nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
+    carteRetournee: null,
+    carteRetourneeEnRetour: carteRetournee,
+    phaseEncheres: null,
+    historiqueEncheres: [],
+    cartesRestantesPaquet: 1,
+    afficherActionsEnchereRedistribution: false,
+  }));
+} else {
+  // Pas de carte retournée (cas défensif) — phase 2 directement
+  setEtatJeu((prev) => ({
+    ...prev,
+    mainJoueur: [],
+    nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
+    phaseEncheres: null,
+    historiqueEncheres: [],
+    cartesRestantesPaquet: 1,
+    afficherActionsEnchereRedistribution: false,
+  }));
+  lancerPhase2();
+}
 ```
 
-Si `carteRetournee` est null (cas défensif), `carteRetourneeEnRetour` reste null et `onTerminee` sur le composant n'est jamais appelé — donc prévoir un appel direct à `lancerPhase2()` dans ce cas (via `useEffect` ou condition dans PlateauJeu).
+**3. Exposer le callback (pattern identique à `onRevelationTerminee`) :**
+
+```ts
+const onRetourCarteRetourneeTerminee = useCallback(() => {
+  const fn = onRetourCarteRetourneeRef.current;
+  onRetourCarteRetourneeRef.current = null;
+  fn?.();
+}, []);
+```
+
+Ajouter `onRetourCarteRetourneeTerminee` dans l'objet retourné par le hook.
+
+**PlateauJeu** passe ce callback à `<CarteRevelation inverse ... onTerminee={onRetourCarteRetourneeTerminee} />`.
 
 ---
 
@@ -204,6 +249,8 @@ Ajouter des cas pour `inverse: true` :
 
 - Le composant se monte sans erreur avec `inverse`
 - `onTerminee` est appelé après la fin de l'animation
+- La position initiale du conteneur correspond à `arriveeX/arriveeY` (pas `departX/departY`) — vérifie que les coords de départ sont inversées. Avec le mock `interpolate` qui retourne `output[0]`, le style initial doit avoir `left = arriveeX - largeurCarte/2`.
+- `styleDos` initial a `rotY = -90` (formule de face en mode normal, clampée à `p < 1`) — vérifie que les rôles dos/face sont bien échangés.
 
 ### `apps/mobile/__tests__/useAnimations.test.ts`
 
