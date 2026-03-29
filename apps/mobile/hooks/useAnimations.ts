@@ -304,7 +304,11 @@ export function useAnimations() {
   );
 
   const lancerAnimationRetourPaquet = useCallback(
-    (cartes: ReadonlyArray<CarteRetourPaquet>, onTerminee?: () => void) => {
+    (
+      cartes: ReadonlyArray<CarteRetourPaquet>,
+      arrivee: { x: number; y: number },
+      onTerminee?: () => void,
+    ) => {
       if (cartes.length === 0) {
         onTerminee?.();
         return;
@@ -319,8 +323,8 @@ export function useAnimations() {
             carte,
             depart,
             arrivee: {
-              x: ANIMATIONS.distribution.originX,
-              y: ANIMATIONS.distribution.originY,
+              x: arrivee.x,
+              y: arrivee.y,
               rotation: 0,
               echelle: 0.85,
             },

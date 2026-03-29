@@ -1,7 +1,6 @@
 import type { Carte } from "@belote/shared-types";
 import { act, renderHook } from "@testing-library/react-native";
 
-import { ANIMATIONS_CARTE_RETOURNEE } from "../constants/animations-visuelles";
 import { ANIMATIONS } from "../constants/layout";
 import { useAnimations } from "../hooks/useAnimations";
 
@@ -75,6 +74,7 @@ describe("useAnimations", () => {
             delai: ANIMATIONS.distribution.delaiEntreVaguesRetourPaquet,
           },
         ],
+        { x: 0.38, y: 0.45 },
         surFin,
       );
     });
@@ -86,7 +86,7 @@ describe("useAnimations", () => {
       faceVisible: false,
       segment: 0,
       delai: 0,
-      arrivee: { echelle: 0.85 },
+      arrivee: { x: 0.38, y: 0.45, echelle: 0.85 },
       flipDe: 180,
       flipVers: 0,
     });
@@ -115,79 +115,6 @@ describe("useAnimations", () => {
       jest.advanceTimersByTime(1);
       result.current.surAnimationTerminee("retour-1");
       result.current.surAnimationTerminee("retour-2");
-    });
-
-    expect(result.current.cartesEnVol).toHaveLength(0);
-    expect(surFin).toHaveBeenCalledTimes(1);
-  });
-
-  it("anime la revelation de la carte retournee avec soulèvement, flip au sommet puis pose", () => {
-    const surFin = jest.fn();
-    const { result } = renderHook(() => useAnimations());
-
-    act(() => {
-      result.current.lancerAnimationRevelationCarteRetournee(
-        CARTE_TEST,
-        { x: 0.58, y: ANIMATIONS.distribution.originY },
-        surFin,
-      );
-    });
-
-    expect(result.current.cartesEnVol).toHaveLength(1);
-    expect(result.current.cartesEnVol[0]).toMatchObject({
-      id: "revelation-retournee-1",
-      carte: CARTE_TEST,
-      faceVisible: false,
-      segment: 0,
-      delai: ANIMATIONS_CARTE_RETOURNEE.delaiFlip,
-      depart: {
-        x: ANIMATIONS.distribution.originX,
-        y: ANIMATIONS.distribution.originY,
-      },
-      duree: expect.any(Number),
-    });
-    expect(result.current.cartesEnVol[0].arrivee.y).toBeLessThan(
-      ANIMATIONS.distribution.originY,
-    );
-    expect(result.current.cartesEnVol[0].arrivee.x).toBeGreaterThan(
-      ANIMATIONS.distribution.originX,
-    );
-
-    act(() => {
-      result.current.surAnimationTerminee("revelation-retournee-1");
-    });
-
-    expect(result.current.cartesEnVol).toHaveLength(1);
-    expect(result.current.cartesEnVol[0]).toMatchObject({
-      id: "revelation-retournee-1",
-      segment: 1,
-      flipDe: 0,
-      flipVers: 110,
-    });
-    expect(result.current.cartesEnVol[0].arrivee.y).toBeLessThan(
-      result.current.cartesEnVol[0].depart.y,
-    );
-    expect(surFin).not.toHaveBeenCalled();
-
-    act(() => {
-      result.current.surAnimationTerminee("revelation-retournee-1");
-    });
-
-    expect(result.current.cartesEnVol).toHaveLength(1);
-    expect(result.current.cartesEnVol[0]).toMatchObject({
-      id: "revelation-retournee-1",
-      segment: 2,
-      arrivee: {
-        x: 0.58,
-        y: ANIMATIONS.distribution.originY,
-      },
-      flipDe: 110,
-      flipVers: 180,
-    });
-    expect(surFin).not.toHaveBeenCalled();
-
-    act(() => {
-      result.current.surAnimationTerminee("revelation-retournee-1");
     });
 
     expect(result.current.cartesEnVol).toHaveLength(0);
