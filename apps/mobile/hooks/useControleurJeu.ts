@@ -1490,6 +1490,12 @@ export function useControleurJeu({
     }
   }, [etatJeu.pliEnCours, animations]);
 
+  const onRevelationTerminee = useCallback(() => {
+    const fn = onRevelationTermineeRef.current;
+    onRevelationTermineeRef.current = null;
+    fn?.();
+  }, []);
+
   return {
     etatJeu,
     // Animations
@@ -1514,8 +1520,6 @@ export function useControleurJeu({
     passer,
     continuerApresScore,
     recommencer,
-    onRevelationTerminee: useCallback(() => {
-      onRevelationTermineeRef.current?.();
-    }, []),
+    onRevelationTerminee,
   };
 }
