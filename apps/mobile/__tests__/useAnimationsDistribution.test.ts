@@ -203,7 +203,7 @@ describe("useAnimationsDistribution", () => {
     }
 
     expect(result.current.progressionsAdv[0].value).toEqual({
-      delai: 0,
+      delai: ANIMATIONS.distribution.delaiEntreJoueurs,
       valeur: {
         type: "timing",
         valeur: 1,

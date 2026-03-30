@@ -223,12 +223,39 @@ export function useAnimationsDistribution(
       const nbCartesExistantesAdv = options?.nbCartesExistantesAdversaires ?? {};
       const ordreDistribution = obtenirOrdreDistribution(indexDonneur);
       const origineDistribution = obtenirOrigineDistribution(indexDonneur);
+      const delaiPremierPaquetParPosition: Partial<Record<PositionJoueur, number>> = {};
       let indexCarteCachee = 0;
+
+      let tempsSimulation = 0;
+      let indexCarteSimulation = 0;
+
+      for (let p = 0; p < taillesPaquets.length; p++) {
+        const taillePaquet = taillesPaquets[p];
+        if (p > 0) tempsSimulation += distribution.pauseEntreRounds;
+
+        for (const position of ordreDistribution) {
+          const cartesJoueur = mains[position];
+          const cartesDuPaquet = cartesJoueur.slice(
+            indexCarteSimulation,
+            indexCarteSimulation + taillePaquet,
+          );
+          if (cartesDuPaquet.length === 0) continue;
+
+          if (delaiPremierPaquetParPosition[position] === undefined) {
+            delaiPremierPaquetParPosition[position] = tempsSimulation;
+          }
+
+          tempsSimulation += distribution.delaiEntreJoueurs;
+        }
+
+        indexCarteSimulation += taillePaquet;
+      }
 
       for (const position of ["nord", "ouest", "est"] as const) {
         const nbExistantes = nbCartesExistantesAdv[position] ?? 0;
         if (nbExistantes === 0) continue;
         const nbCartesFinal = nbExistantes + mains[position].length;
+        const delaiAnimation = delaiPremierPaquetParPosition[position] ?? 0;
 
         const ciblesExistantesDepart = calculerCiblesEventailAdversaire(
           position,
@@ -280,7 +307,7 @@ export function useAnimationsDistribution(
             ECHELLE_MAIN_ADVERSE,
           );
           delaisCartesAdv.push({
-            delai: 0,
+            delai: delaiAnimation,
             duree: distribution.dureeCarte,
           });
           indexCarteCachee += 1;
