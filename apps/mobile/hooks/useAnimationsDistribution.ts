@@ -228,12 +228,13 @@ export function useAnimationsDistribution(
       for (const position of ["nord", "ouest", "est"] as const) {
         const nbExistantes = nbCartesExistantesAdv[position] ?? 0;
         if (nbExistantes === 0) continue;
+        const nbCartesFinal = nbExistantes + mains[position].length;
 
         const ciblesExistantes = calculerCiblesEventailAdversaire(
           position,
           0,
           nbExistantes,
-          nbExistantes,
+          nbCartesFinal,
           largeurEcran,
           hauteurEcran,
         );
