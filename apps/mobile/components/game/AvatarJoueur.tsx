@@ -1,6 +1,6 @@
 // Avatar d'un joueur — affiche l'identité, les bulles d'enchère et l'indicateur preneur/atout
 import type { ActionEnchere, Couleur, PositionJoueur } from "@belote/shared-types";
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import { Animated, Easing, Platform, StyleSheet, Text, View } from "react-native";
 
 import { DUREE_PULSE_JOUEUR_ACTIF } from "../../constants/animations-visuelles";
@@ -112,7 +112,7 @@ interface Badge {
   couleurTexte: string;
 }
 
-export function AvatarJoueur({
+export const AvatarJoueur = memo(function AvatarJoueur({
   position,
   largeurEcran,
   hauteurEcran,
@@ -181,7 +181,7 @@ export function AvatarJoueur({
       <Text style={styles.nom}>{NOMS_JOUEUR[position]}</Text>
     </View>
   );
-}
+});
 
 function AvatarPortrait({
   position,

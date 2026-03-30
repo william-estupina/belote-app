@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 
 import { COULEURS } from "../../constants/theme";
@@ -7,7 +8,10 @@ interface PropsTableauScores {
   scoreEquipe2: number;
 }
 
-export function TableauScores({ scoreEquipe1, scoreEquipe2 }: PropsTableauScores) {
+export const TableauScores = memo(function TableauScores({
+  scoreEquipe1,
+  scoreEquipe2,
+}: PropsTableauScores) {
   return (
     <View style={styles.conteneur}>
       <View style={styles.ligne}>
@@ -21,7 +25,7 @@ export function TableauScores({ scoreEquipe1, scoreEquipe2 }: PropsTableauScores
       </View>
     </View>
   );
-}
+});
 
 const estWeb = Platform.OS === "web";
 

@@ -1,4 +1,5 @@
 import type { Carte, Couleur, PositionJoueur } from "@belote/shared-types";
+import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import {
@@ -39,7 +40,7 @@ const COULEUR_SYMBOLE: Record<Couleur, string> = {
 // Marge entre le cadre et les emplacements extrêmes du pli
 const MARGE_CADRE = 0.04;
 
-export function ZonePli(props: PropsZonePli) {
+export const ZonePli = memo(function ZonePli(props: PropsZonePli) {
   const { largeurEcran, hauteurEcran, couleurAtout, afficherCadre = false } = props;
   const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE * 0.9);
   const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
@@ -111,7 +112,7 @@ export function ZonePli(props: PropsZonePli) {
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   cadre: {

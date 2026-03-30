@@ -1,5 +1,6 @@
 // Pile visuelle des plis remportés par une équipe
 import type { IdEquipe } from "@belote/shared-types";
+import { memo } from "react";
 import { Platform, View } from "react-native";
 
 import {
@@ -22,7 +23,12 @@ const estWeb = Platform.OS === "web";
 const DECALAGE_PAR_PLI = estWeb ? 3 : 2;
 // Nombre max de cartes visibles dans la pile
 const MAX_CARTES_VISIBLES = 8;
-export function PilePlis({ equipe, nbPlis, largeurEcran, hauteurEcran }: PropsPilePlis) {
+export const PilePlis = memo(function PilePlis({
+  equipe,
+  nbPlis,
+  largeurEcran,
+  hauteurEcran,
+}: PropsPilePlis) {
   const pos = POSITIONS_PILES[equipe];
   const largeurCarte = largeurEcran * RATIO_LARGEUR_CARTE * 0.65;
   const hauteurCarte = largeurCarte * RATIO_ASPECT_CARTE;
@@ -89,4 +95,4 @@ export function PilePlis({ equipe, nbPlis, largeurEcran, hauteurEcran }: PropsPi
       ))}
     </View>
   );
-}
+});
