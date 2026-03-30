@@ -23,6 +23,7 @@ import {
 } from "./distributionAtlas";
 import {
   calculerCiblesEventailAdversaire,
+  ECHELLE_MAIN_ADVERSE,
   obtenirCibleDistributionAtlas,
   obtenirOrdreDistribution,
   obtenirOrigineDistribution,
@@ -84,6 +85,24 @@ export interface ResultatAnimationsDistribution {
 const MAX_CARTES_ADV = 24; // 8 cartes × 3 adversaires
 const MAX_CARTES_SUD = 8;
 const EASING_OUT_CUBIC = Easing.out(Easing.cubic);
+const COULEURS_FACTICES: Carte["couleur"][] = ["pique", "coeur", "carreau", "trefle"];
+const RANGS_FACTICES: Carte["rang"][] = [
+  "7",
+  "8",
+  "9",
+  "10",
+  "valet",
+  "dame",
+  "roi",
+  "as",
+];
+
+function creerCarteCachee(index: number): Carte {
+  return {
+    couleur: COULEURS_FACTICES[Math.floor(index / RANGS_FACTICES.length) % 4],
+    rang: RANGS_FACTICES[index % RANGS_FACTICES.length],
+  };
+}
 
 /**
  * Hook d'orchestration de la distribution via Skia Atlas.
@@ -191,7 +210,7 @@ export function useAnimationsDistribution(
       const cartesSud: CarteAtlas[] = [];
       const donneesPlatAdv: number[] = [];
       const donneesPlatSud: number[] = [];
-      const delaisCartesAdv: { delai: number; duree: number }[] = [];
+      const delaisCartesAdv: Array<{ delai: number; duree: number } | null> = [];
       const delaisCartesSud: { delai: number; duree: number }[] = [];
 
       let temps = 0;
@@ -204,6 +223,50 @@ export function useAnimationsDistribution(
       const nbCartesExistantesAdv = options?.nbCartesExistantesAdversaires ?? {};
       const ordreDistribution = obtenirOrdreDistribution(indexDonneur);
       const origineDistribution = obtenirOrigineDistribution(indexDonneur);
+      let indexCarteCachee = 0;
+
+      for (const position of ["nord", "ouest", "est"] as const) {
+        const nbExistantes = nbCartesExistantesAdv[position] ?? 0;
+        if (nbExistantes === 0) continue;
+
+        const ciblesExistantes = calculerCiblesEventailAdversaire(
+          position,
+          0,
+          nbExistantes,
+          nbExistantes,
+          largeurEcran,
+          hauteurEcran,
+        );
+
+        for (const cible of ciblesExistantes) {
+          cartesAdv.push({
+            carte: creerCarteCachee(indexCarteCachee),
+            joueur: position,
+            depart: cible.arrivee,
+            arrivee: cible.arrivee,
+            controle: cible.arrivee,
+            rotationDepart: cible.rotationArrivee,
+            rotationArrivee: cible.rotationArrivee,
+            echelleDepart: ECHELLE_MAIN_ADVERSE,
+            echelleArrivee: ECHELLE_MAIN_ADVERSE,
+            rectSource: calculerVersoSource(largeurCellule, hauteurCellule),
+          });
+          donneesPlatAdv.push(
+            cible.arrivee.x,
+            cible.arrivee.y,
+            cible.arrivee.x,
+            cible.arrivee.y,
+            cible.arrivee.x,
+            cible.arrivee.y,
+            cible.rotationArrivee,
+            cible.rotationArrivee,
+            ECHELLE_MAIN_ADVERSE,
+            ECHELLE_MAIN_ADVERSE,
+          );
+          delaisCartesAdv.push(null);
+          indexCarteCachee += 1;
+        }
+      }
 
       // Tracker les paquets pour les callbacks onPaquetArrive
       const paquetsCallback: {
@@ -485,9 +548,21 @@ export function useAnimationsDistribution(
         timeoutsCallbacksRef.current.push(timeoutFin);
       }
 
+      // Les cartes deja en main restent visibles immediatement pendant la
+      // distribution restante, puis les nouvelles cartes s'animent vers le pool.
+      for (let i = 0; i < cartesAdv.length; i++) {
+        const delaiCarte = delaisCartesAdv[i];
+        if (!delaiCarte) {
+          progressionsAdv[i].value = 1;
+        }
+      }
+
       // Lancer les animations withDelay + withTiming — pool adversaires
       for (let i = 0; i < cartesAdv.length; i++) {
-        const { delai, duree } = delaisCartesAdv[i];
+        const delaiCarte = delaisCartesAdv[i];
+        if (!delaiCarte) continue;
+
+        const { delai, duree } = delaiCarte;
         progressionsAdv[i].value = withDelay(
           delai,
           withTiming(1, { duration: duree, easing: EASING_OUT_CUBIC }),
