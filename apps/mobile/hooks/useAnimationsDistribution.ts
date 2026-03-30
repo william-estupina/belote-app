@@ -516,6 +516,12 @@ export function useAnimationsDistribution(
         progressionsSud[i].value = -1;
       }
 
+      // Les cartes adverses deja visibles doivent rester affichees a leur
+      // position de depart jusqu'au declenchement de leur glissement differe.
+      for (let i = 0; i < indexCarteCachee; i++) {
+        progressionsAdv[i].value = 0;
+      }
+
       // Planifier les callbacks.
       // Les cartes sud restent visibles dans l'Atlas (progression = 1) après leur arrivée.
       // Le masquage (progression = 2) se fait au départ du paquet sud suivant,
