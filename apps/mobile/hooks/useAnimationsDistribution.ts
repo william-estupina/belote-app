@@ -210,7 +210,7 @@ export function useAnimationsDistribution(
       const cartesSud: CarteAtlas[] = [];
       const donneesPlatAdv: number[] = [];
       const donneesPlatSud: number[] = [];
-      const delaisCartesAdv: Array<{ delai: number; duree: number } | null> = [];
+      const delaisCartesAdv: { delai: number; duree: number }[] = [];
       const delaisCartesSud: { delai: number; duree: number }[] = [];
 
       let temps = 0;
@@ -230,7 +230,15 @@ export function useAnimationsDistribution(
         if (nbExistantes === 0) continue;
         const nbCartesFinal = nbExistantes + mains[position].length;
 
-        const ciblesExistantes = calculerCiblesEventailAdversaire(
+        const ciblesExistantesDepart = calculerCiblesEventailAdversaire(
+          position,
+          0,
+          nbExistantes,
+          nbExistantes,
+          largeurEcran,
+          hauteurEcran,
+        );
+        const ciblesExistantesArrivee = calculerCiblesEventailAdversaire(
           position,
           0,
           nbExistantes,
@@ -239,32 +247,42 @@ export function useAnimationsDistribution(
           hauteurEcran,
         );
 
-        for (const cible of ciblesExistantes) {
+        for (let index = 0; index < nbExistantes; index += 1) {
+          const cibleDepart = ciblesExistantesDepart[index];
+          const cibleArrivee = ciblesExistantesArrivee[index];
+          const controle = {
+            x: (cibleDepart.arrivee.x + cibleArrivee.arrivee.x) / 2,
+            y: (cibleDepart.arrivee.y + cibleArrivee.arrivee.y) / 2,
+          };
+
           cartesAdv.push({
             carte: creerCarteCachee(indexCarteCachee),
             joueur: position,
-            depart: cible.arrivee,
-            arrivee: cible.arrivee,
-            controle: cible.arrivee,
-            rotationDepart: cible.rotationArrivee,
-            rotationArrivee: cible.rotationArrivee,
+            depart: cibleDepart.arrivee,
+            arrivee: cibleArrivee.arrivee,
+            controle,
+            rotationDepart: cibleDepart.rotationArrivee,
+            rotationArrivee: cibleArrivee.rotationArrivee,
             echelleDepart: ECHELLE_MAIN_ADVERSE,
             echelleArrivee: ECHELLE_MAIN_ADVERSE,
             rectSource: calculerVersoSource(largeurCellule, hauteurCellule),
           });
           donneesPlatAdv.push(
-            cible.arrivee.x,
-            cible.arrivee.y,
-            cible.arrivee.x,
-            cible.arrivee.y,
-            cible.arrivee.x,
-            cible.arrivee.y,
-            cible.rotationArrivee,
-            cible.rotationArrivee,
+            cibleDepart.arrivee.x,
+            cibleDepart.arrivee.y,
+            controle.x,
+            controle.y,
+            cibleArrivee.arrivee.x,
+            cibleArrivee.arrivee.y,
+            cibleDepart.rotationArrivee,
+            cibleArrivee.rotationArrivee,
             ECHELLE_MAIN_ADVERSE,
             ECHELLE_MAIN_ADVERSE,
           );
-          delaisCartesAdv.push(null);
+          delaisCartesAdv.push({
+            delai: 0,
+            duree: distribution.dureeCarte,
+          });
           indexCarteCachee += 1;
         }
       }
@@ -549,20 +567,9 @@ export function useAnimationsDistribution(
         timeoutsCallbacksRef.current.push(timeoutFin);
       }
 
-      // Les cartes deja en main restent visibles immediatement pendant la
-      // distribution restante, puis les nouvelles cartes s'animent vers le pool.
-      for (let i = 0; i < cartesAdv.length; i++) {
-        const delaiCarte = delaisCartesAdv[i];
-        if (!delaiCarte) {
-          progressionsAdv[i].value = 1;
-        }
-      }
-
       // Lancer les animations withDelay + withTiming — pool adversaires
       for (let i = 0; i < cartesAdv.length; i++) {
         const delaiCarte = delaisCartesAdv[i];
-        if (!delaiCarte) continue;
-
         const { delai, duree } = delaiCarte;
         progressionsAdv[i].value = withDelay(
           delai,
