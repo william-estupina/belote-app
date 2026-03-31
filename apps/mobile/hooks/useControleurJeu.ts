@@ -8,9 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Actor } from "xstate";
 import { createActor } from "xstate";
 
-import { calculerDispositionReserveCentrale } from "../components/game/reserve-centrale-disposition";
 import { ANIMATIONS } from "../constants/layout";
-import { construireCartesRetourPaquet } from "./construireCartesRetourPaquet";
 import {
   demarrerTransitionDernierPli,
   terminerTransitionDernierPli,
@@ -25,15 +23,11 @@ import {
 } from "./extraireEtatUI";
 import { calculerDureeTotaleRamassagePli } from "./planRamassagePli";
 import type { ResumeFinManche } from "./resume-fin-manche";
-import {
-  construireTransitionTriMainInitiale,
-  DELAI_SUPPLEMENTAIRE_TRI_MAIN_INITIALE_MS,
-} from "./transition-tri-main-initiale";
-import { trierMainJoueur } from "./triMainJoueur";
 import { construireCartesGeleesDepuisPli, useAnimations } from "./useAnimations";
 import { useAnimationsDistribution } from "./useAnimationsDistribution";
 import { useAtlasCartes } from "./useAtlasCartes";
 import { useDelaiBot } from "./useDelaiBot";
+import { useOrchestrationDistribution } from "./useOrchestrationDistribution";
 
 // --- Types exposés ---
 
@@ -127,21 +121,6 @@ interface OptionsControleur {
 // --- Constantes ---
 
 const INDEX_HUMAIN = 0; // sud
-const NB_CARTES_JEU_BELOTE = 32;
-
-function conserverHistoriqueEncheresAvantRedistribution(etat: EtatJeu) {
-  if (etat.phaseEncheres !== "encheres2" || etat.historiqueEncheres.length >= 8) {
-    return etat.historiqueEncheres;
-  }
-
-  return [
-    ...etat.historiqueEncheres,
-    {
-      type: "PASSER" as const,
-      joueur: POSITIONS_JOUEUR[etat.indexDonneur],
-    },
-  ];
-}
 
 // --- Hook principal ---
 
@@ -218,8 +197,6 @@ export function useControleurJeu({
   const nbRedistributionsVues = useRef(0);
   const timeoutsControleurRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  // Ref pour appeler lancerDistributionRestanteAnimee depuis les callbacks déclarés avant
-  const distribRestanteRef = useRef<(ctx: ContextePartie) => void>(() => {});
   const onRevelationTermineeRef = useRef<(() => void) | null>(null);
   const onRetourCarteRetourneeRef = useRef<(() => void) | null>(null);
 
@@ -336,308 +313,27 @@ export function useControleurJeu({
     }
   }, [attendreDelaiBot, difficulte, animations]);
 
-  // --- Phase 3 : tri et finalisation après distribution ---
-  const lancerPhase3 = useCallback(
-    (contexte: ContextePartie) => {
-      const { distribution } = ANIMATIONS;
-
-      const timeout = setTimeout(() => {
-        if (estDemonte.current) return;
-
-        const acteur = acteurRef.current;
-        if (!acteur) return;
-        const snap = acteur.getSnapshot();
-        const etat = snap.value as string;
-        const ctx = snap.context;
-        const carteRetournee = ctx.carteRetournee;
-        const mainTriee = trierMainJoueur(ctx.mains[INDEX_HUMAIN], {
-          couleurPrioritaire: ctx.couleurAtout ?? ctx.carteRetournee?.couleur ?? null,
-          couleurAtout: ctx.couleurAtout,
-        });
-        const transitionTri = construireTransitionTriMainInitiale(
-          ctx.mains[INDEX_HUMAIN],
-          mainTriee,
-        );
-
-        animationDistribEnCours.current = false;
-        // Masquer les cartes sud dans l'Atlas avant de démonter le canvas,
-        // pour éviter un flash dû au double rendu (Atlas + MainJoueur).
-        for (const p of animDistribution.progressionsSud) {
-          p.value = 2;
-        }
-        animDistribution.terminerDistribution();
-
-        const appliquerEtatAvantEncheres = () =>
-          setEtatJeu((prev) => ({
-            ...prev,
-            ...transitionTri.etatAvantTri,
-            phaseUI: "distribution",
-            phaseEncheres: null,
-            carteRetournee: null,
-            nbCartesAdversaires: {
-              nord: ctx.mains[2].length,
-              est: ctx.mains[3].length,
-              ouest: ctx.mains[1].length,
-            },
-            cartesRestantesPaquet: 12,
-            nbCartesAnticipeesJoueur: ctx.mains[INDEX_HUMAIN].length,
-          }));
-
-        const finaliserEntreeEncheres = () => {
-          if (estDemonte.current) return;
-
-          setEtatJeu((prev) => ({
-            ...prev,
-            ...extraireEtatUI(ctx, etat),
-            mainJoueur: mainTriee,
-            triMainDiffere: false,
-            nbCartesAdversaires: {
-              nord: ctx.mains[2].length,
-              est: ctx.mains[3].length,
-              ouest: ctx.mains[1].length,
-            },
-            cartesRestantesPaquet: 12,
-            nbCartesAnticipeesJoueur: ctx.mains[INDEX_HUMAIN].length,
-          }));
-
-          const timeoutBot = setTimeout(() => jouerBotSiNecessaire(), 50);
-          timeoutsControleurRef.current.push(timeoutBot);
-        };
-
-        appliquerEtatAvantEncheres();
-
-        const timeoutTri = setTimeout(() => {
-          if (estDemonte.current) return;
-
-          const acteurCourant = acteurRef.current;
-          if (!acteurCourant) return;
-          const snapshotCourant = acteurCourant.getSnapshot();
-
-          if (snapshotCourant.context.mains[INDEX_HUMAIN].length !== mainTriee.length) {
-            return;
-          }
-
-          setEtatJeu((prev) => ({
-            ...prev,
-            ...transitionTri.etatApresTri,
-          }));
-        }, DELAI_SUPPLEMENTAIRE_TRI_MAIN_INITIALE_MS);
-        timeoutsControleurRef.current.push(timeoutTri);
-
-        const dimensionsCourantes = dimensionsEcranRef.current;
-
-        if (
-          !carteRetournee ||
-          dimensionsCourantes.largeur <= 0 ||
-          dimensionsCourantes.hauteur <= 0
-        ) {
-          finaliserEntreeEncheres();
-          return;
-        }
-
-        onRevelationTermineeRef.current = finaliserEntreeEncheres;
-        setEtatJeu((prev) => ({
-          ...prev,
-          phaseUI: "revelationCarte",
-          carteRetournee,
-        }));
-      }, distribution.pauseAvantTri);
-
-      timeoutsControleurRef.current.push(timeout);
-    },
-    [jouerBotSiNecessaire, animDistribution],
-  );
-
-  // --- Lancer la distribution avec animation ---
-  const lancerDistributionAnimee = useCallback(
-    (contexte: ContextePartie) => {
-      animationDistribEnCours.current = true;
-      nbPlisVus.current = 0;
-
-      const mainsRecord: Record<PositionJoueur, Carte[]> = {
-        sud: contexte.mains[0],
-        ouest: contexte.mains[1],
-        nord: contexte.mains[2],
-        est: contexte.mains[3],
-      };
-
-      // Calculer le nombre total de cartes à distribuer (5 par joueur = 20)
-      let totalCartesAttendues = 0;
-      for (const pos of POSITIONS_JOUEUR) {
-        totalCartesAttendues += mainsRecord[pos].length;
-      }
-
-      setEtatJeu((prev) => ({
-        ...prev,
-        phaseUI: "distribution",
-        mainJoueur: [],
-        nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
-        pliEnCours: [],
-        cartesRestantesPaquet: NB_CARTES_JEU_BELOTE,
-        nbCartesAnticipeesJoueur: 0,
-        triMainDiffere: false,
-        dernierPliVisible: null,
-        precedentDernierPliVisible: null,
-        transitionDernierPliActive: false,
-        dureeTransitionDernierPliMs: 0,
-        cleTransitionDernierPli: 0,
-        afficherActionsEnchereRedistribution: false,
-      }));
-
-      let cartesRecues = 0;
-      // Compteur local pour nbCartesAnticipeesJoueur — évite de lire
-      // prev.mainJoueur.length (qui reste vide pendant la distribution).
-      let cartesSudEnvoyees = 0;
-      // Accumulation locale des cartes sud pour un seul setEtatJeu à la fin,
-      // évitant les re-renders lourds de MainJoueur pendant l'animation Est.
-      const cartesSudAccumulees: Carte[] = [];
-
-      animDistribution.lancerDistribution(mainsRecord, {
-        indexDonneur: contexte.indexDonneur,
-        cartesVisibles: mainsRecord.sud,
-        onPaquetDepart: (position, cartes) => {
-          if (estDemonte.current) return;
-          if (position === "sud") {
-            cartesSudEnvoyees += cartes.length;
-          }
-
-          setEtatJeu((prev) => ({
-            ...prev,
-            cartesRestantesPaquet: prev.cartesRestantesPaquet - cartes.length,
-            nbCartesAnticipeesJoueur:
-              position === "sud" ? cartesSudEnvoyees : prev.nbCartesAnticipeesJoueur,
-          }));
-        },
-        onPaquetArrive: (position, cartes) => {
-          if (estDemonte.current) return;
-
-          if (position !== "sud") {
-            setEtatJeu((prev) => ({
-              ...prev,
-              nbCartesAdversaires: {
-                ...prev.nbCartesAdversaires,
-                [position]:
-                  prev.nbCartesAdversaires[position as "nord" | "est" | "ouest"] +
-                  cartes.length,
-              },
-            }));
-          } else {
-            cartesSudAccumulees.push(...cartes);
-          }
-
-          cartesRecues += cartes.length;
-          if (cartesRecues >= totalCartesAttendues) {
-            // Pousser toutes les cartes sud en un seul batch avant lancerPhase3,
-            // pour que mainJoueur soit peuplé avant que le canvas ne soit masqué.
-            setEtatJeu((prev) => ({
-              ...prev,
-              mainJoueur: [...prev.mainJoueur, ...cartesSudAccumulees],
-            }));
-            lancerPhase3(contexte);
-          }
-        },
-      });
-    },
-    [animDistribution, lancerPhase3],
-  );
-
-  const lancerRedistributionAnimee = useCallback(
-    (contexte: ContextePartie) => {
-      animationDistribEnCours.current = true;
-      nbPlisVus.current = 0;
-
-      setEtatJeu((prev) => ({
-        ...prev,
-        phaseUI: "redistribution",
-        indexDonneur: prev.indexDonneur,
-        joueurActif: POSITIONS_JOUEUR[contexte.indexJoueurActif],
-        phaseEncheres: prev.phaseEncheres,
-        indexPreneur: null,
-        couleurAtout: null,
-        cartesRestantesPaquet: 1,
-        historiqueEncheres: conserverHistoriqueEncheresAvantRedistribution(prev),
-        cartesJouables: [],
-        estTourHumain: false,
-        afficherActionsEnchereRedistribution: true,
-      }));
-
-      const timeoutAvantRappel = setTimeout(() => {
-        if (estDemonte.current) return;
-
-        const { largeur, hauteur } = dimensionsEcranRef.current;
-        const disposition = calculerDispositionReserveCentrale({
-          largeurEcran: largeur,
-          hauteurEcran: hauteur,
-        });
-        const centrePaquet = {
-          x: disposition.centrePaquet.x / largeur,
-          y: disposition.centrePaquet.y / hauteur,
-        };
-        const centreCarteRetournee = {
-          x: disposition.centreCarteRetournee.x / largeur,
-          y: disposition.centreCarteRetournee.y / hauteur,
-        };
-
-        const carteRetournee = etatJeuRef.current.carteRetournee;
-        const cartesRetour = construireCartesRetourPaquet(
-          etatJeuRef.current,
-          largeur,
-          hauteur,
-        );
-
-        const lancerPhase2 = () => {
-          animations.lancerAnimationRetourPaquet(cartesRetour, centrePaquet, () => {
-            if (estDemonte.current) return;
-
-            setEtatJeu((prev) => ({
-              ...prev,
-              cartesRestantesPaquet: 32,
-              indexDonneur: contexte.indexDonneur,
-            }));
-
-            const timeoutApresDealer = setTimeout(() => {
-              if (estDemonte.current) return;
-              lancerDistributionAnimee(contexte);
-            }, ANIMATIONS.redistribution.dureeGlissementDealer);
-
-            timeoutsControleurRef.current.push(timeoutApresDealer);
-          });
-        };
-
-        if (carteRetournee) {
-          onRetourCarteRetourneeRef.current = () => {
-            setEtatJeu((prev) => ({ ...prev, carteRetourneeEnRetour: null }));
-            lancerPhase2();
-          };
-          setEtatJeu((prev) => ({
-            ...prev,
-            mainJoueur: [],
-            nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
-            carteRetournee: null,
-            carteRetourneeEnRetour: carteRetournee,
-            phaseEncheres: null,
-            historiqueEncheres: [],
-            cartesRestantesPaquet: 1,
-            afficherActionsEnchereRedistribution: false,
-          }));
-        } else {
-          setEtatJeu((prev) => ({
-            ...prev,
-            mainJoueur: [],
-            nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
-            phaseEncheres: null,
-            historiqueEncheres: [],
-            cartesRestantesPaquet: 1,
-            afficherActionsEnchereRedistribution: false,
-          }));
-          lancerPhase2();
-        }
-      }, ANIMATIONS.redistribution.pauseAvantRappel);
-
-      timeoutsControleurRef.current.push(timeoutAvantRappel);
-    },
-    [animations, lancerDistributionAnimee],
-  );
+  // --- Orchestration distribution (hook extrait) ---
+  const { distribRestanteRef, lancerDistributionAnimee, lancerRedistributionAnimee } =
+    useOrchestrationDistribution(
+      {
+        acteurRef,
+        etatJeuRef,
+        dimensionsEcranRef,
+        estDemonte,
+        animationDistribEnCours,
+        nbPlisVus,
+        timeoutsControleurRef,
+        onRevelationTermineeRef,
+        onRetourCarteRetourneeRef,
+      },
+      {
+        setEtatJeu,
+        animations,
+        animDistribution,
+        jouerBotSiNecessaire,
+      },
+    );
 
   // --- Lancer l'animation de ramassage du pli ---
   const lancerRamassagePli = useCallback(
@@ -978,212 +674,6 @@ export function useControleurJeu({
     acteur.send({ type: "RECOMMENCER" });
     lancerNouvellePartie(acteur);
   }, [lancerNouvellePartie]);
-
-  // --- Phase 3 restante : tri et finalisation après distribution restante ---
-  const lancerPhase3Restante = useCallback(
-    (contexte: ContextePartie) => {
-      const { distribution } = ANIMATIONS;
-
-      const timeout = setTimeout(() => {
-        if (estDemonte.current) return;
-
-        const acteur = acteurRef.current;
-        if (!acteur) return;
-        const snap = acteur.getSnapshot();
-        const etat = snap.value as string;
-        const ctx = snap.context;
-
-        animationDistribEnCours.current = false;
-        for (const p of animDistribution.progressionsSud) {
-          p.value = 2;
-        }
-        animDistribution.terminerDistribution();
-
-        setEtatJeu((prev) => ({
-          ...prev,
-          ...extraireEtatUI(ctx, etat),
-          mainJoueur: trierMainJoueur(ctx.mains[INDEX_HUMAIN], {
-            couleurPrioritaire: ctx.couleurAtout ?? ctx.carteRetournee?.couleur ?? null,
-            couleurAtout: ctx.couleurAtout,
-          }),
-          triMainDiffere: false,
-          nbCartesAdversaires: {
-            nord: ctx.mains[2].length,
-            est: ctx.mains[3].length,
-            ouest: ctx.mains[1].length,
-          },
-          cartesRestantesPaquet: 0,
-          nbCartesAnticipeesJoueur: ctx.mains[INDEX_HUMAIN].length,
-        }));
-
-        setTimeout(() => jouerBotSiNecessaire(), 50);
-      }, distribution.pauseAvantTri);
-
-      timeoutsControleurRef.current.push(timeout);
-    },
-    [jouerBotSiNecessaire, animDistribution],
-  );
-
-  // --- Animation distribution restante (après enchères) ---
-  const lancerDistributionRestanteAnimee = useCallback(
-    (contexte: ContextePartie) => {
-      animationDistribEnCours.current = true;
-
-      const indexPreneur = contexte.indexPreneur!;
-      const positionPreneur = POSITIONS_JOUEUR[indexPreneur];
-
-      const premierServi = POSITIONS_JOUEUR[(contexte.indexDonneur + 3) % 4];
-      const estPreneurPremier = positionPreneur === premierServi;
-
-      const mainsRecord: Record<PositionJoueur, Carte[]> = {
-        sud: [],
-        ouest: [],
-        nord: [],
-        est: [],
-      };
-
-      for (let i = 0; i < 4; i++) {
-        const pos = POSITIONS_JOUEUR[i];
-        if (i === indexPreneur) {
-          mainsRecord[pos] = contexte.mains[i].slice(6);
-        } else {
-          mainsRecord[pos] = contexte.mains[i].slice(5);
-        }
-      }
-
-      const carteRetournee = contexte.carteRetournee;
-
-      // Nombre de cartes que sud a déjà en main quand la distribution restante démarre
-      // Cas particulier : si sud est preneur et la carte retournée lui est glissée
-      // séparément (!estPreneurPremier), il a 6 cartes au lieu de 5
-      const sudEstPreneur = indexPreneur === 0;
-      const nbCartesExistantesSud =
-        sudEstPreneur && !estPreneurPremier && carteRetournee ? 6 : 5;
-
-      // Compter les cartes attendues
-      let totalCartesAttendues = 0;
-      for (const pos of POSITIONS_JOUEUR) {
-        totalCartesAttendues += mainsRecord[pos].length;
-      }
-      if (carteRetournee) {
-        totalCartesAttendues += 1;
-      }
-
-      setEtatJeu((prev) => ({
-        ...prev,
-        phaseUI: "distribution",
-        carteRetournee: null,
-        cartesRestantesPaquet: totalCartesAttendues,
-        nbCartesAnticipeesJoueur: prev.mainJoueur.length,
-        triMainDiffere: false,
-      }));
-
-      let cartesRecues = 0;
-      let cartesSudEnvoyeesRestante = nbCartesExistantesSud;
-      const cartesSudAccumuleesRestante: Carte[] = [];
-
-      const gererPaquetDepart = (position: PositionJoueur, cartes: Carte[]) => {
-        if (estDemonte.current) return;
-        if (position === "sud") {
-          cartesSudEnvoyeesRestante += cartes.length;
-        }
-
-        setEtatJeu((prev) => ({
-          ...prev,
-          cartesRestantesPaquet: prev.cartesRestantesPaquet - cartes.length,
-          nbCartesAnticipeesJoueur:
-            position === "sud"
-              ? cartesSudEnvoyeesRestante
-              : prev.nbCartesAnticipeesJoueur,
-        }));
-      };
-
-      const gererPaquetArrive = (position: PositionJoueur, cartes: Carte[]) => {
-        if (estDemonte.current) return;
-
-        if (position !== "sud") {
-          setEtatJeu((prev) => ({
-            ...prev,
-            nbCartesAdversaires: {
-              ...prev.nbCartesAdversaires,
-              [position]:
-                prev.nbCartesAdversaires[position as "nord" | "est" | "ouest"] +
-                cartes.length,
-            },
-          }));
-        } else {
-          cartesSudAccumuleesRestante.push(...cartes);
-        }
-
-        cartesRecues += cartes.length;
-        if (cartesRecues >= totalCartesAttendues) {
-          setEtatJeu((prev) => ({
-            ...prev,
-            mainJoueur: [...prev.mainJoueur, ...cartesSudAccumuleesRestante],
-          }));
-          lancerPhase3Restante(contexte);
-        }
-      };
-
-      const lancerDistribRestante = () => {
-        const cartesVisiblesSud = mainsRecord.sud;
-        const cartesVisibles =
-          estPreneurPremier && carteRetournee
-            ? [carteRetournee, ...cartesVisiblesSud]
-            : [...cartesVisiblesSud];
-
-        const mainsADistribuer = estPreneurPremier
-          ? {
-              ...mainsRecord,
-              [positionPreneur]: carteRetournee
-                ? [carteRetournee, ...mainsRecord[positionPreneur]]
-                : mainsRecord[positionPreneur],
-            }
-          : mainsRecord;
-
-        // Calculer les cartes existantes par adversaire avant cette distribution
-        const nbCartesExistantesAdversaires: Partial<
-          Record<"nord" | "est" | "ouest", number>
-        > = {};
-        for (const pos of ["nord", "est", "ouest"] as const) {
-          const idx = POSITIONS_JOUEUR.indexOf(pos);
-          nbCartesExistantesAdversaires[pos] =
-            contexte.mains[idx].length - mainsADistribuer[pos].length;
-        }
-
-        animDistribution.lancerDistribution(mainsADistribuer, {
-          indexDonneur: contexte.indexDonneur,
-          nbCartesExistantesSud,
-          nbCartesExistantesAdversaires,
-          cartesVisibles,
-          onPaquetDepart: (position, cartes) => {
-            gererPaquetDepart(position, cartes);
-          },
-          onPaquetArrive: gererPaquetArrive,
-        });
-      };
-
-      if (!estPreneurPremier && carteRetournee) {
-        gererPaquetDepart(positionPreneur, [carteRetournee]);
-        animations.glisserCarteRetournee(
-          carteRetournee,
-          0.5,
-          0.35,
-          positionPreneur,
-          () => {
-            gererPaquetArrive(positionPreneur, [carteRetournee]);
-            lancerDistribRestante();
-          },
-        );
-      } else {
-        lancerDistribRestante();
-      }
-    },
-    [animations, animDistribution, lancerPhase3Restante],
-  );
-
-  // Mettre à jour la ref pour que prendre/annoncer puissent appeler cette fonction
-  distribRestanteRef.current = lancerDistributionRestanteAnimee;
 
   // Resynchroniser : créer des cartes gelées pour les cartes du pli absentes de cartesEnVol
   useEffect(() => {
