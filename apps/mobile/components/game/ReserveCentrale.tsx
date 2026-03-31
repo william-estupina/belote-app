@@ -48,8 +48,9 @@ export function ReserveCentrale({
   atlas,
 }: PropsReserveCentrale) {
   const afficherCarteRetournee = carteRetournee !== null;
+  const afficherPaquetVisible = afficherPaquet && cartesPaquetVisibles > 0;
 
-  if (!afficherPaquet && !afficherCarteRetournee) {
+  if (!afficherPaquetVisible && !afficherCarteRetournee) {
     return null;
   }
 
@@ -81,7 +82,7 @@ export function ReserveCentrale({
       ]}
       pointerEvents="none"
     >
-      {afficherPaquet && (
+      {afficherPaquetVisible && (
         <View
           testID="reserve-paquet"
           style={[

@@ -4,7 +4,7 @@
 
 **Goal:** Donner au paquet central une presence visuelle plus forte au depart et une diminution plus sensible pendant la distribution.
 
-**Architecture:** Le changement reste local au composant `ReserveCentrale`. Le calcul du nombre de couches et de leur dispersion dependra directement de `cartesPaquetVisibles`, sans changer l'ancrage global ni la carte retournee. Les tests de composant verifieront la nouvelle densite maximale et l'amincissement du paquet. Un correctif de suivi dans `useControleurJeu` conserve ensuite `12` cartes visibles a la fin de la donne initiale pour eviter un regonflement du paquet juste avant la revelation. Le vidage final du paquet s'appuie ensuite sur `onPaquetDepart` dans `useControleurJeu`, afin que la reserve se vide pendant le vol des cartes et disparaisse au depart du dernier paquet.
+**Architecture:** Le changement reste local au composant `ReserveCentrale`. Le calcul du nombre de couches et de leur dispersion dependra directement de `cartesPaquetVisibles`, sans changer l'ancrage global ni la carte retournee. Les tests de composant verifieront la nouvelle densite maximale et l'amincissement du paquet. Un correctif de suivi dans `useControleurJeu` conserve ensuite `12` cartes visibles a la fin de la donne initiale pour eviter un regonflement du paquet juste avant la revelation. Le vidage final du paquet s'appuie ensuite sur `onPaquetDepart` dans `useControleurJeu`, afin que la reserve se vide pendant le vol des cartes et disparaisse au depart du dernier paquet. Enfin, `ReserveCentrale` ne rend plus le paquet quand `cartesPaquetVisibles` vaut `0`, ce qui supprime le dernier frame parasite en fin de distribution.
 
 **Tech Stack:** TypeScript strict, React Native, Jest, Testing Library React Native
 

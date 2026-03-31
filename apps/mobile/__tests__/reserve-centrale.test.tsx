@@ -157,6 +157,22 @@ describe("ReserveCentrale", () => {
     expect(styleCarteRetournee.opacity).toBe(0);
   });
 
+  it("masque le paquet quand il n'y a plus de cartes visibles meme si la reserve reste montee", () => {
+    const { queryByTestId } = render(
+      <ReserveCentrale
+        afficherPaquet={true}
+        cartesPaquetVisibles={0}
+        carteRetournee={null}
+        largeurEcran={1000}
+        hauteurEcran={700}
+        atlas={atlas as never}
+      />,
+    );
+
+    expect(queryByTestId("reserve-paquet")).toBeNull();
+    expect(queryByTestId("carte-dos")).toBeNull();
+  });
+
   it("garde le paquet exactement au meme endroit avec ou sans carte retournee", () => {
     const { rerender } = render(
       <ReserveCentrale

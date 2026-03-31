@@ -40,6 +40,8 @@ La donne initiale doit faire descendre le paquet de `32` cartes vers `12`, pas d
 
 Le vidage visuel du paquet doit etre pilote par le depart des cartes depuis la reserve centrale, pas par leur arrivee en main. Ainsi, la reserve diminue pendant que les cartes sont en vol et disparait exactement quand les derniers paquets quittent le paquet.
 
+Quand `cartesPaquetVisibles` atteint `0`, `ReserveCentrale` ne doit plus rendre le paquet du tout, meme si la reserve centrale reste montee pour d'autres elements visuels.
+
 ## Hors scope
 
 - refonte des animations de distribution ;
