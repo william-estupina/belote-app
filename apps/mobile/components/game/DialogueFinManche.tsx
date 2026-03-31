@@ -32,14 +32,12 @@ type NiveauEmotionFinManche =
 
 interface ConfigurationCadranEmotionnel {
   titre: string;
-  sousTitre: string;
   niveau: NiveauEmotionFinManche;
   couleurBordurePanneau: string;
   couleurOmbrePanneau: string;
   couleurFondCadran: string;
   couleurBordureCadran: string;
   couleurTitreCadran: string;
-  couleurSousTitreCadran: string;
   couleurFlash: string;
   couleurHalo: string;
   couleurMiseEnAvant: string;
@@ -64,14 +62,12 @@ function creerConfigurationCadran(
     if (victoire) {
       return {
         titre: "Capot",
-        sousTitre: "celebration maximale",
         niveau: "gain-max",
         couleurBordurePanneau: "rgba(230, 183, 48, 1)",
         couleurOmbrePanneau: "rgba(232, 183, 48, 0.28)",
         couleurFondCadran: "rgba(212, 160, 23, 0.22)",
         couleurBordureCadran: "rgba(255, 226, 144, 0.42)",
         couleurTitreCadran: "#fff7df",
-        couleurSousTitreCadran: "#eadfca",
         couleurFlash: "rgba(255, 231, 158, 0.98)",
         couleurHalo: "rgba(255, 206, 92, 0.2)",
         couleurMiseEnAvant: "#ffe28d",
@@ -86,14 +82,12 @@ function creerConfigurationCadran(
 
     return {
       titre: "Capot",
-      sousTitre: "glacial et tranchant",
       niveau: "perte-max",
       couleurBordurePanneau: "rgba(182, 220, 255, 0.9)",
       couleurOmbrePanneau: "rgba(176, 216, 255, 0.24)",
       couleurFondCadran: "rgba(180, 216, 255, 0.11)",
       couleurBordureCadran: "rgba(215, 240, 255, 0.34)",
       couleurTitreCadran: "#f6fbff",
-      couleurSousTitreCadran: "#dbe8f2",
       couleurFlash: "rgba(228, 246, 255, 0.98)",
       couleurHalo: "rgba(198, 234, 255, 0.16)",
       couleurMiseEnAvant: "#f2fbff",
@@ -110,14 +104,12 @@ function creerConfigurationCadran(
     if (victoire) {
       return {
         titre: "Ils sont dedans",
-        sousTitre: "petit yahou",
         niveau: "gain-fort",
         couleurBordurePanneau: "rgba(230, 183, 48, 0.96)",
         couleurOmbrePanneau: "rgba(232, 183, 48, 0.22)",
         couleurFondCadran: "rgba(232, 183, 48, 0.15)",
         couleurBordureCadran: "rgba(255, 226, 144, 0.3)",
         couleurTitreCadran: "#fff4d2",
-        couleurSousTitreCadran: "#e4d5b7",
         couleurFlash: "rgba(255, 225, 140, 0.96)",
         couleurHalo: "rgba(255, 195, 74, 0.18)",
         couleurMiseEnAvant: "#ffdf84",
@@ -132,14 +124,12 @@ function creerConfigurationCadran(
 
     return {
       titre: "Vous etes dedans",
-      sousTitre: "plus froid, plus sec",
       niveau: "perte-forte",
       couleurBordurePanneau: "rgba(170, 210, 255, 0.78)",
       couleurOmbrePanneau: "rgba(170, 210, 255, 0.2)",
       couleurFondCadran: "rgba(170, 210, 255, 0.1)",
       couleurBordureCadran: "rgba(200, 232, 255, 0.28)",
       couleurTitreCadran: "#f2f9ff",
-      couleurSousTitreCadran: "#d2e2ef",
       couleurFlash: "rgba(220, 242, 255, 0.94)",
       couleurHalo: "rgba(190, 228, 255, 0.13)",
       couleurMiseEnAvant: "#e5f5ff",
@@ -155,14 +145,12 @@ function creerConfigurationCadran(
   if (victoire) {
     return {
       titre: resumeFinManche.messageVerdict,
-      sousTitre: "chaleur legere",
       niveau: "gain-leger",
       couleurBordurePanneau: "rgba(230, 183, 48, 0.9)",
       couleurOmbrePanneau: "rgba(232, 183, 48, 0.18)",
       couleurFondCadran: "rgba(232, 183, 48, 0.1)",
       couleurBordureCadran: "rgba(255, 215, 107, 0.22)",
       couleurTitreCadran: "#fff0c1",
-      couleurSousTitreCadran: "#d9cab1",
       couleurFlash: "rgba(255, 225, 140, 0.92)",
       couleurHalo: "rgba(255, 196, 74, 0.12)",
       couleurMiseEnAvant: "#ffd76c",
@@ -177,14 +165,12 @@ function creerConfigurationCadran(
 
   return {
     titre: "Defaite",
-    sousTitre: "glace legere",
     niveau: "perte-legere",
     couleurBordurePanneau: "rgba(170, 210, 255, 0.62)",
     couleurOmbrePanneau: "rgba(170, 210, 255, 0.16)",
     couleurFondCadran: "rgba(170, 210, 255, 0.08)",
     couleurBordureCadran: "rgba(190, 226, 255, 0.2)",
     couleurTitreCadran: "#eef7ff",
-    couleurSousTitreCadran: "#c5d9e9",
     couleurFlash: "rgba(215, 240, 255, 0.88)",
     couleurHalo: "rgba(190, 228, 255, 0.09)",
     couleurMiseEnAvant: "#d8efff",
@@ -738,14 +724,6 @@ export function DialogueFinManche({
             >
               {configurationCadran.titre}
             </Text>
-            <Text
-              style={[
-                styles.texteSousTitreCadran,
-                { color: configurationCadran.couleurSousTitreCadran },
-              ]}
-            >
-              {configurationCadran.sousTitre}
-            </Text>
           </Animated.View>
         ) : null}
 
@@ -1003,11 +981,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     textTransform: "uppercase",
     letterSpacing: 1.2,
-  },
-  texteSousTitreCadran: {
-    fontSize: estWeb ? 14 : 12,
-    textAlign: "center",
-    marginTop: 4,
   },
   haloCadran: {
     position: "absolute",

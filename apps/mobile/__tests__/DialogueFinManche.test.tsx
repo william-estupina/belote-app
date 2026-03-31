@@ -168,4 +168,33 @@ describe("DialogueFinManche", () => {
     expect(screen.getByText("Defaite")).toBeTruthy();
     expect(screen.queryByText("Contrat rempli !")).toBeNull();
   });
+
+  it("n'affiche plus les sous-textes de demo dans le cadran", () => {
+    render(
+      <DialogueFinManche
+        resumeFinManche={{
+          ...RESUME_CONTRAT_REMPLI,
+          estCapot: true,
+          equipeCapot: "equipe1",
+          scoreMancheEquipe1: 252,
+          scoreMancheEquipe2: 0,
+          scoreApresEquipe1: 342,
+          scoreApresEquipe2: 10,
+        }}
+        onContinuer={jest.fn()}
+      />,
+    );
+
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
+
+    expect(screen.getByText("Capot")).toBeTruthy();
+    expect(screen.queryByText("celebration maximale")).toBeNull();
+    expect(screen.queryByText("glacial et tranchant")).toBeNull();
+    expect(screen.queryByText("plus froid, plus sec")).toBeNull();
+    expect(screen.queryByText("petit yahou")).toBeNull();
+    expect(screen.queryByText("glace legere")).toBeNull();
+    expect(screen.queryByText("chaleur legere")).toBeNull();
+  });
 });
