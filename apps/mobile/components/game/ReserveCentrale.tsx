@@ -16,6 +16,28 @@ interface PropsReserveCentrale {
   atlas: AtlasCartes;
 }
 
+const NB_CARTES_PAQUET_COMPLET = 32;
+const NB_COUCHES_MAX = 8;
+
+interface ParametresEmpilementPaquet {
+  nbCouches: number;
+  decalageHorizontal: number;
+  decalageVertical: number;
+}
+
+function calculerEmpilementPaquet(
+  cartesPaquetVisibles: number,
+): ParametresEmpilementPaquet {
+  const cartesVisibles = Math.max(cartesPaquetVisibles, 1);
+  const ratioRemplissage = Math.min(cartesVisibles / NB_CARTES_PAQUET_COMPLET, 1);
+
+  return {
+    nbCouches: Math.min(NB_COUCHES_MAX, Math.max(1, Math.ceil(cartesVisibles / 4))),
+    decalageHorizontal: 0.65 + ratioRemplissage * 0.55,
+    decalageVertical: 1.2 + ratioRemplissage * 0.9,
+  };
+}
+
 export function ReserveCentrale({
   afficherPaquet,
   cartesPaquetVisibles,
@@ -42,7 +64,8 @@ export function ReserveCentrale({
     hauteurEcran,
   });
   const largeurTotale = afficherCarteRetournee ? largeurTotaleAvecCarte : largeurCarte;
-  const nbCouches = Math.min(5, Math.ceil(Math.max(cartesPaquetVisibles, 1) / 6));
+  const { nbCouches, decalageHorizontal, decalageVertical } =
+    calculerEmpilementPaquet(cartesPaquetVisibles);
 
   return (
     <View
@@ -74,11 +97,12 @@ export function ReserveCentrale({
           {Array.from({ length: nbCouches }).map((_, index) => (
             <View
               key={index}
+              testID={`reserve-paquet-couche-${index}`}
               style={[
                 styles.carteEmpilee,
                 {
-                  left: index * 0.5,
-                  top: -index,
+                  left: index * decalageHorizontal,
+                  top: -(index * decalageVertical),
                 },
               ]}
             >
