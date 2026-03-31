@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Platform } from "react-native";
 
 import { COULEURS } from "../constants/theme";
-import { SPRITE_SHEET_SOURCE } from "../hooks/useAtlasCartes";
+import { SPRITE_SHEET_SOURCE } from "../hooks/spriteSheetSource";
 
 if (Platform.OS !== "web") {
   void SplashScreen.preventAutoHideAsync();

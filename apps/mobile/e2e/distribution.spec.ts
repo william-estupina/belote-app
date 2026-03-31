@@ -25,4 +25,17 @@ test.describe("Distribution des cartes", () => {
     // Aucune erreur JS pendant la distribution
     expect(erreursPage).toEqual([]);
   });
+
+  test("le rendu web garde un canvas de distribution pendant la donne initiale", async ({
+    page,
+  }) => {
+    await page.goto("/", { waitUntil: "networkidle" });
+    await page.getByTestId("bouton-jouer").click();
+
+    await page.waitForTimeout(1200);
+
+    expect(await page.locator("canvas").count()).toBeGreaterThan(0);
+    await expect(page.locator("body")).not.toContainText("♥");
+    await expect(page.locator("body")).not.toContainText("♠");
+  });
 });
