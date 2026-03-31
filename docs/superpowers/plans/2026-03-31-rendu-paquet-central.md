@@ -4,7 +4,7 @@
 
 **Goal:** Donner au paquet central une presence visuelle plus forte au depart et une diminution plus sensible pendant la distribution.
 
-**Architecture:** Le changement reste local au composant `ReserveCentrale`. Le calcul du nombre de couches et de leur dispersion dependra directement de `cartesPaquetVisibles`, sans changer l'ancrage global ni la carte retournee. Les tests de composant verifieront la nouvelle densite maximale et l'amincissement du paquet. Un correctif de suivi dans `useControleurJeu` conserve ensuite `12` cartes visibles a la fin de la donne initiale pour eviter un regonflement du paquet juste avant la revelation.
+**Architecture:** Le changement reste local au composant `ReserveCentrale`. Le calcul du nombre de couches et de leur dispersion dependra directement de `cartesPaquetVisibles`, sans changer l'ancrage global ni la carte retournee. Les tests de composant verifieront la nouvelle densite maximale et l'amincissement du paquet. Un correctif de suivi dans `useControleurJeu` conserve ensuite `12` cartes visibles a la fin de la donne initiale pour eviter un regonflement du paquet juste avant la revelation. Un dernier ajustement dans `useAnimationsDistribution` anticipe legerement le callback de vidage du paquet pour supprimer le petit decalage perceptible sur les dernieres cartes.
 
 **Tech Stack:** TypeScript strict, React Native, Jest, Testing Library React Native
 

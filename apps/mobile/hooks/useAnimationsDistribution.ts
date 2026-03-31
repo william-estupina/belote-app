@@ -85,6 +85,7 @@ export interface ResultatAnimationsDistribution {
 const MAX_CARTES_ADV = 24; // 8 cartes × 3 adversaires
 const MAX_CARTES_SUD = 8;
 const EASING_OUT_CUBIC = Easing.out(Easing.cubic);
+const ANTICIPATION_ARRIVEE_PAQUET_MS = 60;
 const COULEURS_FACTICES: Carte["couleur"][] = ["pique", "coeur", "carreau", "trefle"];
 const RANGS_FACTICES: Carte["rang"][] = [
   "7",
@@ -558,11 +559,15 @@ export function useAnimationsDistribution(
 
         if (delaiCarte) {
           const delaiArriveeMs = delaiCarte.delai + delaiCarte.duree;
+          const delaiCallbackArriveeMs = Math.max(
+            paquet.delaiDepartMs,
+            delaiArriveeMs - ANTICIPATION_ARRIVEE_PAQUET_MS,
+          );
           delaiFinDistributionMs = Math.max(delaiFinDistributionMs, delaiArriveeMs);
 
           const timeout = setTimeout(() => {
             options?.onPaquetArrive?.(paquet.position, paquet.cartes);
-          }, delaiArriveeMs);
+          }, delaiCallbackArriveeMs);
           timeoutsCallbacksRef.current.push(timeout);
         }
       }

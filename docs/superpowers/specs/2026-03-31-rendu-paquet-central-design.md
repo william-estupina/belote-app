@@ -38,6 +38,8 @@ Fichier de test :
 
 La donne initiale doit faire descendre le paquet de `32` cartes vers `12`, pas de `20` vers `0`. Le volume du paquet reste ainsi stable au moment de `revelationCarte` et n'a plus besoin de regrossir juste avant l'animation de la carte retournee.
 
+La reduction visuelle du paquet peut aussi etre legerement anticipee par rapport a la fin exacte du vol d'un paquet, afin d'eviter un effet ou les dernieres cartes semblent deja posees alors que le paquet central n'a pas encore fini de se vider.
+
 ## Hors scope
 
 - refonte des animations de distribution ;
