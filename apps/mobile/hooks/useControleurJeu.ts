@@ -1,14 +1,8 @@
 // Hook d'orchestration du jeu — pilote la machine XState, les bots et les animations
 import { deciderBot } from "@belote/bot-engine";
-import type { ContextePartie, EvenementPartie } from "@belote/game-logic";
-import { getCartesJouables, machineBelote } from "@belote/game-logic";
-import type {
-  ActionBot,
-  Carte,
-  Couleur,
-  Difficulte,
-  PositionJoueur,
-} from "@belote/shared-types";
+import type { ContextePartie } from "@belote/game-logic";
+import { machineBelote } from "@belote/game-logic";
+import type { Carte, Couleur, Difficulte, PositionJoueur } from "@belote/shared-types";
 import { POSITIONS_JOUEUR } from "@belote/shared-types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Actor } from "xstate";
@@ -30,9 +24,14 @@ import {
 } from "./etatDernierPliVisuel";
 import { appliquerEtatVerrouillePendantFinPli } from "./etatFinPliVisuel";
 import { ajouterCarteAuPliVisuel } from "./etatPliVisuel";
+import {
+  actionBotVersEvenement,
+  construireVueBot,
+  extraireEtatUI,
+  synchroniserOrdreVisibleMain,
+} from "./extraireEtatUI";
 import { calculerDureeTotaleRamassagePli } from "./planRamassagePli";
 import type { ResumeFinManche } from "./resume-fin-manche";
-import { construireResumeFinManche } from "./resume-fin-manche";
 import {
   construireTransitionTriMainInitiale,
   DELAI_SUPPLEMENTAIRE_TRI_MAIN_INITIALE_MS,
@@ -46,7 +45,7 @@ import {
 import { useAnimationsDistribution } from "./useAnimationsDistribution";
 import { useAtlasCartes } from "./useAtlasCartes";
 import { useDelaiBot } from "./useDelaiBot";
-import { creerCarteFactice, estMemeCarte } from "./utils-cartes";
+import { creerCarteFactice } from "./utils-cartes";
 
 // --- Types exposés ---
 
@@ -142,31 +141,6 @@ interface OptionsControleur {
 const INDEX_HUMAIN = 0; // sud
 const NB_CARTES_JEU_BELOTE = 32;
 
-function getPositionPartenaire(position: PositionJoueur): PositionJoueur {
-  const index = POSITIONS_JOUEUR.indexOf(position);
-  return POSITIONS_JOUEUR[(index + 2) % 4];
-}
-
-function synchroniserOrdreVisibleMain(
-  mainVisible: ReadonlyArray<Carte>,
-  mainContexte: ReadonlyArray<Carte>,
-): Carte[] {
-  const cartesRestantes = [...mainContexte];
-  const mainSynchronisee: Carte[] = [];
-
-  for (const carteVisible of mainVisible) {
-    const indexCarte = cartesRestantes.findIndex((carte) =>
-      estMemeCarte(carte, carteVisible),
-    );
-    if (indexCarte === -1) continue;
-
-    mainSynchronisee.push(cartesRestantes[indexCarte]);
-    cartesRestantes.splice(indexCarte, 1);
-  }
-
-  return [...mainSynchronisee, ...cartesRestantes];
-}
-
 function conserverHistoriqueEncheresAvantRedistribution(etat: EtatJeu) {
   if (etat.phaseEncheres !== "encheres2" || etat.historiqueEncheres.length >= 8) {
     return etat.historiqueEncheres;
@@ -260,156 +234,6 @@ export function useControleurJeu({
   const distribRestanteRef = useRef<(ctx: ContextePartie) => void>(() => {});
   const onRevelationTermineeRef = useRef<(() => void) | null>(null);
   const onRetourCarteRetourneeRef = useRef<(() => void) | null>(null);
-
-  // --- Extraire l'état UI depuis le contexte XState ---
-  const extraireEtatUI = useCallback(
-    (contexte: ContextePartie, etatMachine: string): Partial<EtatJeu> => {
-      const position = POSITIONS_JOUEUR[contexte.indexJoueurActif];
-      const estHumain = contexte.indexJoueurActif === INDEX_HUMAIN;
-
-      // Calculer les cartes jouables si c'est le tour du joueur humain en phase jeu
-      let cartesJouables: Carte[] = [];
-      if (estHumain && etatMachine === "jeu" && contexte.couleurAtout) {
-        cartesJouables = getCartesJouables(
-          contexte.mains[INDEX_HUMAIN],
-          contexte.pliEnCours,
-          contexte.couleurAtout,
-          getPositionPartenaire("sud"),
-        );
-      }
-
-      // Mapper l'état machine vers la phase UI
-      let phaseUI: PhaseUI;
-      switch (etatMachine) {
-        case "inactif":
-          phaseUI = "inactif";
-          break;
-        case "distribution":
-        case "distributionRestante":
-        case "redistribution":
-          phaseUI = "distribution";
-          break;
-        case "encheres1":
-        case "encheres2":
-          phaseUI = "encheres";
-          break;
-        case "jeu":
-        case "verificationPli":
-          phaseUI = "jeu";
-          break;
-        case "finPli":
-          phaseUI = "finPli";
-          break;
-        case "scoresManche":
-          phaseUI = "scoresManche";
-          break;
-        case "finPartie":
-          phaseUI = "finPartie";
-          break;
-        default:
-          phaseUI = "inactif";
-      }
-
-      const resumeFinManche =
-        etatMachine === "scoresManche" && contexte.indexPreneur !== null
-          ? construireResumeFinManche({
-              indexPreneur: contexte.indexPreneur,
-              scoreEquipe1: contexte.scoreEquipe1,
-              scoreEquipe2: contexte.scoreEquipe2,
-              scoreMancheEquipe1: contexte.scoreMancheEquipe1,
-              scoreMancheEquipe2: contexte.scoreMancheEquipe2,
-            })
-          : null;
-
-      return {
-        phaseUI,
-        mainJoueur: trierMainJoueur(contexte.mains[INDEX_HUMAIN], {
-          couleurPrioritaire:
-            contexte.couleurAtout ?? contexte.carteRetournee?.couleur ?? null,
-          couleurAtout: contexte.couleurAtout,
-        }),
-        nbCartesAdversaires: {
-          nord: contexte.mains[2].length,
-          est: contexte.mains[3].length,
-          ouest: contexte.mains[1].length,
-        },
-        pliEnCours: contexte.pliEnCours,
-        couleurAtout: contexte.couleurAtout,
-        carteRetournee: contexte.carteRetournee,
-        scoreEquipe1: contexte.scoreEquipe1,
-        scoreEquipe2: contexte.scoreEquipe2,
-        pointsEquipe1: contexte.pointsEquipe1,
-        pointsEquipe2: contexte.pointsEquipe2,
-        scoreMancheEquipe1: contexte.scoreMancheEquipe1,
-        scoreMancheEquipe2: contexte.scoreMancheEquipe2,
-        resumeFinManche,
-        cartesJouables,
-        estTourHumain: estHumain,
-        joueurActif: position,
-        phaseEncheres:
-          etatMachine === "encheres1" || etatMachine === "encheres2" ? etatMachine : null,
-        indexPreneur: contexte.indexPreneur,
-        scoreObjectif: contexte.scoreObjectif,
-        historiquePlis: contexte.historiquePlis,
-        historiqueEncheres: contexte.historiqueEncheres,
-        plisEquipe1: contexte.plisEquipe1,
-        plisEquipe2: contexte.plisEquipe2,
-        annonceBelote: contexte.annonceBelote,
-        indexDonneur: contexte.indexDonneur,
-        nbCartesAnticipeesJoueur: contexte.mains[INDEX_HUMAIN].length,
-        afficherActionsEnchereRedistribution: false,
-      };
-    },
-    [],
-  );
-
-  // --- Construire la vue bot ---
-  const construireVueBot = useCallback(
-    (
-      contexte: ContextePartie,
-      indexBot: number,
-      phaseJeu: "encheres1" | "encheres2" | "jeu",
-    ) => {
-      const position = POSITIONS_JOUEUR[indexBot];
-      const equipeBot = indexBot % 2 === 0 ? "equipe1" : "equipe2";
-
-      return {
-        maMain: contexte.mains[indexBot],
-        maPosition: position,
-        positionPartenaire: getPositionPartenaire(position),
-        couleurAtout: contexte.couleurAtout,
-        pliEnCours: contexte.pliEnCours,
-        couleurDemandee:
-          contexte.pliEnCours.length > 0 ? contexte.pliEnCours[0].carte.couleur : null,
-        historiquePlis: contexte.historiquePlis,
-        scoreMonEquipe:
-          equipeBot === "equipe1" ? contexte.scoreEquipe1 : contexte.scoreEquipe2,
-        scoreAdversaire:
-          equipeBot === "equipe1" ? contexte.scoreEquipe2 : contexte.scoreEquipe1,
-        phaseJeu,
-        carteRetournee: contexte.carteRetournee,
-        historiqueEncheres: contexte.historiqueEncheres,
-        positionPreneur:
-          contexte.indexPreneur !== null ? POSITIONS_JOUEUR[contexte.indexPreneur] : null,
-        positionDonneur: POSITIONS_JOUEUR[contexte.indexDonneur],
-      };
-    },
-    [],
-  );
-
-  // --- Convertir action bot en événement XState ---
-  const actionBotVersEvenement = useCallback((action: ActionBot): EvenementPartie => {
-    switch (action.type) {
-      case "PRENDRE":
-        return { type: "PRENDRE" };
-      case "ANNONCER":
-        return { type: "ANNONCER", couleur: action.couleur };
-      case "PASSER":
-        return { type: "PASSER" };
-      case "JOUER_CARTE":
-        return { type: "JOUER_CARTE", carte: action.carte };
-    }
-  }, []);
 
   // --- Boucle de jeu des bots ---
   const jouerBotSiNecessaire = useCallback(async () => {
@@ -522,13 +346,7 @@ export function useControleurJeu({
       // (la souscription ne peut pas le faire car estOccupe était true quand elle a été appelée)
       setTimeout(() => jouerBotSiNecessaire(), 50);
     }
-  }, [
-    attendreDelaiBot,
-    construireVueBot,
-    difficulte,
-    animations,
-    actionBotVersEvenement,
-  ]);
+  }, [attendreDelaiBot, difficulte, animations]);
 
   // --- Phase 3 : tri et finalisation après distribution ---
   const lancerPhase3 = useCallback(
@@ -639,7 +457,7 @@ export function useControleurJeu({
 
       timeoutsControleurRef.current.push(timeout);
     },
-    [extraireEtatUI, jouerBotSiNecessaire, animDistribution],
+    [jouerBotSiNecessaire, animDistribution],
   );
 
   const construireCartesRetourPaquet = useCallback((): CarteRetourPaquet[] => {
@@ -1003,7 +821,7 @@ export function useControleurJeu({
         },
       );
     },
-    [animations, extraireEtatUI, jouerBotSiNecessaire],
+    [animations, jouerBotSiNecessaire],
   );
 
   const lancerNouvellePartie = useCallback(
@@ -1327,7 +1145,7 @@ export function useControleurJeu({
 
       timeoutsControleurRef.current.push(timeout);
     },
-    [extraireEtatUI, jouerBotSiNecessaire, animDistribution],
+    [jouerBotSiNecessaire, animDistribution],
   );
 
   // --- Animation distribution restante (après enchères) ---

@@ -1,12 +1,14 @@
 import type { Carte, PositionJoueur } from "@belote/shared-types";
 
-import type { EtatJeu } from "./useControleurJeu";
+interface EtatAvecPli {
+  pliEnCours: { joueur: PositionJoueur; carte: Carte }[];
+}
 
-export function ajouterCarteAuPliVisuel(
-  etat: EtatJeu,
+export function ajouterCarteAuPliVisuel<T extends EtatAvecPli>(
+  etat: T,
   joueur: PositionJoueur,
   carte: Carte,
-): EtatJeu {
+): T {
   const dejaPresente = etat.pliEnCours.some(
     (entree) =>
       entree.joueur === joueur &&
