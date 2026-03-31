@@ -4,9 +4,11 @@ import {
   Easing,
   Platform,
   Pressable,
+  type StyleProp,
   StyleSheet,
   Text,
   View,
+  type ViewStyle,
 } from "react-native";
 
 import { ANIMATIONS_DIALOGUE_FIN_MANCHE } from "../../constants/animations-visuelles";
@@ -19,6 +21,181 @@ interface PropsDialogueFinManche {
 }
 
 const estWeb = Platform.OS === "web";
+
+type NiveauEmotionFinManche =
+  | "gain-leger"
+  | "gain-fort"
+  | "gain-max"
+  | "perte-legere"
+  | "perte-forte"
+  | "perte-max";
+
+interface ConfigurationCadranEmotionnel {
+  titre: string;
+  sousTitre: string;
+  niveau: NiveauEmotionFinManche;
+  couleurBordurePanneau: string;
+  couleurOmbrePanneau: string;
+  couleurFondCadran: string;
+  couleurBordureCadran: string;
+  couleurTitreCadran: string;
+  couleurSousTitreCadran: string;
+  couleurFlash: string;
+  couleurHalo: string;
+  couleurMiseEnAvant: string;
+  couleurEclairScore: string;
+  couleurBouton: string;
+  couleurTexteBouton: string;
+  afficherTraits: boolean;
+  afficherCristaux: boolean;
+  afficherEtoiles: boolean;
+}
+
+function estVictoireJoueur(resumeFinManche: ResumeFinManche): boolean {
+  return resumeFinManche.equipeGagnanteManche === "equipe1";
+}
+
+function creerConfigurationCadran(
+  resumeFinManche: ResumeFinManche,
+): ConfigurationCadranEmotionnel {
+  const victoire = estVictoireJoueur(resumeFinManche);
+
+  if (resumeFinManche.estCapot) {
+    if (victoire) {
+      return {
+        titre: "Capot",
+        sousTitre: "celebration maximale",
+        niveau: "gain-max",
+        couleurBordurePanneau: "rgba(230, 183, 48, 1)",
+        couleurOmbrePanneau: "rgba(232, 183, 48, 0.28)",
+        couleurFondCadran: "rgba(212, 160, 23, 0.22)",
+        couleurBordureCadran: "rgba(255, 226, 144, 0.42)",
+        couleurTitreCadran: "#fff7df",
+        couleurSousTitreCadran: "#eadfca",
+        couleurFlash: "rgba(255, 231, 158, 0.98)",
+        couleurHalo: "rgba(255, 206, 92, 0.2)",
+        couleurMiseEnAvant: "#ffe28d",
+        couleurEclairScore: "rgba(232, 183, 48, 0.26)",
+        couleurBouton: COULEURS.boutonPrimaire,
+        couleurTexteBouton: COULEURS.boutonPrimaireTexte,
+        afficherTraits: true,
+        afficherCristaux: false,
+        afficherEtoiles: true,
+      };
+    }
+
+    return {
+      titre: "Capot",
+      sousTitre: "glacial et tranchant",
+      niveau: "perte-max",
+      couleurBordurePanneau: "rgba(182, 220, 255, 0.9)",
+      couleurOmbrePanneau: "rgba(176, 216, 255, 0.24)",
+      couleurFondCadran: "rgba(180, 216, 255, 0.11)",
+      couleurBordureCadran: "rgba(215, 240, 255, 0.34)",
+      couleurTitreCadran: "#f6fbff",
+      couleurSousTitreCadran: "#dbe8f2",
+      couleurFlash: "rgba(228, 246, 255, 0.98)",
+      couleurHalo: "rgba(198, 234, 255, 0.16)",
+      couleurMiseEnAvant: "#f2fbff",
+      couleurEclairScore: "rgba(176, 216, 255, 0.24)",
+      couleurBouton: "#d6e7f4",
+      couleurTexteBouton: "#143040",
+      afficherTraits: true,
+      afficherCristaux: true,
+      afficherEtoiles: false,
+    };
+  }
+
+  if (resumeFinManche.estChute) {
+    if (victoire) {
+      return {
+        titre: "Ils sont dedans",
+        sousTitre: "petit yahou",
+        niveau: "gain-fort",
+        couleurBordurePanneau: "rgba(230, 183, 48, 0.96)",
+        couleurOmbrePanneau: "rgba(232, 183, 48, 0.22)",
+        couleurFondCadran: "rgba(232, 183, 48, 0.15)",
+        couleurBordureCadran: "rgba(255, 226, 144, 0.3)",
+        couleurTitreCadran: "#fff4d2",
+        couleurSousTitreCadran: "#e4d5b7",
+        couleurFlash: "rgba(255, 225, 140, 0.96)",
+        couleurHalo: "rgba(255, 195, 74, 0.18)",
+        couleurMiseEnAvant: "#ffdf84",
+        couleurEclairScore: "rgba(232, 183, 48, 0.22)",
+        couleurBouton: COULEURS.boutonPrimaire,
+        couleurTexteBouton: COULEURS.boutonPrimaireTexte,
+        afficherTraits: true,
+        afficherCristaux: false,
+        afficherEtoiles: false,
+      };
+    }
+
+    return {
+      titre: "Vous etes dedans",
+      sousTitre: "plus froid, plus sec",
+      niveau: "perte-forte",
+      couleurBordurePanneau: "rgba(170, 210, 255, 0.78)",
+      couleurOmbrePanneau: "rgba(170, 210, 255, 0.2)",
+      couleurFondCadran: "rgba(170, 210, 255, 0.1)",
+      couleurBordureCadran: "rgba(200, 232, 255, 0.28)",
+      couleurTitreCadran: "#f2f9ff",
+      couleurSousTitreCadran: "#d2e2ef",
+      couleurFlash: "rgba(220, 242, 255, 0.94)",
+      couleurHalo: "rgba(190, 228, 255, 0.13)",
+      couleurMiseEnAvant: "#e5f5ff",
+      couleurEclairScore: "rgba(170, 210, 255, 0.2)",
+      couleurBouton: "#cad9e6",
+      couleurTexteBouton: "#173241",
+      afficherTraits: false,
+      afficherCristaux: true,
+      afficherEtoiles: false,
+    };
+  }
+
+  if (victoire) {
+    return {
+      titre: resumeFinManche.messageVerdict,
+      sousTitre: "chaleur legere",
+      niveau: "gain-leger",
+      couleurBordurePanneau: "rgba(230, 183, 48, 0.9)",
+      couleurOmbrePanneau: "rgba(232, 183, 48, 0.18)",
+      couleurFondCadran: "rgba(232, 183, 48, 0.1)",
+      couleurBordureCadran: "rgba(255, 215, 107, 0.22)",
+      couleurTitreCadran: "#fff0c1",
+      couleurSousTitreCadran: "#d9cab1",
+      couleurFlash: "rgba(255, 225, 140, 0.92)",
+      couleurHalo: "rgba(255, 196, 74, 0.12)",
+      couleurMiseEnAvant: "#ffd76c",
+      couleurEclairScore: "rgba(232, 183, 48, 0.18)",
+      couleurBouton: COULEURS.boutonPrimaire,
+      couleurTexteBouton: COULEURS.boutonPrimaireTexte,
+      afficherTraits: false,
+      afficherCristaux: false,
+      afficherEtoiles: false,
+    };
+  }
+
+  return {
+    titre: "Defaite",
+    sousTitre: "glace legere",
+    niveau: "perte-legere",
+    couleurBordurePanneau: "rgba(170, 210, 255, 0.62)",
+    couleurOmbrePanneau: "rgba(170, 210, 255, 0.16)",
+    couleurFondCadran: "rgba(170, 210, 255, 0.08)",
+    couleurBordureCadran: "rgba(190, 226, 255, 0.2)",
+    couleurTitreCadran: "#eef7ff",
+    couleurSousTitreCadran: "#c5d9e9",
+    couleurFlash: "rgba(215, 240, 255, 0.88)",
+    couleurHalo: "rgba(190, 228, 255, 0.09)",
+    couleurMiseEnAvant: "#d8efff",
+    couleurEclairScore: "rgba(170, 210, 255, 0.16)",
+    couleurBouton: "#cad9e6",
+    couleurTexteBouton: "#173241",
+    afficherTraits: false,
+    afficherCristaux: false,
+    afficherEtoiles: false,
+  };
+}
 
 function useCompteurAnime(
   debut: number,
@@ -74,15 +251,18 @@ export function DialogueFinManche({
 }: PropsDialogueFinManche) {
   const [afficherVerdict, setAfficherVerdict] = useState(false);
   const [afficherDetails, setAfficherDetails] = useState(false);
-  const [afficherCapot, setAfficherCapot] = useState(false);
   const [afficherTotal, setAfficherTotal] = useState(false);
   const [afficherBouton, setAfficherBouton] = useState(false);
+
+  const configurationCadran = useMemo(
+    () => creerConfigurationCadran(resumeFinManche),
+    [resumeFinManche],
+  );
 
   const animOverlay = useRef(new Animated.Value(0)).current;
   const animPanneau = useRef(new Animated.Value(0)).current;
   const animVerdict = useRef(new Animated.Value(0)).current;
   const animDetails = useRef(new Animated.Value(0)).current;
-  const animCapot = useRef(new Animated.Value(0)).current;
   const animTotal = useRef(new Animated.Value(0)).current;
   const animBouton = useRef(new Animated.Value(0)).current;
   const animEclair1 = useRef(new Animated.Value(0)).current;
@@ -152,11 +332,6 @@ export function DialogueFinManche({
         );
       }, ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiDetails),
       setTimeout(() => {
-        if (!resumeFinManche.estCapot) return;
-        setAfficherCapot(true);
-        animerEntreeBloc(animCapot, ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeAnimationCapot);
-      }, ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiCapot),
-      setTimeout(() => {
         setAfficherTotal(true);
         animerEntreeBloc(animTotal, ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeApparitionTotal);
       }, delaiAffichageTotal),
@@ -174,7 +349,6 @@ export function DialogueFinManche({
     };
   }, [
     animBouton,
-    animCapot,
     animDetails,
     animOverlay,
     animPanneau,
@@ -230,6 +404,10 @@ export function DialogueFinManche({
         style={[
           styles.panneau,
           {
+            borderColor: configurationCadran.couleurBordurePanneau,
+            shadowColor: configurationCadran.couleurOmbrePanneau,
+          },
+          {
             opacity: animPanneau,
             transform: [
               {
@@ -246,8 +424,13 @@ export function DialogueFinManche({
 
         {afficherVerdict ? (
           <Animated.View
+            testID="cadran-fin-manche"
             style={[
-              styles.blocVerdict,
+              styles.cadran,
+              {
+                backgroundColor: configurationCadran.couleurFondCadran,
+                borderColor: configurationCadran.couleurBordureCadran,
+              },
               {
                 opacity: animVerdict,
                 transform: [
@@ -257,11 +440,312 @@ export function DialogueFinManche({
                       outputRange: [10, 0],
                     }),
                   },
+                  {
+                    scale: animVerdict.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.96, 1],
+                    }),
+                  },
                 ],
               },
             ]}
           >
-            <Text style={styles.texteVerdict}>{resumeFinManche.messageVerdict}</Text>
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.haloCadran,
+                {
+                  backgroundColor: configurationCadran.couleurHalo,
+                  opacity: animVerdict.interpolate({
+                    inputRange: [0, 0.55, 0.7, 1],
+                    outputRange: [0, 0, 0.9, 0],
+                  }),
+                },
+              ]}
+            />
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.flashCadran,
+                {
+                  backgroundColor: configurationCadran.couleurFlash,
+                  opacity: animVerdict.interpolate({
+                    inputRange: [0, 0.52, 0.62, 1],
+                    outputRange: [0, 0, 1, 0],
+                  }),
+                  transform: [
+                    {
+                      scaleX: animVerdict.interpolate({
+                        inputRange: [0, 0.52, 0.62, 1],
+                        outputRange: [0.1, 0.1, 1.12, 1.12],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            />
+
+            {configurationCadran.afficherTraits ? (
+              <>
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    styles.traitCadran,
+                    styles.trait1,
+                    {
+                      backgroundColor: configurationCadran.couleurFlash,
+                      opacity: animVerdict.interpolate({
+                        inputRange: [0, 0.58, 0.64, 1],
+                        outputRange: [0, 0, 1, 0],
+                      }),
+                      transform: [
+                        { rotate: "18deg" },
+                        {
+                          translateX: animVerdict.interpolate({
+                            inputRange: [0, 0.58, 0.64, 1],
+                            outputRange: [0, 0, -6, -8],
+                          }),
+                        },
+                        {
+                          translateY: animVerdict.interpolate({
+                            inputRange: [0, 0.58, 0.64, 1],
+                            outputRange: [0, 0, -10, -14],
+                          }),
+                        },
+                        {
+                          scaleY: animVerdict.interpolate({
+                            inputRange: [0, 0.58, 0.64, 1],
+                            outputRange: [0.2, 0.2, 1, 1.2],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                />
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    styles.traitCadran,
+                    styles.trait2,
+                    {
+                      backgroundColor: configurationCadran.couleurFlash,
+                      opacity: animVerdict.interpolate({
+                        inputRange: [0, 0.6, 0.66, 1],
+                        outputRange: [0, 0, 1, 0],
+                      }),
+                      transform: [
+                        { rotate: "-24deg" },
+                        {
+                          translateX: animVerdict.interpolate({
+                            inputRange: [0, 0.6, 0.66, 1],
+                            outputRange: [0, 0, 6, 10],
+                          }),
+                        },
+                        {
+                          translateY: animVerdict.interpolate({
+                            inputRange: [0, 0.6, 0.66, 1],
+                            outputRange: [0, 0, -10, -14],
+                          }),
+                        },
+                        {
+                          scaleY: animVerdict.interpolate({
+                            inputRange: [0, 0.6, 0.66, 1],
+                            outputRange: [0.2, 0.2, 1, 1.2],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                />
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    styles.traitCadran,
+                    styles.trait3,
+                    {
+                      backgroundColor: configurationCadran.couleurFlash,
+                      opacity: animVerdict.interpolate({
+                        inputRange: [0, 0.62, 0.68, 1],
+                        outputRange: [0, 0, 1, 0],
+                      }),
+                      transform: [
+                        { rotate: "-56deg" },
+                        {
+                          translateX: animVerdict.interpolate({
+                            inputRange: [0, 0.62, 0.68, 1],
+                            outputRange: [0, 0, -6, -9],
+                          }),
+                        },
+                        {
+                          translateY: animVerdict.interpolate({
+                            inputRange: [0, 0.62, 0.68, 1],
+                            outputRange: [0, 0, 8, 14],
+                          }),
+                        },
+                        {
+                          scaleY: animVerdict.interpolate({
+                            inputRange: [0, 0.62, 0.68, 1],
+                            outputRange: [0.2, 0.2, 1, 1.2],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                />
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    styles.traitCadran,
+                    styles.trait4,
+                    {
+                      backgroundColor: configurationCadran.couleurFlash,
+                      opacity: animVerdict.interpolate({
+                        inputRange: [0, 0.64, 0.7, 1],
+                        outputRange: [0, 0, 1, 0],
+                      }),
+                      transform: [
+                        { rotate: "58deg" },
+                        {
+                          translateX: animVerdict.interpolate({
+                            inputRange: [0, 0.64, 0.7, 1],
+                            outputRange: [0, 0, 6, 9],
+                          }),
+                        },
+                        {
+                          translateY: animVerdict.interpolate({
+                            inputRange: [0, 0.64, 0.7, 1],
+                            outputRange: [0, 0, 8, 14],
+                          }),
+                        },
+                        {
+                          scaleY: animVerdict.interpolate({
+                            inputRange: [0, 0.64, 0.7, 1],
+                            outputRange: [0.2, 0.2, 1, 1.2],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                />
+              </>
+            ) : null}
+
+            {configurationCadran.afficherCristaux ? (
+              <>
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    styles.cristalCadran,
+                    styles.cristal1,
+                    {
+                      borderColor: configurationCadran.couleurFlash,
+                      opacity: animVerdict.interpolate({
+                        inputRange: [0, 0.6, 0.67, 1],
+                        outputRange: [0, 0, 1, 0],
+                      }),
+                      transform: [
+                        { rotate: "45deg" },
+                        {
+                          scale: animVerdict.interpolate({
+                            inputRange: [0, 0.6, 0.67, 1],
+                            outputRange: [0.2, 0.2, 1, 1.24],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                />
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    styles.cristalCadran,
+                    styles.cristal2,
+                    {
+                      borderColor: configurationCadran.couleurFlash,
+                      opacity: animVerdict.interpolate({
+                        inputRange: [0, 0.63, 0.7, 1],
+                        outputRange: [0, 0, 1, 0],
+                      }),
+                      transform: [
+                        { rotate: "45deg" },
+                        {
+                          scale: animVerdict.interpolate({
+                            inputRange: [0, 0.63, 0.7, 1],
+                            outputRange: [0.2, 0.2, 1, 1.24],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                />
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    styles.cristalCadran,
+                    styles.cristal3,
+                    {
+                      borderColor: configurationCadran.couleurFlash,
+                      opacity: animVerdict.interpolate({
+                        inputRange: [0, 0.66, 0.73, 1],
+                        outputRange: [0, 0, 1, 0],
+                      }),
+                      transform: [
+                        { rotate: "45deg" },
+                        {
+                          scale: animVerdict.interpolate({
+                            inputRange: [0, 0.66, 0.73, 1],
+                            outputRange: [0.2, 0.2, 1, 1.24],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                />
+              </>
+            ) : null}
+
+            {configurationCadran.afficherEtoiles ? (
+              <>
+                <OrnementEtoile
+                  animation={animVerdict}
+                  couleur={configurationCadran.couleurFlash}
+                  style={styles.etoile1}
+                  palierDebut={0.6}
+                  palierPic={0.67}
+                />
+                <OrnementEtoile
+                  animation={animVerdict}
+                  couleur={configurationCadran.couleurFlash}
+                  style={styles.etoile2}
+                  palierDebut={0.63}
+                  palierPic={0.7}
+                />
+                <OrnementEtoile
+                  animation={animVerdict}
+                  couleur={configurationCadran.couleurFlash}
+                  style={styles.etoile3}
+                  palierDebut={0.66}
+                  palierPic={0.73}
+                />
+              </>
+            ) : null}
+
+            <Text
+              style={[
+                styles.texteVerdict,
+                { color: configurationCadran.couleurTitreCadran },
+              ]}
+            >
+              {configurationCadran.titre}
+            </Text>
+            <Text
+              style={[
+                styles.texteSousTitreCadran,
+                { color: configurationCadran.couleurSousTitreCadran },
+              ]}
+            >
+              {configurationCadran.sousTitre}
+            </Text>
           </Animated.View>
         ) : null}
 
@@ -286,42 +770,14 @@ export function DialogueFinManche({
               testID="points-manche-nous"
               texte={`Vous +${resumeFinManche.scoreMancheEquipe1}`}
               estMisEnAvant={resumeFinManche.equipeGagnanteManche === "equipe1"}
+              couleurMiseEnAvant={configurationCadran.couleurMiseEnAvant}
             />
             <TextePointsManche
               testID="points-manche-eux"
               texte={`Adversaires +${resumeFinManche.scoreMancheEquipe2}`}
               estMisEnAvant={resumeFinManche.equipeGagnanteManche === "equipe2"}
+              couleurMiseEnAvant={configurationCadran.couleurMiseEnAvant}
             />
-          </Animated.View>
-        ) : null}
-
-        {afficherCapot ? (
-          <Animated.View
-            testID="animation-capot"
-            style={[
-              styles.capot,
-              resumeFinManche.equipeCapot === "equipe1"
-                ? styles.capotNous
-                : styles.capotEux,
-              {
-                opacity: animCapot,
-                transform: [
-                  {
-                    scale: animCapot.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.96, 1],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          >
-            <Text style={styles.capotTitre}>Capot</Text>
-            <Text style={styles.capotTexte}>
-              {resumeFinManche.equipeCapot === "equipe1"
-                ? "Vous prenez tous les plis"
-                : "Les adversaires prennent tous les plis"}
-            </Text>
           </Animated.View>
         ) : null}
 
@@ -350,11 +806,13 @@ export function DialogueFinManche({
                 label="Vous"
                 score={compteur1}
                 animationEclair={animEclair1}
+                couleurEclair={configurationCadran.couleurEclairScore}
               />
               <LigneScoreTotal
                 label="Adversaires"
                 score={compteur2}
                 animationEclair={animEclair2}
+                couleurEclair={configurationCadran.couleurEclairScore}
               />
             </Animated.View>
           </>
@@ -362,8 +820,21 @@ export function DialogueFinManche({
 
         {afficherBouton ? (
           <Animated.View style={{ opacity: animBouton }}>
-            <Pressable style={styles.bouton} onPress={onContinuer}>
-              <Text style={styles.texteBouton}>Continuer</Text>
+            <Pressable
+              style={[
+                styles.bouton,
+                { backgroundColor: configurationCadran.couleurBouton },
+              ]}
+              onPress={onContinuer}
+            >
+              <Text
+                style={[
+                  styles.texteBouton,
+                  { color: configurationCadran.couleurTexteBouton },
+                ]}
+              >
+                Continuer
+              </Text>
             </Pressable>
           </Animated.View>
         ) : null}
@@ -373,10 +844,12 @@ export function DialogueFinManche({
 }
 
 function TextePointsManche({
+  couleurMiseEnAvant,
   estMisEnAvant,
   testID,
   texte,
 }: {
+  couleurMiseEnAvant: string;
   estMisEnAvant: boolean;
   testID: string;
   texte: string;
@@ -384,19 +857,71 @@ function TextePointsManche({
   return (
     <Text
       testID={testID}
-      style={[styles.textePointsManche, estMisEnAvant && styles.textePointsMisEnAvant]}
+      style={[
+        styles.textePointsManche,
+        estMisEnAvant && { color: couleurMiseEnAvant, fontWeight: "700" },
+      ]}
     >
       {texte}
     </Text>
   );
 }
 
+function OrnementEtoile({
+  animation,
+  couleur,
+  palierDebut,
+  palierPic,
+  style,
+}: {
+  animation: Animated.Value;
+  couleur: string;
+  palierDebut: number;
+  palierPic: number;
+  style: StyleProp<ViewStyle>;
+}) {
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.etoileCadran,
+        style,
+        {
+          opacity: animation.interpolate({
+            inputRange: [0, palierDebut, palierPic, 1],
+            outputRange: [0, 0, 1, 0],
+          }),
+          transform: [
+            {
+              scale: animation.interpolate({
+                inputRange: [0, palierDebut, palierPic, 1],
+                outputRange: [0.2, 0.2, 1.08, 1.25],
+              }),
+            },
+            {
+              rotate: animation.interpolate({
+                inputRange: [0, palierDebut, palierPic, 1],
+                outputRange: ["0deg", "0deg", "45deg", "90deg"],
+              }),
+            },
+          ],
+        },
+      ]}
+    >
+      <View style={[styles.brancheEtoileVerticale, { backgroundColor: couleur }]} />
+      <View style={[styles.brancheEtoileHorizontale, { backgroundColor: couleur }]} />
+    </Animated.View>
+  );
+}
+
 function LigneScoreTotal({
   animationEclair,
+  couleurEclair,
   label,
   score,
 }: {
   animationEclair: Animated.Value;
+  couleurEclair: string;
   label: string;
   score: number;
 }) {
@@ -408,6 +933,7 @@ function LigneScoreTotal({
           style={[
             styles.eclairScore,
             {
+              backgroundColor: couleurEclair,
               opacity: animationEclair,
               transform: [
                 {
@@ -461,16 +987,117 @@ const styles = StyleSheet.create({
     textAlign: "center",
     letterSpacing: 0.5,
   },
-  blocVerdict: {
+  cadran: {
     alignItems: "center",
     justifyContent: "center",
-    minHeight: estWeb ? 34 : 30,
+    minHeight: estWeb ? 82 : 76,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingVertical: estWeb ? 12 : 10,
+    paddingHorizontal: estWeb ? 16 : 12,
+    overflow: "hidden",
   },
   texteVerdict: {
-    color: COULEURS.accent,
-    fontSize: estWeb ? 22 : 18,
-    fontWeight: "bold",
+    fontSize: estWeb ? 18 : 16,
+    fontWeight: "700",
     textAlign: "center",
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+  },
+  texteSousTitreCadran: {
+    fontSize: estWeb ? 14 : 12,
+    textAlign: "center",
+    marginTop: 4,
+  },
+  haloCadran: {
+    position: "absolute",
+    top: -16,
+    left: -16,
+    right: -16,
+    bottom: -16,
+    borderRadius: 999,
+  },
+  flashCadran: {
+    position: "absolute",
+    left: "-10%",
+    right: "-10%",
+    top: "50%",
+    height: 2,
+    marginTop: -1,
+  },
+  traitCadran: {
+    position: "absolute",
+    width: 2,
+    height: 16,
+    borderRadius: 999,
+  },
+  trait1: {
+    top: 10,
+    left: 18,
+  },
+  trait2: {
+    top: 12,
+    right: 22,
+  },
+  trait3: {
+    bottom: 14,
+    left: 44,
+  },
+  trait4: {
+    bottom: 18,
+    right: 46,
+  },
+  cristalCadran: {
+    position: "absolute",
+    width: 12,
+    height: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderWidth: 1,
+  },
+  cristal1: {
+    top: 10,
+    left: 22,
+  },
+  cristal2: {
+    top: 14,
+    right: 28,
+  },
+  cristal3: {
+    bottom: 14,
+    right: 54,
+  },
+  etoileCadran: {
+    position: "absolute",
+    width: 10,
+    height: 10,
+  },
+  etoile1: {
+    top: 8,
+    left: 26,
+  },
+  etoile2: {
+    top: 14,
+    right: 30,
+  },
+  etoile3: {
+    bottom: 16,
+    right: 56,
+  },
+  brancheEtoileVerticale: {
+    position: "absolute",
+    left: 4,
+    top: 0,
+    width: 2,
+    height: 10,
+    borderRadius: 999,
+  },
+  brancheEtoileHorizontale: {
+    position: "absolute",
+    left: 0,
+    top: 4,
+    width: 10,
+    height: 2,
+    borderRadius: 999,
   },
   blocSection: {
     gap: estWeb ? 8 : 6,
@@ -478,39 +1105,6 @@ const styles = StyleSheet.create({
   textePointsManche: {
     color: COULEURS.textePrincipal,
     fontSize: estWeb ? 17 : 15,
-    textAlign: "center",
-  },
-  textePointsMisEnAvant: {
-    color: "#ffd700",
-    fontWeight: "700",
-  },
-  capot: {
-    borderRadius: 14,
-    paddingVertical: estWeb ? 12 : 10,
-    paddingHorizontal: estWeb ? 16 : 12,
-    alignItems: "center",
-    gap: 2,
-  },
-  capotNous: {
-    backgroundColor: "rgba(212, 160, 23, 0.18)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 215, 0, 0.35)",
-  },
-  capotEux: {
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.18)",
-  },
-  capotTitre: {
-    color: COULEURS.textePrincipal,
-    fontSize: estWeb ? 18 : 16,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 1.2,
-  },
-  capotTexte: {
-    color: COULEURS.texteSecondaire,
-    fontSize: estWeb ? 14 : 12,
     textAlign: "center",
   },
   separateur: {
@@ -552,17 +1146,14 @@ const styles = StyleSheet.create({
     width: "120%",
     height: "140%",
     borderRadius: 8,
-    backgroundColor: "rgba(212, 160, 23, 0.25)",
   },
   bouton: {
-    backgroundColor: COULEURS.boutonPrimaire,
     paddingVertical: 13,
     borderRadius: 10,
     alignItems: "center",
     marginTop: 10,
   },
   texteBouton: {
-    color: COULEURS.boutonPrimaireTexte,
     fontWeight: "bold",
     fontSize: estWeb ? 16 : 14,
     letterSpacing: 0.3,

@@ -20,6 +20,23 @@ const RESUME_CONTRAT_REMPLI = {
   scoreApresEquipe2: 74,
 };
 
+const RESUME_DEFAITE_NORMALE = {
+  verdict: "contrat-rempli" as const,
+  messageVerdict: "Contrat rempli !" as const,
+  equipePreneur: "equipe2" as const,
+  equipeGagnanteManche: "equipe2" as const,
+  estContratRempli: true,
+  estChute: false,
+  estCapot: false,
+  equipeCapot: null,
+  scoreAvantEquipe1: 110,
+  scoreAvantEquipe2: 90,
+  scoreMancheEquipe1: 72,
+  scoreMancheEquipe2: 90,
+  scoreApresEquipe1: 182,
+  scoreApresEquipe2: 180,
+};
+
 describe("DialogueFinManche", () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -32,7 +49,7 @@ describe("DialogueFinManche", () => {
     jest.useRealTimers();
   });
 
-  it("enchaine automatiquement titre, verdict, details puis score total", () => {
+  it("enchaine automatiquement titre, cadran, details puis score total", () => {
     render(
       <DialogueFinManche
         resumeFinManche={RESUME_CONTRAT_REMPLI}
@@ -44,6 +61,7 @@ describe("DialogueFinManche", () => {
     expect(screen.queryByText("Contrat rempli !")).toBeNull();
     expect(screen.queryByText("Vous +92")).toBeNull();
     expect(screen.queryByText("Score total")).toBeNull();
+    expect(screen.queryByTestId("cadran-fin-manche")).toBeNull();
 
     act(() => {
       jest.advanceTimersByTime(400);
@@ -56,6 +74,7 @@ describe("DialogueFinManche", () => {
       jest.advanceTimersByTime(100);
     });
 
+    expect(screen.getByTestId("cadran-fin-manche")).toBeTruthy();
     expect(screen.getByText("Contrat rempli !")).toBeTruthy();
     expect(screen.queryByText("Vous +92")).toBeNull();
 
@@ -92,7 +111,7 @@ describe("DialogueFinManche", () => {
     expect(screen.getByText("Continuer")).toBeTruthy();
   });
 
-  it("affiche un indicateur de capot quand une equipe capote", () => {
+  it("affiche le capot dans le cadran sans bloc separe", () => {
     render(
       <DialogueFinManche
         resumeFinManche={{
@@ -112,8 +131,10 @@ describe("DialogueFinManche", () => {
       jest.advanceTimersByTime(1700);
     });
 
-    expect(screen.getByTestId("animation-capot")).toBeTruthy();
+    expect(screen.getByTestId("cadran-fin-manche")).toBeTruthy();
     expect(screen.getByText("Capot")).toBeTruthy();
+    expect(screen.queryByTestId("animation-capot")).toBeNull();
+    expect(screen.queryByText("Vous prenez tous les plis")).toBeNull();
   });
 
   it("garde un panneau de hauteur fixe des l'ouverture", () => {
@@ -129,5 +150,22 @@ describe("DialogueFinManche", () => {
     );
 
     expect(stylePanneau.minHeight).toBe(320);
+  });
+
+  it("affiche 'Defaite' dans le cadran pour une manche perdue sans chute", () => {
+    render(
+      <DialogueFinManche
+        resumeFinManche={RESUME_DEFAITE_NORMALE}
+        onContinuer={jest.fn()}
+      />,
+    );
+
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
+
+    expect(screen.getByTestId("cadran-fin-manche")).toBeTruthy();
+    expect(screen.getByText("Defaite")).toBeTruthy();
+    expect(screen.queryByText("Contrat rempli !")).toBeNull();
   });
 });
