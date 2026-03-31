@@ -1,6 +1,7 @@
 import type { Carte, PositionJoueur } from "@belote/shared-types";
 import { POSITIONS_JOUEUR } from "@belote/shared-types";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Platform } from "react-native";
 import {
   Easing,
   makeMutable,
@@ -166,9 +167,10 @@ export function useAnimationsDistribution(
       const { distribution } = ANIMATIONS;
       const { largeurCellule, hauteurCellule } = atlas;
       const { largeur: largeurEcran, hauteur: hauteurEcran } = dimensionsEcran;
+      const doitAttendreImage = Platform.OS !== "web";
 
       if (
-        !atlas.image ||
+        (doitAttendreImage && !atlas.image) ||
         largeurCellule === 0 ||
         largeurEcran === 0 ||
         hauteurEcran === 0
@@ -515,7 +517,7 @@ export function useAnimationsDistribution(
 
   useEffect(() => {
     const appelEnAttente = appelEnAttenteRef.current;
-    if (atlas.image && appelEnAttente) {
+    if ((Platform.OS === "web" || atlas.image) && appelEnAttente) {
       appelEnAttenteRef.current = null;
       lancerDistribution(appelEnAttente.mains, appelEnAttente.options);
     }

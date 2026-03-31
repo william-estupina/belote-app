@@ -1,5 +1,6 @@
 import type { Carte, PositionJoueur } from "@belote/shared-types";
 import { act, renderHook } from "@testing-library/react-native";
+import { Platform } from "react-native";
 
 import { ANIMATIONS } from "../constants/layout";
 import { calculerCiblesEventailAdversaire } from "../hooks/distributionLayoutAtlas";
@@ -73,6 +74,15 @@ function creerMain(position: PositionJoueur, quantite: number, base: number): Ca
 }
 
 describe("useAnimationsDistribution", () => {
+  const plateformeOriginale = Platform.OS;
+
+  afterEach(() => {
+    Object.defineProperty(Platform, "OS", {
+      configurable: true,
+      value: plateformeOriginale,
+    });
+  });
+
   it("conserve les cartes adverses deja en main pendant la distribution restante dans le pool unique", () => {
     const atlas: AtlasCartes = {
       image: {
@@ -328,5 +338,36 @@ describe("useAnimationsDistribution", () => {
         .every((progression) => progression.value < 0),
     ).toBe(true);
     expect(result.current.enCours).toBe(true);
+  });
+
+  it("demarre aussi la distribution sur le web quand l'image atlas est absente", () => {
+    Object.defineProperty(Platform, "OS", {
+      configurable: true,
+      value: "web",
+    });
+
+    const atlas: AtlasCartes = {
+      image: null,
+      largeurCellule: 167,
+      hauteurCellule: 243,
+      rectSource: () => ({ x: 0, y: 0, width: 167, height: 243 }),
+      rectDos: () => ({ x: 0, y: 972, width: 167, height: 243 }),
+    };
+
+    const { result } = renderHook(() =>
+      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }),
+    );
+
+    act(() => {
+      result.current.lancerDistribution({
+        sud: creerMain("sud", 5, 0),
+        ouest: creerMain("ouest", 5, 10),
+        nord: creerMain("nord", 5, 20),
+        est: creerMain("est", 5, 30),
+      });
+    });
+
+    expect(result.current.enCours).toBe(true);
+    expect(result.current.nbCartesActives.value).toBeGreaterThan(0);
   });
 });
