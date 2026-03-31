@@ -264,14 +264,14 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
             }));
           } else {
             cartesSudAccumulees.push(...cartes);
+            setEtatJeu((prev) => ({
+              ...prev,
+              mainJoueur: [...cartesSudAccumulees],
+            }));
           }
 
           cartesRecues += cartes.length;
           if (cartesRecues >= totalCartesAttendues) {
-            setEtatJeu((prev) => ({
-              ...prev,
-              mainJoueur: [...prev.mainJoueur, ...cartesSudAccumulees],
-            }));
             lancerPhase3(contexte);
           }
         },
@@ -478,6 +478,7 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
       const sudEstPreneur = indexPreneur === 0;
       const nbCartesExistantesSud =
         sudEstPreneur && !estPreneurPremier && carteRetournee ? 6 : 5;
+      const mainSudAvantDistributionRestante = [...etatJeuRef.current.mainJoueur];
 
       let totalCartesAttendues = 0;
       for (const pos of POSITIONS_JOUEUR) {
@@ -531,14 +532,17 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
           }));
         } else {
           cartesSudAccumuleesRestante.push(...cartes);
+          setEtatJeu((prev) => ({
+            ...prev,
+            mainJoueur: [
+              ...mainSudAvantDistributionRestante,
+              ...cartesSudAccumuleesRestante,
+            ],
+          }));
         }
 
         cartesRecues += cartes.length;
         if (cartesRecues >= totalCartesAttendues) {
-          setEtatJeu((prev) => ({
-            ...prev,
-            mainJoueur: [...prev.mainJoueur, ...cartesSudAccumuleesRestante],
-          }));
           lancerPhase3Restante(contexte);
         }
       };
