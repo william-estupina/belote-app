@@ -217,6 +217,25 @@ describe("useControleurJeu - redistribution", () => {
     expect(result.current.etatJeu.carteRetournee).not.toBeNull();
   });
 
+  it("conserve les 12 cartes restantes dans le paquet a la fin de la donne initiale", async () => {
+    const { result } = renderHook(() =>
+      useControleurJeu({
+        difficulte: "facile",
+        scoreObjectif: 1000,
+        largeurEcran: 1280,
+        hauteurEcran: 720,
+      }),
+    );
+
+    expect(result.current.etatJeu.phaseUI).toBe("distribution");
+    expect(result.current.etatJeu.cartesRestantesPaquet).toBe(12);
+
+    await viderFileEvenements();
+
+    expect(result.current.etatJeu.phaseUI).toBe("revelationCarte");
+    expect(result.current.etatJeu.cartesRestantesPaquet).toBe(12);
+  });
+
   it("appelle directement finaliserEntreeEncheres si les dimensions sont nulles au moment de la transition", async () => {
     const { result } = renderHook(
       ({ largeurEcran, hauteurEcran }) =>

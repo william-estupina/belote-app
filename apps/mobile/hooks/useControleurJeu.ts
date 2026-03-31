@@ -139,6 +139,7 @@ interface OptionsControleur {
 // --- Constantes ---
 
 const INDEX_HUMAIN = 0; // sud
+const NB_CARTES_JEU_BELOTE = 32;
 const COULEURS_FACTICES: Couleur[] = ["pique", "coeur", "carreau", "trefle"];
 const RANGS_FACTICES = ["7", "8", "9", "10", "valet", "dame", "roi", "as"] as const;
 
@@ -794,7 +795,7 @@ export function useControleurJeu({
         mainJoueur: [],
         nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
         pliEnCours: [],
-        cartesRestantesPaquet: totalCartesAttendues,
+        cartesRestantesPaquet: NB_CARTES_JEU_BELOTE,
         nbCartesAnticipeesJoueur: 0,
         triMainDiffere: false,
         dernierPliVisible: null,
@@ -806,6 +807,12 @@ export function useControleurJeu({
       }));
 
       let cartesRecues = 0;
+      // Compteur local pour nbCartesAnticipeesJoueur — évite de lire
+      // prev.mainJoueur.length (qui reste vide pendant la distribution).
+      let cartesSudEnvoyees = 0;
+      // Accumulation locale des cartes sud pour un seul setEtatJeu à la fin,
+      // évitant les re-renders lourds de MainJoueur pendant l'animation Est.
+      const cartesSudAccumulees: Carte[] = [];
 
       animDistribution.lancerDistribution(mainsRecord, {
         indexDonneur: contexte.indexDonneur,
@@ -813,24 +820,16 @@ export function useControleurJeu({
         onPaquetDepart: (position, cartes) => {
           if (position !== "sud" || estDemonte.current) return;
 
+          cartesSudEnvoyees += cartes.length;
           setEtatJeu((prev) => ({
             ...prev,
-            nbCartesAnticipeesJoueur: Math.max(
-              prev.nbCartesAnticipeesJoueur,
-              prev.mainJoueur.length + cartes.length,
-            ),
+            nbCartesAnticipeesJoueur: cartesSudEnvoyees,
           }));
         },
         onPaquetArrive: (position, cartes) => {
           if (estDemonte.current) return;
 
-          if (position === "sud") {
-            setEtatJeu((prev) => ({
-              ...prev,
-              mainJoueur: [...prev.mainJoueur, ...cartes],
-              cartesRestantesPaquet: prev.cartesRestantesPaquet - cartes.length,
-            }));
-          } else {
+          if (position !== "sud") {
             setEtatJeu((prev) => ({
               ...prev,
               nbCartesAdversaires: {
@@ -841,10 +840,22 @@ export function useControleurJeu({
               },
               cartesRestantesPaquet: prev.cartesRestantesPaquet - cartes.length,
             }));
+          } else {
+            cartesSudAccumulees.push(...cartes);
+            setEtatJeu((prev) => ({
+              ...prev,
+              cartesRestantesPaquet: prev.cartesRestantesPaquet - cartes.length,
+            }));
           }
 
           cartesRecues += cartes.length;
           if (cartesRecues >= totalCartesAttendues) {
+            // Pousser toutes les cartes sud en un seul batch avant lancerPhase3,
+            // pour que mainJoueur soit peuplé avant que le canvas ne soit masqué.
+            setEtatJeu((prev) => ({
+              ...prev,
+              mainJoueur: [...prev.mainJoueur, ...cartesSudAccumulees],
+            }));
             lancerPhase3(contexte);
           }
         },
@@ -1387,17 +1398,13 @@ export function useControleurJeu({
       }));
 
       let cartesRecues = 0;
+      let cartesSudEnvoyeesRestante = nbCartesExistantesSud;
+      const cartesSudAccumuleesRestante: Carte[] = [];
 
       const gererPaquetArrive = (position: PositionJoueur, cartes: Carte[]) => {
         if (estDemonte.current) return;
 
-        if (position === "sud") {
-          setEtatJeu((prev) => ({
-            ...prev,
-            mainJoueur: [...prev.mainJoueur, ...cartes],
-            cartesRestantesPaquet: prev.cartesRestantesPaquet - cartes.length,
-          }));
-        } else {
+        if (position !== "sud") {
           setEtatJeu((prev) => ({
             ...prev,
             nbCartesAdversaires: {
@@ -1408,10 +1415,20 @@ export function useControleurJeu({
             },
             cartesRestantesPaquet: prev.cartesRestantesPaquet - cartes.length,
           }));
+        } else {
+          cartesSudAccumuleesRestante.push(...cartes);
+          setEtatJeu((prev) => ({
+            ...prev,
+            cartesRestantesPaquet: prev.cartesRestantesPaquet - cartes.length,
+          }));
         }
 
         cartesRecues += cartes.length;
         if (cartesRecues >= totalCartesAttendues) {
+          setEtatJeu((prev) => ({
+            ...prev,
+            mainJoueur: [...prev.mainJoueur, ...cartesSudAccumuleesRestante],
+          }));
           lancerPhase3Restante(contexte);
         }
       };
@@ -1450,12 +1467,10 @@ export function useControleurJeu({
           onPaquetDepart: (position, cartes) => {
             if (position !== "sud" || estDemonte.current) return;
 
+            cartesSudEnvoyeesRestante += cartes.length;
             setEtatJeu((prev) => ({
               ...prev,
-              nbCartesAnticipeesJoueur: Math.max(
-                prev.nbCartesAnticipeesJoueur,
-                prev.mainJoueur.length + cartes.length,
-              ),
+              nbCartesAnticipeesJoueur: cartesSudEnvoyeesRestante,
             }));
           },
           onPaquetArrive: gererPaquetArrive,

@@ -4,7 +4,7 @@
 
 **Goal:** Donner au paquet central une presence visuelle plus forte au depart et une diminution plus sensible pendant la distribution.
 
-**Architecture:** Le changement reste local au composant `ReserveCentrale`. Le calcul du nombre de couches et de leur dispersion dependra directement de `cartesPaquetVisibles`, sans changer l'ancrage global ni la carte retournee. Les tests de composant verifieront la nouvelle densite maximale et l'amincissement du paquet.
+**Architecture:** Le changement reste local au composant `ReserveCentrale`. Le calcul du nombre de couches et de leur dispersion dependra directement de `cartesPaquetVisibles`, sans changer l'ancrage global ni la carte retournee. Les tests de composant verifieront la nouvelle densite maximale et l'amincissement du paquet. Un correctif de suivi dans `useControleurJeu` conserve ensuite `12` cartes visibles a la fin de la donne initiale pour eviter un regonflement du paquet juste avant la revelation.
 
 **Tech Stack:** TypeScript strict, React Native, Jest, Testing Library React Native
 
@@ -62,6 +62,8 @@ Expected: PASS
 - Modify: `docs/superpowers/plans/2026-03-31-rendu-paquet-central.md`
 - Modify: `apps/mobile/__tests__/reserve-centrale.test.tsx`
 - Modify: `apps/mobile/components/game/ReserveCentrale.tsx`
+- Modify: `apps/mobile/__tests__/useControleurJeuDistribution.test.ts`
+- Modify: `apps/mobile/hooks/useControleurJeu.ts`
 
 - [ ] **Step 1: Verifier l'etat git et la suite de tests ciblee**
 

@@ -27,10 +27,16 @@ Approche retenue : recalibrer ensemble le nombre de couches visibles et leur dis
 Fichier principal :
 
 - `apps/mobile/components/game/ReserveCentrale.tsx`
+- `apps/mobile/hooks/useControleurJeu.ts`
 
 Fichier de test :
 
 - `apps/mobile/__tests__/reserve-centrale.test.tsx`
+- `apps/mobile/__tests__/useControleurJeuDistribution.test.ts`
+
+## Note de continuite visuelle
+
+La donne initiale doit faire descendre le paquet de `32` cartes vers `12`, pas de `20` vers `0`. Le volume du paquet reste ainsi stable au moment de `revelationCarte` et n'a plus besoin de regrossir juste avant l'animation de la carte retournee.
 
 ## Hors scope
 
