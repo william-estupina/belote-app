@@ -123,7 +123,7 @@ function creerConfigurationCadran(
     }
 
     return {
-      titre: "Vous etes dedans",
+      titre: "Vous êtes dedans",
       niveau: "perte-forte",
       couleurBordurePanneau: "rgba(170, 210, 255, 0.78)",
       couleurOmbrePanneau: "rgba(170, 210, 255, 0.2)",
@@ -164,7 +164,7 @@ function creerConfigurationCadran(
   }
 
   return {
-    titre: "Defaite",
+    titre: "Défaite",
     niveau: "perte-legere",
     couleurBordurePanneau: "rgba(170, 210, 255, 0.62)",
     couleurOmbrePanneau: "rgba(170, 210, 255, 0.16)",

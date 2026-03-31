@@ -165,8 +165,35 @@ describe("DialogueFinManche", () => {
     });
 
     expect(screen.getByTestId("cadran-fin-manche")).toBeTruthy();
-    expect(screen.getByText("Defaite")).toBeTruthy();
+    expect(screen.getByText("Défaite")).toBeTruthy();
     expect(screen.queryByText("Contrat rempli !")).toBeNull();
+    expect(screen.queryByText("Defaite")).toBeNull();
+  });
+
+  it("affiche 'Vous êtes dedans' avec accents dans le cadran", () => {
+    render(
+      <DialogueFinManche
+        resumeFinManche={{
+          ...RESUME_DEFAITE_NORMALE,
+          verdict: "dedans-nous",
+          messageVerdict: "Vous êtes dedans",
+          estContratRempli: false,
+          estChute: true,
+          scoreMancheEquipe1: 0,
+          scoreMancheEquipe2: 162,
+          scoreApresEquipe1: 110,
+          scoreApresEquipe2: 252,
+        }}
+        onContinuer={jest.fn()}
+      />,
+    );
+
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
+
+    expect(screen.getByText("Vous êtes dedans")).toBeTruthy();
+    expect(screen.queryByText("Vous etes dedans")).toBeNull();
   });
 
   it("n'affiche plus les sous-textes de demo dans le cadran", () => {
