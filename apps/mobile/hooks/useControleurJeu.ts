@@ -46,6 +46,7 @@ import {
 import { useAnimationsDistribution } from "./useAnimationsDistribution";
 import { useAtlasCartes } from "./useAtlasCartes";
 import { useDelaiBot } from "./useDelaiBot";
+import { creerCarteFactice, estMemeCarte } from "./utils-cartes";
 
 // --- Types exposés ---
 
@@ -140,16 +141,10 @@ interface OptionsControleur {
 
 const INDEX_HUMAIN = 0; // sud
 const NB_CARTES_JEU_BELOTE = 32;
-const COULEURS_FACTICES: Couleur[] = ["pique", "coeur", "carreau", "trefle"];
-const RANGS_FACTICES = ["7", "8", "9", "10", "valet", "dame", "roi", "as"] as const;
 
 function getPositionPartenaire(position: PositionJoueur): PositionJoueur {
   const index = POSITIONS_JOUEUR.indexOf(position);
   return POSITIONS_JOUEUR[(index + 2) % 4];
-}
-
-function estMemeCarte(a: Carte, b: Carte): boolean {
-  return a.couleur === b.couleur && a.rang === b.rang;
 }
 
 function synchroniserOrdreVisibleMain(
@@ -170,13 +165,6 @@ function synchroniserOrdreVisibleMain(
   }
 
   return [...mainSynchronisee, ...cartesRestantes];
-}
-
-function creerCarteFactice(index: number): Carte {
-  return {
-    couleur: COULEURS_FACTICES[Math.floor(index / RANGS_FACTICES.length) % 4],
-    rang: RANGS_FACTICES[index % RANGS_FACTICES.length],
-  };
 }
 
 function conserverHistoriqueEncheresAvantRedistribution(etat: EtatJeu) {

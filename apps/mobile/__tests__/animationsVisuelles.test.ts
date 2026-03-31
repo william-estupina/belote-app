@@ -3,12 +3,15 @@ import {
   accelererTensionAnimation,
   ANIMATIONS_CARTE_RETOURNEE,
   ANIMATIONS_DIALOGUE_FIN_MANCHE,
+  delaiPhaseScore,
   DUREE_FONDU_ENTREE_MAIN,
   DUREE_PULSE_JOUEUR_ACTIF,
+  dureeAnimationMajeure,
   FACTEUR_ACCELERATION_ANIMATIONS_VISUELLES,
   FACTEUR_RALENTISSEMENT_ANIMATIONS_MAJEURES,
   ralentirDureeAnimationMajeure,
   ralentirTensionAnimationMajeure,
+  tensionAnimationMajeure,
 } from "../constants/animations-visuelles";
 
 describe("animations visuelles", () => {
@@ -52,5 +55,16 @@ describe("animations visuelles", () => {
       dureePicEclair: 120,
       dureeSortieEclair: 180,
     });
+  });
+
+  it("fournit des raccourcis pour les compositions courantes", () => {
+    // dureeAnimationMajeure = accelerer + ralentir (×0.6)
+    expect(dureeAnimationMajeure(800)).toBe(480);
+    expect(dureeAnimationMajeure(400)).toBe(240);
+    // delaiPhaseScore = accelerer + ralentir + score (×0.75)
+    expect(delaiPhaseScore(600)).toBe(450);
+    expect(delaiPhaseScore(2200)).toBe(1650);
+    // tensionAnimationMajeure = accelerer + ralentir tensions
+    expect(tensionAnimationMajeure(60)).toBe(100);
   });
 });

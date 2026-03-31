@@ -150,12 +150,10 @@ export default function PlateauJeu() {
 
           {/* Zone du pli au centre */}
           <ZonePli
-            cartes={etatJeu.pliEnCours}
             largeurEcran={largeur}
             hauteurEcran={hauteur}
             couleurAtout={etatJeu.couleurAtout}
             afficherCadre={etatJeu.phaseUI !== "inactif"}
-            atlas={atlas}
           />
 
           {/* Scores */}

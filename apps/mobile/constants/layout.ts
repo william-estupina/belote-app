@@ -3,6 +3,7 @@ import { Platform } from "react-native";
 
 import {
   accelererDureeAnimation,
+  dureeAnimationMajeure,
   ralentirDureeAnimationMajeure,
 } from "./animations-visuelles";
 
@@ -79,8 +80,8 @@ export const INDICATEURS = {
 export const ANIMATIONS = {
   // Distribution : vol centre -> main (par paquets simultanes, 3 puis 2)
   distribution: {
-    dureeCarte: ralentirDureeAnimationMajeure(accelererDureeAnimation(800)), // duree de vol par carte (ms)
-    delaiEntreJoueurs: ralentirDureeAnimationMajeure(accelererDureeAnimation(500)), // delai entre les paquets de chaque joueur (ms)
+    dureeCarte: dureeAnimationMajeure(800), // duree de vol par carte (ms)
+    delaiEntreJoueurs: dureeAnimationMajeure(500), // delai entre les paquets de chaque joueur (ms)
     pauseEntreRounds: 0, // pas de pause entre le paquet de 3 et le paquet de 2
     easingDistribution: "out-cubic" as const, // deceleration naturelle a l'arrivee
     staggerIntraPaquet: 0, // toutes les cartes d'un meme paquet partent en meme temps
@@ -92,11 +93,11 @@ export const ANIMATIONS = {
       ecartX: 0.03, // ecart horizontal entre cartes adjacentes (fraction ecran)
       ecartRotation: 10, // ecart de rotation entre cartes adjacentes (degres)
     },
-    dureeReorganisationMain: ralentirDureeAnimationMajeure(accelererDureeAnimation(350)), // duree du placement/tri visuel dans la main du joueur (ms)
+    dureeReorganisationMain: dureeAnimationMajeure(350), // duree du placement/tri visuel dans la main du joueur (ms)
     // Tri apres distribution
-    pauseAvantTri: ralentirDureeAnimationMajeure(accelererDureeAnimation(250)), // pause avant animation de tri (ms)
+    pauseAvantTri: dureeAnimationMajeure(250), // pause avant animation de tri (ms)
     // Distribution restante -> slide carte retournee
-    dureeSlideRetournee: ralentirDureeAnimationMajeure(accelererDureeAnimation(600)), // duree du slide vers main preneur (ms)
+    dureeSlideRetournee: dureeAnimationMajeure(600), // duree du slide vers main preneur (ms)
     dureeRetourPaquet: ralentirDureeAnimationMajeure(1000), // duree du rappel des mains vers le paquet (ms)
     delaiEntreVaguesRetourPaquet: accelererDureeAnimation(720), // decalage entre chaque vague de 4 cartes (ms)
     pauseApresRetourPaquet: accelererDureeAnimation(600), // pause avant de relancer la nouvelle distribution (ms)
@@ -130,7 +131,7 @@ export const ANIMATIONS = {
     max: 1500, // delai maximum (ms)
   },
   // Pause apres la distribution pour montrer la carte retournee avant les encheres
-  pauseAvantEncheres: ralentirDureeAnimationMajeure(accelererDureeAnimation(1500)), // ms
+  pauseAvantEncheres: dureeAnimationMajeure(1500), // ms
 } as const;
 
 // --- Piles de plis remportes (positions des tas de cartes par equipe) ---

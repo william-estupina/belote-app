@@ -1,4 +1,4 @@
-import type { Carte, Couleur, PositionJoueur } from "@belote/shared-types";
+import type { Couleur } from "@belote/shared-types";
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
@@ -7,20 +7,12 @@ import {
   RATIO_ASPECT_CARTE,
   RATIO_LARGEUR_CARTE,
 } from "../../constants/layout";
-import type { AtlasCartes } from "../../hooks/useAtlasCartes";
-
-interface CartePli {
-  joueur: PositionJoueur;
-  carte: Carte;
-}
 
 interface PropsZonePli {
-  cartes: CartePli[];
   largeurEcran: number;
   hauteurEcran: number;
   couleurAtout: Couleur | null;
   afficherCadre?: boolean;
-  atlas: AtlasCartes;
 }
 
 const SYMBOLES_COULEUR: Record<Couleur, string> = {

@@ -10,6 +10,7 @@ import {
   variationCartePli,
 } from "../constants/layout";
 import { planifierRamassagePli } from "./planRamassagePli";
+import { estMemeCarte } from "./utils-cartes";
 
 const POSITIONS_JOUEUR: PositionJoueur[] = ["sud", "ouest", "nord", "est"];
 
@@ -25,10 +26,6 @@ export interface CarteRetourPaquet {
 
 function arrondirPosition(valeur: number): number {
   return Number(valeur.toFixed(3));
-}
-
-function estMemeCarte(a: Carte, b: Carte): boolean {
-  return a.couleur === b.couleur && a.rang === b.rang;
 }
 
 function estCartePliAnimable(id: string): boolean {

@@ -29,6 +29,7 @@ import {
   obtenirOrigineDistribution,
 } from "./distributionLayoutAtlas";
 import type { AtlasCartes } from "./useAtlasCartes";
+import { creerCarteFactice } from "./utils-cartes";
 
 // --- Types ---
 
@@ -85,25 +86,6 @@ export interface ResultatAnimationsDistribution {
 const MAX_CARTES_ADV = 24; // 8 cartes × 3 adversaires
 const MAX_CARTES_SUD = 8;
 const EASING_OUT_CUBIC = Easing.out(Easing.cubic);
-const ANTICIPATION_ARRIVEE_PAQUET_MS = 60;
-const COULEURS_FACTICES: Carte["couleur"][] = ["pique", "coeur", "carreau", "trefle"];
-const RANGS_FACTICES: Carte["rang"][] = [
-  "7",
-  "8",
-  "9",
-  "10",
-  "valet",
-  "dame",
-  "roi",
-  "as",
-];
-
-function creerCarteCachee(index: number): Carte {
-  return {
-    couleur: COULEURS_FACTICES[Math.floor(index / RANGS_FACTICES.length) % 4],
-    rang: RANGS_FACTICES[index % RANGS_FACTICES.length],
-  };
-}
 
 /**
  * Hook d'orchestration de la distribution via Skia Atlas.
@@ -284,7 +266,7 @@ export function useAnimationsDistribution(
           };
 
           cartesAdv.push({
-            carte: creerCarteCachee(indexCarteCachee),
+            carte: creerCarteFactice(indexCarteCachee),
             joueur: position,
             depart: cibleDepart.arrivee,
             arrivee: cibleArrivee.arrivee,
