@@ -113,7 +113,7 @@
 
 ### Etape 9 : Tests d'integration et E2E
 
-- [ ] Tests d'integration : parties completes simulees
+- [x] Tests d'integration : parties completes simulees (7 tests via `useControleurJeu` hook — manche humain/bot prend, annonce tour 2, partie complete, recommencer, redistribution, coherence scores)
 - [ ] Tests de composants avec React Native Testing Library
 - [ ] Tests E2E avec Maestro
 - [ ] Verifier le responsive (web desktop + mobile)
