@@ -32,7 +32,9 @@ test.describe("Distribution des cartes", () => {
     await page.goto("/", { waitUntil: "networkidle" });
     await page.getByTestId("bouton-jouer").click();
 
-    await page.waitForTimeout(1200);
+    await expect(page.getByText("Chargement du plateau...")).not.toBeVisible({
+      timeout: 15000,
+    });
 
     expect(await page.locator("canvas").count()).toBeGreaterThan(0);
     await expect(page.locator("body")).not.toContainText("♥");
