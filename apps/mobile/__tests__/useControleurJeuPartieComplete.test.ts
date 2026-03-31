@@ -39,6 +39,7 @@ const mockDeciderBot = jest.fn<ActionBotTest, [VueBotTest?]>((_vueBot?: VueBotTe
   type: "PASSER",
 }));
 const mockLancerDistribution = jest.fn();
+const mockMasquerCartesSud = jest.fn();
 const mockTerminerDistribution = jest.fn();
 const mockAjouterCartesGelees = jest.fn();
 const mockAnnulerAnimations = jest.fn();
@@ -71,15 +72,12 @@ jest.mock("../hooks/useAnimations", () => ({
 jest.mock("../hooks/useAnimationsDistribution", () => ({
   useAnimationsDistribution: () => ({
     lancerDistribution: mockLancerDistribution,
+    masquerCartesSud: mockMasquerCartesSud,
     terminerDistribution: mockTerminerDistribution,
-    cartesAtlasAdversaires: [],
-    cartesAtlasSud: [],
-    progressionsAdv: [],
-    donneesWorkletAdv: { value: [] },
-    nbCartesActivesAdv: { value: 0 },
-    progressionsSud: [],
-    donneesWorkletSud: { value: [] },
-    nbCartesActivesSud: { value: 0 },
+    cartesAtlas: [],
+    progressions: [],
+    donneesWorklet: { value: [] },
+    nbCartesActives: { value: 0 },
     enCours: false,
   }),
 }));

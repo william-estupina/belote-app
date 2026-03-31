@@ -1,8 +1,40 @@
+import { Asset } from "expo-asset";
 import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect, useState } from "react";
 
 import { COULEURS } from "../constants/theme";
+import { SPRITE_SHEET_SOURCE } from "../hooks/useAtlasCartes";
+
+void SplashScreen.preventAutoHideAsync();
 
 export default function Layout() {
+  const [pret, setPret] = useState(false);
+
+  useEffect(() => {
+    let actif = true;
+
+    const preparer = async () => {
+      try {
+        await Asset.fromModule(SPRITE_SHEET_SOURCE).downloadAsync();
+      } finally {
+        if (!actif) return;
+        setPret(true);
+        await SplashScreen.hideAsync();
+      }
+    };
+
+    void preparer();
+
+    return () => {
+      actif = false;
+    };
+  }, []);
+
+  if (!pret) {
+    return null;
+  }
+
   return (
     <Stack
       screenOptions={{
