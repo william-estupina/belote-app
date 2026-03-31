@@ -3,7 +3,7 @@ import { render } from "@testing-library/react-native";
 import type { ComponentProps } from "react";
 import type { SharedValue } from "react-native-reanimated";
 
-import { DistributionCanvasSud } from "../components/game/DistributionCanvasSud";
+import { CanvasCartesUnifie } from "../components/game/CanvasCartesUnifie";
 
 type TransformationCapturee = [number, number, number, number];
 type OmbreCapturee = {
@@ -68,8 +68,25 @@ function creerSharedValue(valeur: number): SharedValue<number> {
 
 function creerCanvasProps(
   progression: number,
-): ComponentProps<typeof DistributionCanvasSud> {
+): ComponentProps<typeof CanvasCartesUnifie> {
   const carte: Carte = { couleur: "pique", rang: "as" };
+  const cartesAtlas = Array.from({ length: 32 }, (_, index) => ({
+    carte,
+    joueur: index < 8 ? ("sud" as const) : ("nord" as const),
+    depart: { x: 0.5, y: 0.5 },
+    arrivee: { x: 0.8, y: 0.8 },
+    controle: { x: 0.65, y: 0.45 },
+    rotationDepart: 0,
+    rotationArrivee: 0,
+    echelleDepart: 0.5,
+    echelleArrivee: 1,
+    rectSource: { x: 0, y: 0, width: 167, height: 243 },
+  }));
+  const progressions = Array.from({ length: 32 }, (_, index) =>
+    creerSharedValue(index === 0 ? progression : -1),
+  );
+  const donnees = new Array(32 * 10).fill(0);
+  donnees.splice(0, 10, 0.5, 0.5, 0.65, 0.45, 0.8, 0.8, 0, 0, 0.5, 1);
 
   return {
     atlas: {
@@ -77,30 +94,17 @@ function creerCanvasProps(
         width: () => 1336,
         height: () => 1215,
       } as unknown as NonNullable<
-        ComponentProps<typeof DistributionCanvasSud>["atlas"]["image"]
+        ComponentProps<typeof CanvasCartesUnifie>["atlas"]["image"]
       >,
       largeurCellule: 167,
       hauteurCellule: 243,
       rectSource: () => ({ x: 0, y: 0, width: 167, height: 243 }),
       rectDos: () => ({ x: 0, y: 972, width: 167, height: 243 }),
     },
-    cartesAtlas: [
-      {
-        carte,
-        joueur: "sud" as const,
-        depart: { x: 0.5, y: 0.5 },
-        arrivee: { x: 0.8, y: 0.8 },
-        controle: { x: 0.65, y: 0.45 },
-        rotationDepart: 0,
-        rotationArrivee: 0,
-        echelleDepart: 0.5,
-        echelleArrivee: 1,
-        rectSource: { x: 0, y: 0, width: 167, height: 243 },
-      },
-    ],
-    progressions: [creerSharedValue(progression)],
+    cartesAtlas,
+    progressions,
     donneesWorklet: {
-      value: [0.5, 0.5, 0.65, 0.45, 0.8, 0.8, 0, 0, 0.5, 1],
+      value: donnees,
     } as SharedValue<number[]>,
     nbCartesActives: creerSharedValue(1),
     largeurEcran: 1000,
@@ -108,32 +112,32 @@ function creerCanvasProps(
   };
 }
 
-describe("DistributionCanvasSud", () => {
+describe("CanvasCartesUnifie", () => {
   beforeEach(() => {
     transformationsCapturees.length = 0;
     ombresCapturees.length = 0;
   });
 
   it("cache une carte atlas qui n'a pas encore commence a voler", () => {
-    render(<DistributionCanvasSud {...creerCanvasProps(-1)} />);
+    render(<CanvasCartesUnifie {...creerCanvasProps(-1)} />);
 
     expect(transformationsCapturees[0]).toEqual(TRANSFORMATION_HORS_ECRAN);
   });
 
   it("cache une carte atlas deja arrivee a destination", () => {
-    render(<DistributionCanvasSud {...creerCanvasProps(2)} />);
+    render(<CanvasCartesUnifie {...creerCanvasProps(2)} />);
 
     expect(transformationsCapturees[0]).toEqual(TRANSFORMATION_HORS_ECRAN);
   });
 
   it("laisse visible une carte atlas en cours de vol", () => {
-    render(<DistributionCanvasSud {...creerCanvasProps(0.5)} />);
+    render(<CanvasCartesUnifie {...creerCanvasProps(0.5)} />);
 
     expect(transformationsCapturees[0]).not.toEqual(TRANSFORMATION_HORS_ECRAN);
   });
 
   it("applique une ombre skia alignee sur les cartes statiques", () => {
-    render(<DistributionCanvasSud {...creerCanvasProps(0.5)} />);
+    render(<CanvasCartesUnifie {...creerCanvasProps(0.5)} />);
 
     expect(ombresCapturees).toEqual([
       {

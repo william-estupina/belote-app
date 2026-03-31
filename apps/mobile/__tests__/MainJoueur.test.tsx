@@ -175,4 +175,28 @@ describe("MainJoueur", () => {
       expect.objectContaining({ duration: 50 }),
     );
   });
+
+  it("supprime le fondu initial quand la main prend le relais de la distribution", () => {
+    const MainJoueurEtendu = MainJoueur as unknown as (
+      props: ComponentProps<typeof MainJoueur> & { sansFonduEntreeInitial?: boolean },
+    ) => React.JSX.Element;
+
+    render(
+      <MainJoueurEtendu
+        cartes={CARTES}
+        largeurEcran={1400}
+        hauteurEcran={1000}
+        cartesJouables={CARTES}
+        interactionActive={false}
+        atlas={MOCK_ATLAS}
+        sansFonduEntreeInitial
+        onCarteJouee={() => {}}
+      />,
+    );
+
+    expect(mockWithTiming).not.toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ duration: 50 }),
+    );
+  });
 });

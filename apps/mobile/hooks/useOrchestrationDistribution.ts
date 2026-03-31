@@ -95,14 +95,6 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
           mainTriee,
         );
 
-        animationDistribEnCours.current = false;
-        // Masquer les cartes sud dans l'Atlas avant de démonter le canvas,
-        // pour éviter un flash dû au double rendu (Atlas + MainJoueur).
-        for (const p of animDistribution.progressionsSud) {
-          p.value = 2;
-        }
-        animDistribution.terminerDistribution();
-
         const appliquerEtatAvantEncheres = () =>
           setEtatJeu((prev) => ({
             ...prev,
@@ -141,6 +133,13 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
         };
 
         appliquerEtatAvantEncheres();
+        animationDistribEnCours.current = false;
+
+        requestAnimationFrame(() => {
+          if (estDemonte.current) return;
+          animDistribution.masquerCartesSud();
+          animDistribution.terminerDistribution();
+        });
 
         const timeoutTri = setTimeout(() => {
           if (estDemonte.current) return;
@@ -407,12 +406,6 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
         const etat = snap.value as string;
         const ctx = snap.context;
 
-        animationDistribEnCours.current = false;
-        for (const p of animDistribution.progressionsSud) {
-          p.value = 2;
-        }
-        animDistribution.terminerDistribution();
-
         setEtatJeu((prev) => ({
           ...prev,
           ...extraireEtatUI(ctx, etat),
@@ -429,6 +422,13 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
           cartesRestantesPaquet: 0,
           nbCartesAnticipeesJoueur: ctx.mains[INDEX_HUMAIN].length,
         }));
+
+        animationDistribEnCours.current = false;
+        requestAnimationFrame(() => {
+          if (estDemonte.current) return;
+          animDistribution.masquerCartesSud();
+          animDistribution.terminerDistribution();
+        });
 
         setTimeout(() => jouerBotSiNecessaire(), 50);
       }, distribution.pauseAvantTri);
