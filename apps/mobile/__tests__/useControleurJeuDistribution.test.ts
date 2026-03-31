@@ -28,6 +28,21 @@ const mockGlisserCarteRetournee = jest.fn();
 const mockSurAnimationTerminee = jest.fn();
 const mockAttendreDelaiBot = jest.fn(() => Promise.resolve());
 const mockAnnulerDelai = jest.fn();
+let dernierLancementDistribution:
+  | {
+      mains: Record<"sud" | "ouest" | "nord" | "est", Carte[]>;
+      options?: {
+        onPaquetDepart?: (
+          position: "sud" | "ouest" | "nord" | "est",
+          cartes: Carte[],
+        ) => void;
+        onPaquetArrive?: (
+          position: "sud" | "ouest" | "nord" | "est",
+          cartes: Carte[],
+        ) => void;
+      };
+    }
+  | undefined;
 
 jest.mock("@belote/bot-engine", () => ({
   deciderBot: (...args: Parameters<typeof mockDeciderBot>) => mockDeciderBot(...args),
@@ -79,28 +94,48 @@ jest.mock("../hooks/useDelaiBot", () => ({
 }));
 
 function configurerDistributionImmediate(): void {
+  dernierLancementDistribution = undefined;
   mockLancerDistribution.mockImplementation(
     (
-      mains: Record<
-        "sud" | "ouest" | "nord" | "est",
-        Array<{ couleur: string; rang: string }>
-      >,
+      mains: Record<"sud" | "ouest" | "nord" | "est", Carte[]>,
       options?: {
         onPaquetDepart?: (
           position: "sud" | "ouest" | "nord" | "est",
-          cartes: Array<{ couleur: string; rang: string }>,
+          cartes: Carte[],
         ) => void;
         onPaquetArrive?: (
           position: "sud" | "ouest" | "nord" | "est",
-          cartes: Array<{ couleur: string; rang: string }>,
+          cartes: Carte[],
         ) => void;
       },
     ) => {
+      dernierLancementDistribution = { mains, options };
       for (const position of ["sud", "ouest", "nord", "est"] as const) {
         const cartes = mains[position];
         options?.onPaquetDepart?.(position, cartes);
         options?.onPaquetArrive?.(position, cartes);
       }
+    },
+  );
+}
+
+function configurerDistributionControlee(): void {
+  dernierLancementDistribution = undefined;
+  mockLancerDistribution.mockImplementation(
+    (
+      mains: Record<"sud" | "ouest" | "nord" | "est", Carte[]>,
+      options?: {
+        onPaquetDepart?: (
+          position: "sud" | "ouest" | "nord" | "est",
+          cartes: Carte[],
+        ) => void;
+        onPaquetArrive?: (
+          position: "sud" | "ouest" | "nord" | "est",
+          cartes: Carte[],
+        ) => void;
+      },
+    ) => {
+      dernierLancementDistribution = { mains, options };
     },
   );
 }
@@ -353,6 +388,54 @@ describe("useControleurJeu - redistribution", () => {
     });
 
     expect(mockLancerDistribution).toHaveBeenCalledTimes(2);
+  });
+
+  it("vide le paquet au depart des derniers paquets de distribution restante", async () => {
+    configurerDistributionControlee();
+
+    const { result } = renderHook(() =>
+      useControleurJeu({
+        difficulte: "facile",
+        scoreObjectif: 1000,
+        largeurEcran: 1280,
+        hauteurEcran: 720,
+      }),
+    );
+
+    await viderFileEvenements();
+
+    act(() => {
+      result.current.onRevelationTerminee();
+    });
+
+    act(() => {
+      result.current.prendre();
+    });
+
+    expect(result.current.etatJeu.phaseUI).toBe("distribution");
+    expect(result.current.etatJeu.cartesRestantesPaquet).toBeGreaterThan(0);
+    expect(dernierLancementDistribution).toBeDefined();
+
+    const lancement = dernierLancementDistribution!;
+    const ordre = ["sud", "ouest", "nord", "est"] as const;
+
+    act(() => {
+      for (const position of ordre) {
+        const cartes = lancement.mains[position];
+        lancement.options?.onPaquetDepart?.(position, cartes);
+      }
+    });
+
+    expect(result.current.etatJeu.cartesRestantesPaquet).toBe(0);
+
+    act(() => {
+      for (const position of ordre) {
+        const cartes = lancement.mains[position];
+        lancement.options?.onPaquetArrive?.(position, cartes);
+      }
+    });
+
+    expect(result.current.etatJeu.cartesRestantesPaquet).toBe(0);
   });
 
   it("relance le ramassage du premier pli meme apres plusieurs redistributions consecutives", async () => {

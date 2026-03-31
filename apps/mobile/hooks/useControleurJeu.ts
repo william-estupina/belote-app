@@ -818,12 +818,16 @@ export function useControleurJeu({
         indexDonneur: contexte.indexDonneur,
         cartesVisibles: mainsRecord.sud,
         onPaquetDepart: (position, cartes) => {
-          if (position !== "sud" || estDemonte.current) return;
+          if (estDemonte.current) return;
+          if (position === "sud") {
+            cartesSudEnvoyees += cartes.length;
+          }
 
-          cartesSudEnvoyees += cartes.length;
           setEtatJeu((prev) => ({
             ...prev,
-            nbCartesAnticipeesJoueur: cartesSudEnvoyees,
+            cartesRestantesPaquet: prev.cartesRestantesPaquet - cartes.length,
+            nbCartesAnticipeesJoueur:
+              position === "sud" ? cartesSudEnvoyees : prev.nbCartesAnticipeesJoueur,
           }));
         },
         onPaquetArrive: (position, cartes) => {
@@ -838,14 +842,9 @@ export function useControleurJeu({
                   prev.nbCartesAdversaires[position as "nord" | "est" | "ouest"] +
                   cartes.length,
               },
-              cartesRestantesPaquet: prev.cartesRestantesPaquet - cartes.length,
             }));
           } else {
             cartesSudAccumulees.push(...cartes);
-            setEtatJeu((prev) => ({
-              ...prev,
-              cartesRestantesPaquet: prev.cartesRestantesPaquet - cartes.length,
-            }));
           }
 
           cartesRecues += cartes.length;
@@ -1401,6 +1400,22 @@ export function useControleurJeu({
       let cartesSudEnvoyeesRestante = nbCartesExistantesSud;
       const cartesSudAccumuleesRestante: Carte[] = [];
 
+      const gererPaquetDepart = (position: PositionJoueur, cartes: Carte[]) => {
+        if (estDemonte.current) return;
+        if (position === "sud") {
+          cartesSudEnvoyeesRestante += cartes.length;
+        }
+
+        setEtatJeu((prev) => ({
+          ...prev,
+          cartesRestantesPaquet: prev.cartesRestantesPaquet - cartes.length,
+          nbCartesAnticipeesJoueur:
+            position === "sud"
+              ? cartesSudEnvoyeesRestante
+              : prev.nbCartesAnticipeesJoueur,
+        }));
+      };
+
       const gererPaquetArrive = (position: PositionJoueur, cartes: Carte[]) => {
         if (estDemonte.current) return;
 
@@ -1413,14 +1428,9 @@ export function useControleurJeu({
                 prev.nbCartesAdversaires[position as "nord" | "est" | "ouest"] +
                 cartes.length,
             },
-            cartesRestantesPaquet: prev.cartesRestantesPaquet - cartes.length,
           }));
         } else {
           cartesSudAccumuleesRestante.push(...cartes);
-          setEtatJeu((prev) => ({
-            ...prev,
-            cartesRestantesPaquet: prev.cartesRestantesPaquet - cartes.length,
-          }));
         }
 
         cartesRecues += cartes.length;
@@ -1465,19 +1475,14 @@ export function useControleurJeu({
           nbCartesExistantesAdversaires,
           cartesVisibles,
           onPaquetDepart: (position, cartes) => {
-            if (position !== "sud" || estDemonte.current) return;
-
-            cartesSudEnvoyeesRestante += cartes.length;
-            setEtatJeu((prev) => ({
-              ...prev,
-              nbCartesAnticipeesJoueur: cartesSudEnvoyeesRestante,
-            }));
+            gererPaquetDepart(position, cartes);
           },
           onPaquetArrive: gererPaquetArrive,
         });
       };
 
       if (!estPreneurPremier && carteRetournee) {
+        gererPaquetDepart(positionPreneur, [carteRetournee]);
         animations.glisserCarteRetournee(
           carteRetournee,
           0.5,

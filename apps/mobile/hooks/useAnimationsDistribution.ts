@@ -559,15 +559,11 @@ export function useAnimationsDistribution(
 
         if (delaiCarte) {
           const delaiArriveeMs = delaiCarte.delai + delaiCarte.duree;
-          const delaiCallbackArriveeMs = Math.max(
-            paquet.delaiDepartMs,
-            delaiArriveeMs - ANTICIPATION_ARRIVEE_PAQUET_MS,
-          );
           delaiFinDistributionMs = Math.max(delaiFinDistributionMs, delaiArriveeMs);
 
           const timeout = setTimeout(() => {
             options?.onPaquetArrive?.(paquet.position, paquet.cartes);
-          }, delaiCallbackArriveeMs);
+          }, delaiArriveeMs);
           timeoutsCallbacksRef.current.push(timeout);
         }
       }

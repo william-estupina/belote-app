@@ -73,10 +73,6 @@ function creerMain(position: PositionJoueur, quantite: number, base: number): Ca
 }
 
 describe("useAnimationsDistribution", () => {
-  afterEach(() => {
-    jest.useRealTimers();
-  });
-
   it("conserve les cartes adverses deja en main pendant la distribution restante", () => {
     const atlas: AtlasCartes = {
       image: {
@@ -294,46 +290,5 @@ describe("useAnimationsDistribution", () => {
         duration: ANIMATIONS.distribution.dureeCarte,
       },
     });
-  });
-
-  it("declenche l'arrivee du paquet un peu avant la fin visuelle du vol", () => {
-    jest.useFakeTimers();
-
-    const atlas: AtlasCartes = {
-      image: {
-        width: () => 1336,
-        height: () => 1215,
-      } as NonNullable<AtlasCartes["image"]>,
-      largeurCellule: 167,
-      hauteurCellule: 243,
-      rectSource: () => ({ x: 0, y: 0, width: 167, height: 243 }),
-      rectDos: () => ({ x: 0, y: 972, width: 167, height: 243 }),
-    };
-
-    const onPaquetArrive = jest.fn();
-
-    const { result } = renderHook(() =>
-      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }),
-    );
-
-    act(() => {
-      result.current.lancerDistribution(
-        {
-          sud: creerMain("sud", 1, 0),
-          ouest: [],
-          nord: [],
-          est: [],
-        },
-        {
-          onPaquetArrive,
-        },
-      );
-    });
-
-    act(() => {
-      jest.advanceTimersByTime(ANIMATIONS.distribution.dureeCarte - 40);
-    });
-
-    expect(onPaquetArrive).toHaveBeenCalledTimes(1);
   });
 });

@@ -38,7 +38,7 @@ Fichier de test :
 
 La donne initiale doit faire descendre le paquet de `32` cartes vers `12`, pas de `20` vers `0`. Le volume du paquet reste ainsi stable au moment de `revelationCarte` et n'a plus besoin de regrossir juste avant l'animation de la carte retournee.
 
-La reduction visuelle du paquet peut aussi etre legerement anticipee par rapport a la fin exacte du vol d'un paquet, afin d'eviter un effet ou les dernieres cartes semblent deja posees alors que le paquet central n'a pas encore fini de se vider.
+Le vidage visuel du paquet doit etre pilote par le depart des cartes depuis la reserve centrale, pas par leur arrivee en main. Ainsi, la reserve diminue pendant que les cartes sont en vol et disparait exactement quand les derniers paquets quittent le paquet.
 
 ## Hors scope
 
