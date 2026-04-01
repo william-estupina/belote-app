@@ -1,6 +1,7 @@
 import type { Couleur, Rang } from "@belote/shared-types";
 import { useImage } from "@shopify/react-native-skia";
 import { useMemo } from "react";
+import { Platform } from "react-native";
 
 import {
   calculerRectoSource,
@@ -9,7 +10,15 @@ import {
   SPRITE_COLONNES,
   SPRITE_LIGNES,
 } from "./distributionAtlas";
-import { SPRITE_SHEET_SOURCE } from "./spriteSheetSource";
+import { resoudreSourceAssetAtlas } from "./sourceAssetAtlas";
+
+// Sur web, Metro/Expo peut retourner un module ES (`default`) ou un objet asset (`uri`).
+
+const SPRITE_SHEET_RAW = require("../assets/sprites/sprite-sheet.png");
+export const SPRITE_SHEET_SOURCE = resoudreSourceAssetAtlas({
+  os: Platform.OS,
+  source: SPRITE_SHEET_RAW,
+});
 
 export interface AtlasCartes {
   image: ReturnType<typeof useImage>;

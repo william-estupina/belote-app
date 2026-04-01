@@ -18,7 +18,6 @@ const mockDeciderBot = jest.fn<ActionBotTest, [VueBotTest?]>((_vueBot?: VueBotTe
   type: "PASSER",
 }));
 const mockLancerDistribution = jest.fn();
-const mockMasquerCartesSud = jest.fn();
 const mockTerminerDistribution = jest.fn();
 const mockAjouterCartesGelees = jest.fn();
 const mockAnnulerAnimations = jest.fn();
@@ -66,12 +65,15 @@ jest.mock("../hooks/useAnimations", () => ({
 jest.mock("../hooks/useAnimationsDistribution", () => ({
   useAnimationsDistribution: () => ({
     lancerDistribution: mockLancerDistribution,
-    masquerCartesSud: mockMasquerCartesSud,
     terminerDistribution: mockTerminerDistribution,
-    cartesAtlas: [],
-    progressions: [],
-    donneesWorklet: { value: [] },
-    nbCartesActives: { value: 0 },
+    cartesAtlasAdversaires: [],
+    cartesAtlasSud: [],
+    progressionsAdv: [],
+    donneesWorkletAdv: { value: [] },
+    nbCartesActivesAdv: { value: 0 },
+    progressionsSud: [],
+    donneesWorkletSud: { value: [] },
+    nbCartesActivesSud: { value: 0 },
     enCours: false,
   }),
 }));
@@ -267,46 +269,6 @@ describe("useControleurJeu - redistribution", () => {
 
     expect(result.current.etatJeu.phaseUI).toBe("revelationCarte");
     expect(result.current.etatJeu.cartesRestantesPaquet).toBe(12);
-  });
-
-  it("alimente la main sud paquet par paquet pendant la donne initiale", async () => {
-    configurerDistributionControlee();
-
-    const { result } = renderHook(() =>
-      useControleurJeu({
-        difficulte: "facile",
-        scoreObjectif: 1000,
-        largeurEcran: 1280,
-        hauteurEcran: 720,
-      }),
-    );
-
-    expect(dernierLancementDistribution).toBeDefined();
-
-    const lancement = dernierLancementDistribution!;
-    const cartesSudPremierPaquet = lancement.mains.sud.slice(0, 3);
-    const cartesSudSecondPaquet = lancement.mains.sud.slice(3, 5);
-
-    act(() => {
-      lancement.options?.onPaquetDepart?.("sud", cartesSudPremierPaquet);
-      lancement.options?.onPaquetArrive?.("sud", cartesSudPremierPaquet);
-    });
-
-    expect(result.current.etatJeu.mainJoueur).toEqual(cartesSudPremierPaquet);
-    expect(result.current.etatJeu.nbCartesAnticipeesJoueur).toBe(3);
-
-    act(() => {
-      lancement.options?.onPaquetDepart?.("sud", cartesSudSecondPaquet);
-    });
-
-    expect(result.current.etatJeu.mainJoueur).toEqual(cartesSudPremierPaquet);
-    expect(result.current.etatJeu.nbCartesAnticipeesJoueur).toBe(5);
-
-    act(() => {
-      lancement.options?.onPaquetArrive?.("sud", cartesSudSecondPaquet);
-    });
-
-    expect(result.current.etatJeu.mainJoueur).toEqual(lancement.mains.sud);
   });
 
   it("appelle directement finaliserEntreeEncheres si les dimensions sont nulles au moment de la transition", async () => {

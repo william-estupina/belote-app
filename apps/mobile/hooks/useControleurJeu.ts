@@ -662,10 +662,6 @@ export function useControleurJeu({
     } else {
       // Pas de distribution (fin de partie) — on annule le flag
       animationDistribEnCours.current = false;
-      setEtatJeu((prev) => ({
-        ...prev,
-        ...extraireEtatUI(snapApres.context, etatApres),
-      }));
     }
   }, [lancerDistributionAnimee]);
 
@@ -707,12 +703,17 @@ export function useControleurJeu({
     // Animations
     cartesEnVol: animations.cartesEnVol,
     surAnimationTerminee: animations.surAnimationTerminee,
-    // Distribution Atlas — pool unifie
+    // Distribution Atlas — pool adversaires (CanvasAdversaires)
     atlas,
-    cartesAtlas: animDistribution.cartesAtlas,
-    progressions: animDistribution.progressions,
-    donneesWorklet: animDistribution.donneesWorklet,
-    nbCartesActives: animDistribution.nbCartesActives,
+    cartesAtlasAdversaires: animDistribution.cartesAtlasAdversaires,
+    progressionsAdv: animDistribution.progressionsAdv,
+    donneesWorkletAdv: animDistribution.donneesWorkletAdv,
+    nbCartesActivesAdv: animDistribution.nbCartesActivesAdv,
+    // Distribution Atlas — pool sud (DistributionCanvasSud)
+    cartesAtlasSud: animDistribution.cartesAtlasSud,
+    progressionsSud: animDistribution.progressionsSud,
+    donneesWorkletSud: animDistribution.donneesWorkletSud,
+    nbCartesActivesSud: animDistribution.nbCartesActivesSud,
     distributionEnCours: animDistribution.enCours,
     // Actions
     jouerCarte,

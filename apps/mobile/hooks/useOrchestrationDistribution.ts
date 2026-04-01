@@ -95,6 +95,14 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
           mainTriee,
         );
 
+        animationDistribEnCours.current = false;
+        // Masquer les cartes sud dans l'Atlas avant de démonter le canvas,
+        // pour éviter un flash dû au double rendu (Atlas + MainJoueur).
+        for (const p of animDistribution.progressionsSud) {
+          p.value = 2;
+        }
+        animDistribution.terminerDistribution();
+
         const appliquerEtatAvantEncheres = () =>
           setEtatJeu((prev) => ({
             ...prev,
@@ -133,13 +141,6 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
         };
 
         appliquerEtatAvantEncheres();
-        animationDistribEnCours.current = false;
-
-        requestAnimationFrame(() => {
-          if (estDemonte.current) return;
-          animDistribution.masquerCartesSud();
-          animDistribution.terminerDistribution();
-        });
 
         const timeoutTri = setTimeout(() => {
           if (estDemonte.current) return;
@@ -264,14 +265,14 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
             }));
           } else {
             cartesSudAccumulees.push(...cartes);
-            setEtatJeu((prev) => ({
-              ...prev,
-              mainJoueur: [...cartesSudAccumulees],
-            }));
           }
 
           cartesRecues += cartes.length;
           if (cartesRecues >= totalCartesAttendues) {
+            setEtatJeu((prev) => ({
+              ...prev,
+              mainJoueur: [...prev.mainJoueur, ...cartesSudAccumulees],
+            }));
             lancerPhase3(contexte);
           }
         },
@@ -406,6 +407,12 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
         const etat = snap.value as string;
         const ctx = snap.context;
 
+        animationDistribEnCours.current = false;
+        for (const p of animDistribution.progressionsSud) {
+          p.value = 2;
+        }
+        animDistribution.terminerDistribution();
+
         setEtatJeu((prev) => ({
           ...prev,
           ...extraireEtatUI(ctx, etat),
@@ -422,13 +429,6 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
           cartesRestantesPaquet: 0,
           nbCartesAnticipeesJoueur: ctx.mains[INDEX_HUMAIN].length,
         }));
-
-        animationDistribEnCours.current = false;
-        requestAnimationFrame(() => {
-          if (estDemonte.current) return;
-          animDistribution.masquerCartesSud();
-          animDistribution.terminerDistribution();
-        });
 
         setTimeout(() => jouerBotSiNecessaire(), 50);
       }, distribution.pauseAvantTri);
@@ -478,7 +478,6 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
       const sudEstPreneur = indexPreneur === 0;
       const nbCartesExistantesSud =
         sudEstPreneur && !estPreneurPremier && carteRetournee ? 6 : 5;
-      const mainSudAvantDistributionRestante = [...etatJeuRef.current.mainJoueur];
 
       let totalCartesAttendues = 0;
       for (const pos of POSITIONS_JOUEUR) {
@@ -532,17 +531,14 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
           }));
         } else {
           cartesSudAccumuleesRestante.push(...cartes);
-          setEtatJeu((prev) => ({
-            ...prev,
-            mainJoueur: [
-              ...mainSudAvantDistributionRestante,
-              ...cartesSudAccumuleesRestante,
-            ],
-          }));
         }
 
         cartesRecues += cartes.length;
         if (cartesRecues >= totalCartesAttendues) {
+          setEtatJeu((prev) => ({
+            ...prev,
+            mainJoueur: [...prev.mainJoueur, ...cartesSudAccumuleesRestante],
+          }));
           lancerPhase3Restante(contexte);
         }
       };

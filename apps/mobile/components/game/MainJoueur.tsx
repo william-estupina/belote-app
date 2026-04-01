@@ -35,7 +35,6 @@ interface PropsMainJoueur {
   cartesJouables?: Carte[];
   interactionActive?: boolean;
   animerNouvellesCartes?: boolean;
-  sansFonduEntreeInitial?: boolean;
   modeDisposition?: ModeDispositionMainJoueur;
   nbCartesDisposition?: number;
   atlas: AtlasCartes;
@@ -65,7 +64,6 @@ interface PropsCarteEventail {
   grisee: boolean;
   interactionActive: boolean;
   animerEntree: boolean;
-  sansFonduEntreeInitial: boolean;
   atlas: AtlasCartes;
   xProp: number;
   yProp: number;
@@ -86,7 +84,6 @@ function CarteEventailAnimee({
   grisee,
   interactionActive,
   animerEntree,
-  sansFonduEntreeInitial,
   atlas,
   xProp,
   yProp,
@@ -120,7 +117,7 @@ function CarteEventailAnimee({
       animX.value = centreMainX;
       animBottom.value = centreMainBottom;
       animAngle.value = 0;
-      animOpacite.value = sansFonduEntreeInitial ? 1 : 0;
+      animOpacite.value = 0;
 
       const config = {
         duration: ANIMATIONS.distribution.dureeReorganisationMain,
@@ -129,9 +126,7 @@ function CarteEventailAnimee({
       animX.value = withTiming(x, config);
       animBottom.value = withTiming(decalageY, config);
       animAngle.value = withTiming(angle, config);
-      if (!sansFonduEntreeInitial) {
-        animOpacite.value = withTiming(1, { duration: DUREE_FONDU_ENTREE_MAIN });
-      }
+      animOpacite.value = withTiming(1, { duration: DUREE_FONDU_ENTREE_MAIN });
       return;
     }
     const config = {
@@ -151,7 +146,6 @@ function CarteEventailAnimee({
     animAngle,
     animOpacite,
     centreMainX,
-    sansFonduEntreeInitial,
   ]);
 
   const styleAnime = useAnimatedStyle(() => ({
@@ -194,7 +188,6 @@ export function MainJoueur({
   cartesJouables,
   interactionActive = false,
   animerNouvellesCartes = true,
-  sansFonduEntreeInitial = false,
   modeDisposition = "eventail",
   nbCartesDisposition,
   atlas,
@@ -257,7 +250,6 @@ export function MainJoueur({
             grisee={grisee}
             interactionActive={interactionActive}
             animerEntree={animerNouvellesCartes}
-            sansFonduEntreeInitial={sansFonduEntreeInitial}
             atlas={atlas}
             xProp={xProp}
             yProp={yProp}

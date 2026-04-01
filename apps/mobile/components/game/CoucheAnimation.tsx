@@ -4,8 +4,9 @@ import type { SharedValue } from "react-native-reanimated";
 
 import type { CarteAtlas } from "../../hooks/useAnimationsDistribution";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
-import { CanvasCartesUnifie } from "./CanvasCartesUnifie";
+import { CanvasAdversaires } from "./CanvasAdversaires";
 import { CarteAnimee, type PositionCarte } from "./CarteAnimee";
+import { DistributionCanvasSud } from "./DistributionCanvasSud";
 
 export interface CarteEnVol {
   id: string;
@@ -27,11 +28,17 @@ interface PropsCoucheAnimation {
   hauteurEcran: number;
   onAnimationTerminee: (id: string) => void;
   atlas: AtlasCartes;
-  cartesAtlas: CarteAtlas[];
-  progressions: SharedValue<number>[];
-  donneesWorklet: SharedValue<number[]>;
-  nbCartesActives: SharedValue<number>;
-  nbCartesAdversaires?: { nord: number; est: number; ouest: number };
+  nbCartesAdversaires: { nord: number; est: number; ouest: number };
+  // Pool adversaires (CanvasAdversaires — permanent)
+  cartesAtlasAdversaires: CarteAtlas[];
+  progressionsAdv: SharedValue<number>[];
+  donneesWorkletAdv: SharedValue<number[]>;
+  nbCartesActivesAdv: SharedValue<number>;
+  // Pool sud (DistributionCanvasSud — éphémère)
+  cartesAtlasSud?: CarteAtlas[];
+  progressionsSud?: SharedValue<number>[];
+  donneesWorkletSud?: SharedValue<number[]>;
+  nbCartesActivesSud?: SharedValue<number>;
   distributionEnCours?: boolean;
 }
 
@@ -41,13 +48,29 @@ export function CoucheAnimation({
   hauteurEcran,
   onAnimationTerminee,
   atlas,
-  cartesAtlas,
-  progressions,
-  donneesWorklet,
-  nbCartesActives,
   nbCartesAdversaires,
+  cartesAtlasAdversaires,
+  progressionsAdv,
+  donneesWorkletAdv,
+  nbCartesActivesAdv,
+  cartesAtlasSud,
+  progressionsSud,
+  donneesWorkletSud,
+  nbCartesActivesSud,
   distributionEnCours,
 }: PropsCoucheAnimation) {
+  const aDistributionSud =
+    distributionEnCours &&
+    cartesAtlasSud &&
+    progressionsSud &&
+    donneesWorkletSud &&
+    nbCartesActivesSud;
+  const afficherCanvasAdversaires =
+    (distributionEnCours ?? false) ||
+    nbCartesAdversaires.nord > 0 ||
+    nbCartesAdversaires.est > 0 ||
+    nbCartesAdversaires.ouest > 0;
+
   return (
     <View
       style={{
@@ -60,17 +83,33 @@ export function CoucheAnimation({
       }}
       pointerEvents="none"
     >
-      <CanvasCartesUnifie
-        atlas={atlas}
-        cartesAtlas={cartesAtlas}
-        progressions={progressions}
-        donneesWorklet={donneesWorklet}
-        nbCartesActives={nbCartesActives}
-        largeurEcran={largeurEcran}
-        hauteurEcran={hauteurEcran}
-        nbCartesAdversaires={nbCartesAdversaires}
-        distributionEnCours={distributionEnCours}
-      />
+      {/* Canvas adversaires permanent (zIndex bas) */}
+      {afficherCanvasAdversaires && (
+        <CanvasAdversaires
+          atlas={atlas}
+          largeurEcran={largeurEcran}
+          hauteurEcran={hauteurEcran}
+          nbCartesAdversaires={nbCartesAdversaires}
+          cartesAtlasAdversaires={cartesAtlasAdversaires}
+          progressions={progressionsAdv}
+          donneesWorklet={donneesWorkletAdv}
+          nbCartesActives={nbCartesActivesAdv}
+          distributionEnCours={distributionEnCours ?? false}
+        />
+      )}
+
+      {/* Canvas sud éphémère — uniquement pendant la distribution (zIndex haut) */}
+      {aDistributionSud && (
+        <DistributionCanvasSud
+          atlas={atlas}
+          cartesAtlas={cartesAtlasSud}
+          progressions={progressionsSud}
+          donneesWorklet={donneesWorkletSud}
+          nbCartesActives={nbCartesActivesSud}
+          largeurEcran={largeurEcran}
+          hauteurEcran={hauteurEcran}
+        />
+      )}
 
       {cartesEnVol.map((vol) => (
         <CarteAnimee

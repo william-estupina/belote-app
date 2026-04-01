@@ -1,6 +1,5 @@
 import type { Carte, PositionJoueur } from "@belote/shared-types";
 import { act, renderHook } from "@testing-library/react-native";
-import { Platform } from "react-native";
 
 import { ANIMATIONS } from "../constants/layout";
 import { calculerCiblesEventailAdversaire } from "../hooks/distributionLayoutAtlas";
@@ -74,16 +73,7 @@ function creerMain(position: PositionJoueur, quantite: number, base: number): Ca
 }
 
 describe("useAnimationsDistribution", () => {
-  const plateformeOriginale = Platform.OS;
-
-  afterEach(() => {
-    Object.defineProperty(Platform, "OS", {
-      configurable: true,
-      value: plateformeOriginale,
-    });
-  });
-
-  it("conserve les cartes adverses deja en main pendant la distribution restante dans le pool unique", () => {
+  it("conserve les cartes adverses deja en main pendant la distribution restante", () => {
     const atlas: AtlasCartes = {
       image: {
         width: () => 1336,
@@ -118,11 +108,11 @@ describe("useAnimationsDistribution", () => {
       );
     });
 
-    expect(result.current.cartesAtlas).toHaveLength(32);
-    expect(result.current.nbCartesActives.value).toBe(32);
+    expect(result.current.cartesAtlasAdversaires).toHaveLength(24);
+    expect(result.current.nbCartesActivesAdv.value).toBe(24);
   });
 
-  it("decale les cartes adverses deja presentes vers l'eventail final dans le pool unique", () => {
+  it("decale les cartes adverses deja presentes vers l'eventail final", () => {
     const atlas: AtlasCartes = {
       image: {
         width: () => 1336,
@@ -165,7 +155,7 @@ describe("useAnimationsDistribution", () => {
       1280,
       720,
     );
-    const cartesNordExistantes = result.current.cartesAtlas.slice(8, 13);
+    const cartesNordExistantes = result.current.cartesAtlasAdversaires.slice(0, 5);
 
     expect(cartesNordExistantes).toHaveLength(5);
 
@@ -185,7 +175,7 @@ describe("useAnimationsDistribution", () => {
     }
   });
 
-  it("fait glisser les cartes adverses deja presentes depuis leur eventail courant dans le pool unique", () => {
+  it("fait glisser les cartes adverses deja presentes depuis leur eventail courant", () => {
     const atlas: AtlasCartes = {
       image: {
         width: () => 1336,
@@ -221,7 +211,7 @@ describe("useAnimationsDistribution", () => {
     });
 
     const ciblesNordDepart = calculerCiblesEventailAdversaire("nord", 0, 5, 5, 1280, 720);
-    const cartesNordExistantes = result.current.cartesAtlas.slice(8, 13);
+    const cartesNordExistantes = result.current.cartesAtlasAdversaires.slice(0, 5);
 
     expect(cartesNordExistantes).toHaveLength(5);
 
@@ -240,7 +230,7 @@ describe("useAnimationsDistribution", () => {
       );
     }
 
-    expect(result.current.progressions[8].value).toEqual({
+    expect(result.current.progressionsAdv[0].value).toEqual({
       delai: ANIMATIONS.distribution.delaiEntreJoueurs,
       valeur: {
         type: "timing",
@@ -250,7 +240,7 @@ describe("useAnimationsDistribution", () => {
     });
   });
 
-  it("garde visibles les cartes adverses deja presentes avant leur glissement differe dans le pool unique", () => {
+  it("garde visibles les cartes adverses deja presentes avant leur glissement differe", () => {
     const atlas: AtlasCartes = {
       image: {
         width: () => 1336,
@@ -285,9 +275,8 @@ describe("useAnimationsDistribution", () => {
       );
     });
 
-    const progressionNord = result.current.progressions[8] as unknown as SharedValueMock<
-      number | ValeurAnimeeMock
-    >;
+    const progressionNord = result.current
+      .progressionsAdv[0] as unknown as SharedValueMock<number | ValeurAnimeeMock>;
 
     const historiqueRecent = progressionNord.historique.slice(-3);
 
@@ -301,73 +290,5 @@ describe("useAnimationsDistribution", () => {
         duration: ANIMATIONS.distribution.dureeCarte,
       },
     });
-  });
-
-  it("masque uniquement les slots sud sans terminer la distribution logique", () => {
-    const atlas: AtlasCartes = {
-      image: {
-        width: () => 1336,
-        height: () => 1215,
-      } as NonNullable<AtlasCartes["image"]>,
-      largeurCellule: 167,
-      hauteurCellule: 243,
-      rectSource: () => ({ x: 0, y: 0, width: 167, height: 243 }),
-      rectDos: () => ({ x: 0, y: 972, width: 167, height: 243 }),
-    };
-
-    const { result } = renderHook(() =>
-      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }),
-    );
-
-    act(() => {
-      result.current.lancerDistribution({
-        sud: creerMain("sud", 5, 0),
-        ouest: creerMain("ouest", 5, 10),
-        nord: creerMain("nord", 5, 20),
-        est: creerMain("est", 5, 30),
-      });
-    });
-
-    act(() => {
-      result.current.masquerCartesSud();
-    });
-
-    expect(
-      result.current.progressions
-        .slice(0, 8)
-        .every((progression) => progression.value < 0),
-    ).toBe(true);
-    expect(result.current.enCours).toBe(true);
-  });
-
-  it("demarre aussi la distribution sur le web quand l'image atlas est absente", () => {
-    Object.defineProperty(Platform, "OS", {
-      configurable: true,
-      value: "web",
-    });
-
-    const atlas: AtlasCartes = {
-      image: null,
-      largeurCellule: 167,
-      hauteurCellule: 243,
-      rectSource: () => ({ x: 0, y: 0, width: 167, height: 243 }),
-      rectDos: () => ({ x: 0, y: 972, width: 167, height: 243 }),
-    };
-
-    const { result } = renderHook(() =>
-      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }),
-    );
-
-    act(() => {
-      result.current.lancerDistribution({
-        sud: creerMain("sud", 5, 0),
-        ouest: creerMain("ouest", 5, 10),
-        nord: creerMain("nord", 5, 20),
-        est: creerMain("est", 5, 30),
-      });
-    });
-
-    expect(result.current.enCours).toBe(true);
-    expect(result.current.nbCartesActives.value).toBeGreaterThan(0);
   });
 });

@@ -38,10 +38,14 @@ export default function PlateauJeu() {
     cartesEnVol,
     surAnimationTerminee,
     atlas,
-    cartesAtlas,
-    progressions,
-    donneesWorklet,
-    nbCartesActives,
+    cartesAtlasAdversaires,
+    progressionsAdv,
+    donneesWorkletAdv,
+    nbCartesActivesAdv,
+    cartesAtlasSud,
+    progressionsSud,
+    donneesWorkletSud,
+    nbCartesActivesSud,
     distributionEnCours,
     jouerCarte,
     prendre,
@@ -203,7 +207,6 @@ export default function PlateauJeu() {
             modeDisposition={
               distributionEnCours || etatJeu.triMainDiffere ? "reception" : "eventail"
             }
-            sansFonduEntreeInitial={distributionEnCours || etatJeu.triMainDiffere}
             nbCartesDisposition={
               distributionEnCours
                 ? Math.max(etatJeu.mainJoueur.length, etatJeu.nbCartesAnticipeesJoueur)
@@ -272,11 +275,15 @@ export default function PlateauJeu() {
             hauteurEcran={hauteur}
             onAnimationTerminee={surAnimationTerminee}
             atlas={atlas}
-            cartesAtlas={cartesAtlas}
-            progressions={progressions}
-            donneesWorklet={donneesWorklet}
-            nbCartesActives={nbCartesActives}
             nbCartesAdversaires={etatJeu.nbCartesAdversaires}
+            cartesAtlasAdversaires={cartesAtlasAdversaires}
+            progressionsAdv={progressionsAdv}
+            donneesWorkletAdv={donneesWorkletAdv}
+            nbCartesActivesAdv={nbCartesActivesAdv}
+            cartesAtlasSud={cartesAtlasSud}
+            progressionsSud={progressionsSud}
+            donneesWorkletSud={donneesWorkletSud}
+            nbCartesActivesSud={nbCartesActivesSud}
             distributionEnCours={distributionEnCours}
           />
 

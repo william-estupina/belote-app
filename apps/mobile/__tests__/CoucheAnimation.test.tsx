@@ -12,12 +12,21 @@ jest.mock("../components/game/CarteAnimee", () => {
   };
 });
 
-jest.mock("../components/game/CanvasCartesUnifie", () => {
+jest.mock("../components/game/CanvasAdversaires", () => {
   const React = require("react") as typeof import("react");
   const { View } = require("react-native") as typeof import("react-native");
 
   return {
-    CanvasCartesUnifie: () => <View testID="canvas-cartes-unifie" />,
+    CanvasAdversaires: () => <View testID="canvas-adversaires" />,
+  };
+});
+
+jest.mock("../components/game/DistributionCanvasSud", () => {
+  const React = require("react") as typeof import("react");
+  const { View } = require("react-native") as typeof import("react-native");
+
+  return {
+    DistributionCanvasSud: () => <View testID="distribution-canvas-sud" />,
   };
 });
 
@@ -38,17 +47,11 @@ describe("CoucheAnimation", () => {
       largeurEcran: 1200,
       hauteurEcran: 800,
       onAnimationTerminee: () => {},
-      atlas: {
-        image: null,
-        largeurCellule: 0,
-        hauteurCellule: 0,
-        rectSource: () => ({ x: 0, y: 0, width: 0, height: 0 }),
-        rectDos: () => ({ x: 0, y: 0, width: 0, height: 0 }),
-      },
-      cartesAtlas: [],
-      progressions: [],
-      donneesWorklet: { value: [] },
-      nbCartesActives: { value: 0 },
+      nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
+      cartesAtlasAdversaires: [],
+      progressionsAdv: [],
+      donneesWorkletAdv: { value: [] },
+      nbCartesActivesAdv: { value: 0 },
     }) as unknown as ComponentProps<typeof CoucheAnimation>;
 
   it("affiche les cartes en vol sur la couche d'animation", () => {
@@ -57,9 +60,18 @@ describe("CoucheAnimation", () => {
     expect(getByTestId("carte-animee")).toBeTruthy();
   });
 
-  it("monte le canvas unifie meme sans carte statique visible", () => {
-    const { getByTestId } = render(<CoucheAnimation {...creerProps()} />);
+  it("ne monte pas le canvas adversaires quand aucune carte statique n'est visible", () => {
+    const { queryByTestId } = render(<CoucheAnimation {...creerProps()} />);
 
-    expect(getByTestId("canvas-cartes-unifie")).toBeTruthy();
+    expect(queryByTestId("canvas-adversaires")).toBeNull();
+  });
+
+  it("monte le canvas adversaires quand une main adverse est visible", () => {
+    const props = creerProps();
+    props.nbCartesAdversaires = { nord: 5, est: 0, ouest: 0 };
+
+    const { getByTestId } = render(<CoucheAnimation {...props} />);
+
+    expect(getByTestId("canvas-adversaires")).toBeTruthy();
   });
 });
