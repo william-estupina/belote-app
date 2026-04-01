@@ -182,10 +182,11 @@ export function useControleurJeu({
   // Animations
   const animations = useAnimations();
   const atlas = useAtlasCartes();
-  const animDistribution = useAnimationsDistribution(atlas, {
-    largeur: largeurEcran,
-    hauteur: hauteurEcran,
-  });
+  const animDistribution = useAnimationsDistribution(
+    atlas,
+    { largeur: largeurEcran, hauteur: hauteurEcran },
+    etatJeu.nbCartesAdversaires,
+  );
   const { attendreDelaiBot, annulerDelai } = useDelaiBot();
 
   // Drapeaux pour éviter les boucles et courses
@@ -660,8 +661,10 @@ export function useControleurJeu({
     if (etatApres === "encheres1") {
       lancerDistributionAnimee(snapApres.context);
     } else {
-      // Pas de distribution (fin de partie) — on annule le flag
+      // Pas de distribution (fin de partie) — on annule le flag et on synchronise phaseUI
       animationDistribEnCours.current = false;
+      const nouvelEtat = extraireEtatUI(snapApres.context, etatApres);
+      setEtatJeu((prev) => ({ ...prev, ...nouvelEtat }));
     }
   }, [lancerDistributionAnimee]);
 
@@ -703,18 +706,12 @@ export function useControleurJeu({
     // Animations
     cartesEnVol: animations.cartesEnVol,
     surAnimationTerminee: animations.surAnimationTerminee,
-    // Distribution Atlas — pool adversaires (CanvasAdversaires)
+    // Distribution Atlas — pool unifiée (CanvasCartesUnifie)
     atlas,
-    cartesAtlasAdversaires: animDistribution.cartesAtlasAdversaires,
-    progressionsAdv: animDistribution.progressionsAdv,
-    donneesWorkletAdv: animDistribution.donneesWorkletAdv,
-    nbCartesActivesAdv: animDistribution.nbCartesActivesAdv,
-    // Distribution Atlas — pool sud (DistributionCanvasSud)
-    cartesAtlasSud: animDistribution.cartesAtlasSud,
-    progressionsSud: animDistribution.progressionsSud,
-    donneesWorkletSud: animDistribution.donneesWorkletSud,
-    nbCartesActivesSud: animDistribution.nbCartesActivesSud,
-    distributionEnCours: animDistribution.enCours,
+    progressions: animDistribution.progressions,
+    donneesWorklet: animDistribution.donneesWorklet,
+    nbCartesActives: animDistribution.nbCartesActives,
+    sprites: animDistribution.sprites,
     // Actions
     jouerCarte,
     prendre,
