@@ -44,16 +44,24 @@ export function PanneauEncheres({
   const estTour1 = phaseEncheres === "encheres1";
 
   return (
-    <View style={styles.conteneur}>
+    <View style={styles.conteneur} testID="panneau-encheres">
       <View style={styles.panneau}>
         <View style={styles.boutons}>
           {estTour1 ? (
             // Tour 1 : Prendre ou Passer
             <>
-              <Pressable style={styles.boutonPrendre} onPress={onPrendre}>
+              <Pressable
+                style={styles.boutonPrendre}
+                onPress={onPrendre}
+                testID="enchere-prendre"
+              >
                 <Text style={styles.texteBoutonPrendre}>Prendre</Text>
               </Pressable>
-              <Pressable style={styles.boutonPasser} onPress={onPasser}>
+              <Pressable
+                style={styles.boutonPasser}
+                onPress={onPasser}
+                testID="enchere-passer"
+              >
                 <Text style={styles.texteBoutonPasser}>Passer</Text>
               </Pressable>
             </>
@@ -68,6 +76,7 @@ export function PanneauEncheres({
                     key={couleur}
                     style={styles.boutonCouleur}
                     onPress={() => onAnnoncer(couleur)}
+                    testID={`annonce-${couleur}`}
                   >
                     <Text
                       style={[
@@ -81,7 +90,11 @@ export function PanneauEncheres({
                   </Pressable>
                 ))}
               </View>
-              <Pressable style={styles.boutonPasser} onPress={onPasser}>
+              <Pressable
+                style={styles.boutonPasser}
+                onPress={onPasser}
+                testID="enchere-passer"
+              >
                 <Text style={styles.texteBoutonPasser}>Passer</Text>
               </Pressable>
             </>

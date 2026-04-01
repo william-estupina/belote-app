@@ -129,6 +129,38 @@ npx playwright test --debug
 npx playwright test --ui
 ```
 
+#### Tests E2E (mobile natif)
+
+Les tests E2E mobiles utilisent `Maestro` et des flows declares dans `apps/mobile/.maestro/`.
+
+Prerequis locaux :
+
+- CLI `maestro` disponible dans le `PATH`
+- emulateur Android lance, ou appareil Android visible par `adb`
+- application Expo installee et lancable sur Android
+
+Commandes :
+
+```bash
+# Verifier la syntaxe des flows Maestro
+pnpm mobile:test:e2e:check
+
+# Lancer tous les flows Maestro Android
+pnpm mobile:test:e2e:android
+```
+
+Flows initiaux disponibles :
+
+- `apps/mobile/.maestro/accueil.yaml`
+- `apps/mobile/.maestro/partie.yaml`
+- `apps/mobile/.maestro/parametres.yaml`
+- `apps/mobile/.maestro/regles.yaml`
+
+Notes :
+
+- les parcours s'appuient d'abord sur des `testID` React Native pour rester stables
+- dans un checkout Windows via chemin UNC (`\\\\wsl.localhost\\...`), les scripts Maestro passent par PowerShell pour eviter les limites de `cmd.exe`
+
 ### Qualité de code
 
 ```bash

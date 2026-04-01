@@ -1,0 +1,7 @@
+appId: com.chiienton.belote
+---
+- launchApp
+- tapOn:
+    id: bouton-regles
+- assertVisible: Le jeu
+- assertVisible: Distribution

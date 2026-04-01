@@ -6,7 +6,7 @@ import { COULEURS } from "../constants/theme";
 
 export default function EcranPartie() {
   return (
-    <View style={styles.conteneur}>
+    <View style={styles.conteneur} testID="ecran-partie">
       <StatusBar hidden />
       <PlateauJeuLoader />
     </View>

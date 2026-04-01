@@ -1,0 +1,9 @@
+appId: com.chiienton.belote
+---
+- launchApp
+- assertVisible:
+    id: bouton-jouer
+- assertVisible:
+    id: bouton-parametres
+- assertVisible:
+    id: bouton-regles

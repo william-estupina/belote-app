@@ -9,6 +9,8 @@
     "mobile:build:android": "pnpm --filter @belote/mobile build:android",
     "mobile:build:android:apk": "pnpm --filter @belote/mobile build:android:apk",
     "mobile:build:ios": "pnpm --filter @belote/mobile build:ios",
+    "mobile:test:e2e:android": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./apps/mobile/scripts/maestro.ps1 test",
+    "mobile:test:e2e:check": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./apps/mobile/scripts/maestro.ps1 check-syntax",
     "test": "turbo test",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",

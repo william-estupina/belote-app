@@ -1,0 +1,11 @@
+appId: com.chiienton.belote
+---
+- launchApp
+- tapOn:
+    id: bouton-parametres
+- assertVisible:
+    id: difficulte-facile
+- assertVisible:
+    id: switch-son
+- assertVisible:
+    id: score-1000

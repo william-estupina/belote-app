@@ -140,5 +140,6 @@ _Non commencee_
 
 ## Mise a jour recente
 
+- Setup initial de Maestro pour le mobile natif : ajout des flows Android-first (`accueil`, `partie`, `parametres`, `regles`), des `testID` stables sur les points d'entree UI, et de scripts de verification compatibles avec le checkout WSL/UNC.
 - Refactor du pli anime termine : CoucheAnimation est devenue l'unique rendu visuel des cartes du pli, ZonePli ne garde que le cadre, et la resynchronisation visuelle se fait depuis `etatJeu.pliEnCours`.
 - Demarrage de la CI/CD : ajout d'un workflow GitHub Actions manuel qui relance lint, typecheck et tests avant un build EAS Android `preview`, puis publie dans le summary GitHub le lien de build et un QR code de recuperation.

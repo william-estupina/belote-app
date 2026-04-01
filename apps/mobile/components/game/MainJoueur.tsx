@@ -163,6 +163,7 @@ function CarteEventailAnimee({
       <Pressable
         disabled={!estInteractive}
         onPress={() => onCarteJouee?.(carte, { x: xProp, y: yProp })}
+        testID={`carte-main-${carte.couleur}-${carte.rang}`}
         style={({ pressed }) => ({
           transform: pressed && estInteractive ? [{ translateY: -8 }] : [],
         })}
@@ -211,6 +212,7 @@ export function MainJoueur({
 
   return (
     <View
+      testID="main-joueur"
       style={{
         position: "absolute",
         bottom: -hauteurCarte * 0.15,

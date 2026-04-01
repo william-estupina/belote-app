@@ -1,5 +1,5 @@
 import type { Carte } from "@belote/shared-types";
-import { render } from "@testing-library/react-native";
+import { render, screen } from "@testing-library/react-native";
 import type { ComponentProps } from "react";
 
 import { MainJoueur } from "../components/game/MainJoueur";
@@ -151,6 +151,25 @@ describe("MainJoueur", () => {
         { id: "trefle-dame", grisee: true },
       ]),
     );
+  });
+
+  it("expose des testID stables pour la main et chaque carte", () => {
+    render(
+      <MainJoueur
+        cartes={CARTES}
+        largeurEcran={1400}
+        hauteurEcran={1000}
+        cartesJouables={CARTES}
+        interactionActive
+        atlas={MOCK_ATLAS}
+        onCarteJouee={() => {}}
+      />,
+    );
+
+    expect(screen.getByTestId("main-joueur")).toBeTruthy();
+    expect(screen.getByTestId("carte-main-pique-as")).toBeTruthy();
+    expect(screen.getByTestId("carte-main-coeur-roi")).toBeTruthy();
+    expect(screen.getByTestId("carte-main-trefle-dame")).toBeTruthy();
   });
 
   it("ralentit legerement la reorganisation principale tout en gardant le petit fondu rapide", () => {

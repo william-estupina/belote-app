@@ -1,0 +1,9 @@
+appId: com.chiienton.belote
+---
+- launchApp
+- tapOn:
+    id: bouton-jouer
+- assertVisible:
+    id: ecran-partie
+- assertVisible:
+    id: main-joueur
