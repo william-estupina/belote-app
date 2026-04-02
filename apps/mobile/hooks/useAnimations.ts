@@ -32,6 +32,10 @@ function estCartePliAnimable(id: string): boolean {
   return id.startsWith("jeu-") || id.startsWith("pli-");
 }
 
+function creerIdCartePli(joueur: PositionJoueur, carte: Carte): string {
+  return `pli-${joueur}-${carte.couleur}-${carte.rang}`;
+}
+
 export function construireCartesGeleesDepuisPli(
   pli: CarteDuPli[],
   cartesEnVol: ReadonlyArray<{ carte: Carte }>,
@@ -56,7 +60,7 @@ export function construireCartesGeleesDepuisPli(
       };
 
       return {
-        id: `pli-${joueur}-${carte.couleur}-${carte.rang}`,
+        id: creerIdCartePli(joueur, carte),
         carte,
         depart: pos,
         arrivee: pos,
@@ -208,6 +212,9 @@ export function useAnimations() {
 
       const timeout = setTimeout(() => {
         onDebutRamassage?.();
+        const idsCartesPli = cartesPli.map(({ joueur, carte }) =>
+          creerIdCartePli(joueur, carte),
+        );
 
         // Phase 1 : convergence — mettre à jour les cartes "jeu-*" existantes
         setCartesEnVol((precedent) => {
@@ -236,38 +243,39 @@ export function useAnimations() {
         });
 
         // Empêche les callbacks de fin de convergence de retirer les cartes réhydratées.
-        for (const { joueur, carte } of cartesPli) {
-          callbacksFinJeuRef.current.set(
-            `pli-${joueur}-${carte.couleur}-${carte.rang}`,
-            () => {},
-          );
+        for (const idCartePli of idsCartesPli) {
+          callbacksFinJeuRef.current.set(idCartePli, () => {});
         }
 
         const timeoutPhase2 = setTimeout(() => {
-          setCartesEnVol((precedent) =>
-            precedent.map((carteEnVol) => {
+          compteurId.current += 1;
+          const idRamassage = `ramassage-${compteurId.current}`;
+          const carteRepere = cartesPli[0]?.carte;
+
+          setCartesEnVol((precedent) => {
+            const cartesHorsPli = precedent.filter((carteEnVol) => {
               if (!estCartePliAnimable(carteEnVol.id)) {
-                return carteEnVol;
+                return true;
               }
 
-              const idx = cartesPli.findIndex(({ carte }) =>
+              return !cartesPli.some(({ carte }) =>
                 estMemeCarte(carte, carteEnVol.carte),
               );
-              if (idx === -1) {
-                return carteEnVol;
-              }
+            });
 
-              const centre = (cartesPli.length - 1) / 2;
-              const offsetIdx = idx - centre;
-              const microDecalageX = offsetIdx * 0.004;
-              const microDecalageY = offsetIdx * 0.002;
+            if (!carteRepere) {
+              return cartesHorsPli;
+            }
 
-              callbacksFinJeuRef.current.set(carteEnVol.id, () => {
-                setCartesEnVol((prec) => prec.filter((c) => c.id !== carteEnVol.id));
-              });
+            callbacksFinJeuRef.current.set(idRamassage, () => {
+              setCartesEnVol((prec) => prec.filter((c) => c.id !== idRamassage));
+            });
 
-              return {
-                ...carteEnVol,
+            return [
+              ...cartesHorsPli,
+              {
+                id: idRamassage,
+                carte: carteRepere,
                 depart: {
                   x: posGagnant.x,
                   y: posGagnant.y,
@@ -275,18 +283,18 @@ export function useAnimations() {
                   echelle: 0.85,
                 },
                 arrivee: {
-                  x: posPile.x + microDecalageX,
-                  y: posPile.y + microDecalageY,
+                  x: posPile.x,
+                  y: posPile.y,
                   rotation: rotationArrivee,
-                  echelle: 0.6,
+                  echelle: 0.62,
                 },
-                faceVisible: carteEnVol.faceVisible,
+                faceVisible: false,
                 duree: dureeGlissement,
                 easing: "inout-cubic" as const,
-                segment: carteEnVol.segment + 1,
-              };
-            }),
-          );
+                segment: 0,
+              },
+            ];
+          });
         }, delaiPhase2);
 
         timeoutsRef.current.push(timeoutPhase2);

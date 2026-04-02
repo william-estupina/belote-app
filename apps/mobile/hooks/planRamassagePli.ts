@@ -7,8 +7,8 @@ export interface PlanRamassagePli {
 }
 
 export function planifierRamassagePli(): PlanRamassagePli {
-  const dureeConvergence = ralentirDureeAnimationMajeure(120);
-  const dureeGlissement = ralentirDureeAnimationMajeure(180);
+  const dureeConvergence = ralentirDureeAnimationMajeure(240);
+  const dureeGlissement = ralentirDureeAnimationMajeure(360);
 
   return {
     dureeConvergence,

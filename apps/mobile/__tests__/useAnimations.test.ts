@@ -171,7 +171,7 @@ describe("useAnimations", () => {
       expect(carteApres!.segment).toBe(1);
     });
 
-    it("retire les cartes de cartesEnVol apres la phase 2 du ramassage", () => {
+    it("fusionne les cartes du pli en une seule carte de collecte avant le depart vers la pile", () => {
       const onTerminee = jest.fn();
       const { delaiPhase2, dureeGlissement } = planifierRamassagePli();
       const { result } = renderHook(() => useAnimations());
@@ -197,13 +197,20 @@ describe("useAnimations", () => {
         jest.advanceTimersByTime(delaiPhase2);
       });
 
-      // La carte devrait etre en segment 2 (glissement)
-      const carteGlissement = result.current.cartesEnVol.find((c) => c.id === "jeu-1");
-      expect(carteGlissement).toBeDefined();
-      expect(carteGlissement!.segment).toBe(2);
+      expect(result.current.cartesEnVol).toHaveLength(1);
+      expect(result.current.cartesEnVol[0].id.startsWith("ramassage-")).toBe(true);
+      expect(result.current.cartesEnVol[0]).toMatchObject({
+        faceVisible: false,
+        depart: {
+          x: POSITIONS_PLI.nord.x,
+          y: POSITIONS_PLI.nord.y,
+          rotation: 0,
+          echelle: 0.85,
+        },
+      });
 
       act(() => {
-        result.current.surAnimationTerminee("jeu-1");
+        result.current.surAnimationTerminee(result.current.cartesEnVol[0].id);
       });
 
       expect(result.current.cartesEnVol).toHaveLength(0);
@@ -278,7 +285,14 @@ describe("useAnimations", () => {
       act(() => {
         result.current.surAnimationTerminee("pli-est-pique-as");
         jest.advanceTimersByTime(planifierRamassagePli().delaiPhase2);
-        result.current.surAnimationTerminee("pli-est-pique-as");
+      });
+
+      const idRamassage = result.current.cartesEnVol[0]?.id;
+
+      act(() => {
+        if (idRamassage) {
+          result.current.surAnimationTerminee(idRamassage);
+        }
       });
 
       expect(result.current.cartesEnVol).toHaveLength(0);
@@ -300,7 +314,7 @@ describe("useAnimations", () => {
       expect(carteApresSecondCycle!.segment).toBe(1);
     });
 
-    it("bascule toutes les cartes du pli ensemble vers le glissement sans saut visuel", () => {
+    it("remplace les quatre cartes convergentes par une seule carte de collecte au debut du glissement", () => {
       const { delaiPhase2 } = planifierRamassagePli();
       const { result } = renderHook(() => useAnimations());
 
@@ -343,14 +357,15 @@ describe("useAnimations", () => {
         jest.advanceTimersByTime(delaiPhase2 + 1);
       });
 
-      expect(result.current.cartesEnVol.every((carte) => carte.segment === 2)).toBe(true);
-      expect(
-        result.current.cartesEnVol.every(
-          (carte) =>
-            carte.depart.x === POSITIONS_PLI.nord.x &&
-            carte.depart.y === POSITIONS_PLI.nord.y,
-        ),
-      ).toBe(true);
+      expect(result.current.cartesEnVol).toHaveLength(1);
+      expect(result.current.cartesEnVol[0].id.startsWith("ramassage-")).toBe(true);
+      expect(result.current.cartesEnVol[0]).toMatchObject({
+        faceVisible: false,
+        depart: {
+          x: POSITIONS_PLI.nord.x,
+          y: POSITIONS_PLI.nord.y,
+        },
+      });
     });
   });
 });
