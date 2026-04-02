@@ -470,8 +470,11 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
       const carteRetournee = contexte.carteRetournee;
 
       const sudEstPreneur = indexPreneur === 0;
-      const nbCartesExistantesSud =
-        sudEstPreneur && !estPreneurPremier && carteRetournee ? 6 : 5;
+      const cartesExistantesSud =
+        sudEstPreneur && !estPreneurPremier && carteRetournee
+          ? [...etatJeuRef.current.mainJoueur, carteRetournee]
+          : [...etatJeuRef.current.mainJoueur];
+      const nbCartesExistantesSud = cartesExistantesSud.length;
 
       let totalCartesAttendues = 0;
       for (const pos of POSITIONS_JOUEUR) {
@@ -560,6 +563,7 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
 
         animDistribution.lancerDistribution(mainsADistribuer, {
           indexDonneur: contexte.indexDonneur,
+          cartesExistantesSud,
           nbCartesExistantesSud,
           nbCartesExistantesAdversaires,
           cartesVisibles,

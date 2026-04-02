@@ -61,6 +61,7 @@ export interface ResultatAnimationsDistribution {
     mains: Record<PositionJoueur, Carte[]>,
     options?: {
       indexDonneur?: number;
+      cartesExistantesSud?: Carte[];
       nbCartesExistantesSud?: number;
       nbCartesExistantesAdversaires?: Partial<Record<"nord" | "est" | "ouest", number>>;
       onPaquetDepart?: (position: PositionJoueur, cartes: Carte[]) => void;
@@ -94,6 +95,10 @@ export interface ResultatAnimationsDistribution {
 const MAX_CARTES_ADV = 24; // 8 cartes × 3 adversaires
 const MAX_CARTES_SUD = 8;
 const EASING_OUT_CUBIC = Easing.out(Easing.cubic);
+
+function cartesSontEgales(carteA: Carte, carteB: Carte): boolean {
+  return carteA.couleur === carteB.couleur && carteA.rang === carteB.rang;
+}
 
 /**
  * Hook d'orchestration de la distribution via Skia Atlas.
@@ -139,6 +144,7 @@ export function useAnimationsDistribution(
     mains: Record<PositionJoueur, Carte[]>;
     options?: {
       indexDonneur?: number;
+      cartesExistantesSud?: Carte[];
       nbCartesExistantesSud?: number;
       nbCartesExistantesAdversaires?: Partial<Record<"nord" | "est" | "ouest", number>>;
       onPaquetDepart?: (position: PositionJoueur, cartes: Carte[]) => void;
@@ -153,6 +159,7 @@ export function useAnimationsDistribution(
       mains: Record<PositionJoueur, Carte[]>,
       options?: {
         indexDonneur?: number;
+        cartesExistantesSud?: Carte[];
         nbCartesExistantesSud?: number;
         nbCartesExistantesAdversaires?: Partial<Record<"nord" | "est" | "ouest", number>>;
         onPaquetDepart?: (position: PositionJoueur, cartes: Carte[]) => void;
@@ -210,7 +217,9 @@ export function useAnimationsDistribution(
       const { ecartX, ecartRotation } = distribution.eventailVol;
       const decalage = distribution.arcDistribution.decalagePerpendiculaire;
       const indexDonneur = options?.indexDonneur ?? 0;
-      const nbCartesExistantesSud = options?.nbCartesExistantesSud ?? 0;
+      const cartesExistantesSud = options?.cartesExistantesSud ?? [];
+      const nbCartesExistantesSud =
+        options?.nbCartesExistantesSud ?? cartesExistantesSud.length;
       const nbCartesExistantesAdv = options?.nbCartesExistantesAdversaires ?? {};
       const ordreDistribution = obtenirOrdreDistribution(indexDonneur);
       const origineDistribution = obtenirOrigineDistribution(indexDonneur);
@@ -302,6 +311,88 @@ export function useAnimationsDistribution(
             duree: distribution.dureeCarte,
           });
           indexCarteCachee += 1;
+        }
+      }
+
+      if (cartesExistantesSud.length > 0) {
+        const delaiAnimationSud = delaiPremierPaquetParPosition.sud ?? 0;
+        const largeurCarteSud = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
+        const hauteurCarteSud = Math.round(largeurCarteSud * RATIO_ASPECT_CARTE);
+        const dispositionDepartSud = calculerDispositionMainJoueur({
+          mode: "eventail",
+          nbCartes: cartesExistantesSud.length,
+          largeurEcran,
+          hauteurEcran,
+          largeurCarte: largeurCarteSud,
+          hauteurCarte: hauteurCarteSud,
+        });
+        const dispositionArriveeSud = calculerDispositionMainJoueur({
+          mode: "eventail",
+          nbCartes: nbCartesExistantesSud + mains.sud.length,
+          largeurEcran,
+          hauteurEcran,
+          largeurCarte: largeurCarteSud,
+          hauteurCarte: hauteurCarteSud,
+        });
+
+        for (let index = 0; index < cartesExistantesSud.length; index += 1) {
+          const carte = cartesExistantesSud[index];
+          const carteDepart = dispositionDepartSud.cartes[index];
+          const carteArrivee = dispositionArriveeSud.cartes[index];
+          const depart = calculerPointAncrageCarteMainJoueurNormalisee({
+            x: carteDepart.x,
+            decalageY: carteDepart.decalageY,
+            largeurEcran,
+            hauteurEcran,
+            largeurCarte: largeurCarteSud,
+            hauteurCarte: hauteurCarteSud,
+          });
+          const arrivee = calculerPointAncrageCarteMainJoueurNormalisee({
+            x: carteArrivee.x,
+            decalageY: carteArrivee.decalageY,
+            largeurEcran,
+            hauteurEcran,
+            largeurCarte: largeurCarteSud,
+            hauteurCarte: hauteurCarteSud,
+          });
+          const controle = {
+            x: (depart.x + arrivee.x) / 2,
+            y: (depart.y + arrivee.y) / 2,
+          };
+
+          cartesSud.push({
+            carte,
+            joueur: "sud",
+            depart,
+            arrivee,
+            controle,
+            rotationDepart: carteDepart.angle,
+            rotationArrivee: carteArrivee.angle,
+            echelleDepart: 1,
+            echelleArrivee: 1,
+            rectSource: calculerRectoSource(
+              largeurCellule,
+              hauteurCellule,
+              carte.couleur,
+              carte.rang,
+            ),
+          });
+          donneesPlatSud.push(
+            depart.x,
+            depart.y,
+            controle.x,
+            controle.y,
+            arrivee.x,
+            arrivee.y,
+            carteDepart.angle,
+            carteArrivee.angle,
+            1,
+            1,
+          );
+          delaisCartesSud.push({
+            delai: delaiAnimationSud,
+            duree: distribution.dureeReorganisationMain,
+          });
         }
       }
 
@@ -512,6 +603,9 @@ export function useAnimationsDistribution(
       for (let i = 0; i < indexCarteCachee; i++) {
         progressionsAdv[i].value = 0;
       }
+      for (let i = 0; i < cartesExistantesSud.length; i++) {
+        progressionsSud[i].value = 0;
+      }
 
       // Planifier les callbacks.
       // Les cartes sud restent visibles dans l'Atlas (progression = 1) après leur arrivée,
@@ -558,7 +652,7 @@ export function useAnimationsDistribution(
 
       // Décaler les cartes du premier paquet sud vers leur position dans le layout final
       // (5 cartes) au départ du second paquet, en réanimant leur progression dans l'Atlas.
-      if (paquetsSud.length >= 2) {
+      if (paquetsSud.length >= 2 && cartesExistantesSud.length === 0) {
         const premierPaquetIndices = indicesSudParPaquet[0];
         const delaiDecalage = paquetsSud[1].delaiDepartMs;
         const nbCartesSudTotal = cartesSud.length;
@@ -715,13 +809,22 @@ export function useAnimationsDistribution(
 
       const donneesCourantes = donneesWorkletSud.value;
       const nouvellesDonnees = [...donneesCourantes];
+      const cartesSudTriees = mainTriee
+        .map((carte) =>
+          cartesAtlasSud.find((carteAtlas) => cartesSontEgales(carteAtlas.carte, carte)),
+        )
+        .filter((carteAtlas): carteAtlas is CarteAtlas => carteAtlas !== undefined);
 
-      for (let i = 0; i < nbCartes; i++) {
-        const carte = mainDistribuee[i];
-        const indexTrie = mainTriee.findIndex(
-          (c) => c.couleur === carte.couleur && c.rang === carte.rang,
+      if (cartesSudTriees.length === mainTriee.length) {
+        setCartesAtlasSud(cartesSudTriees);
+      }
+
+      for (let indexTrie = 0; indexTrie < mainTriee.length; indexTrie += 1) {
+        const carte = mainTriee[indexTrie];
+        const indexSource = mainDistribuee.findIndex((carteDistribuee) =>
+          cartesSontEgales(carteDistribuee, carte),
         );
-        if (indexTrie < 0) continue;
+        if (indexSource < 0) continue;
 
         const carteDisp = dispositionTriee.cartes[indexTrie];
         const arriveeTriee = calculerPointAncrageCarteMainJoueurNormalisee({
@@ -733,22 +836,23 @@ export function useAnimationsDistribution(
           hauteurCarte,
         });
 
-        const offset = i * STRIDE;
-        const currentX = donneesCourantes[offset + 4];
-        const currentY = donneesCourantes[offset + 5];
-        const currentRot = donneesCourantes[offset + 7];
-        const currentEch = donneesCourantes[offset + 9];
+        const offsetSource = indexSource * STRIDE;
+        const offsetCible = indexTrie * STRIDE;
+        const currentX = donneesCourantes[offsetSource + 4];
+        const currentY = donneesCourantes[offsetSource + 5];
+        const currentRot = donneesCourantes[offsetSource + 7];
+        const currentEch = donneesCourantes[offsetSource + 9];
 
-        nouvellesDonnees[offset] = currentX;
-        nouvellesDonnees[offset + 1] = currentY;
-        nouvellesDonnees[offset + 2] = (currentX + arriveeTriee.x) / 2;
-        nouvellesDonnees[offset + 3] = (currentY + arriveeTriee.y) / 2;
-        nouvellesDonnees[offset + 4] = arriveeTriee.x;
-        nouvellesDonnees[offset + 5] = arriveeTriee.y;
-        nouvellesDonnees[offset + 6] = currentRot;
-        nouvellesDonnees[offset + 7] = carteDisp.angle;
-        nouvellesDonnees[offset + 8] = currentEch;
-        nouvellesDonnees[offset + 9] = currentEch;
+        nouvellesDonnees[offsetCible] = currentX;
+        nouvellesDonnees[offsetCible + 1] = currentY;
+        nouvellesDonnees[offsetCible + 2] = (currentX + arriveeTriee.x) / 2;
+        nouvellesDonnees[offsetCible + 3] = (currentY + arriveeTriee.y) / 2;
+        nouvellesDonnees[offsetCible + 4] = arriveeTriee.x;
+        nouvellesDonnees[offsetCible + 5] = arriveeTriee.y;
+        nouvellesDonnees[offsetCible + 6] = currentRot;
+        nouvellesDonnees[offsetCible + 7] = carteDisp.angle;
+        nouvellesDonnees[offsetCible + 8] = currentEch;
+        nouvellesDonnees[offsetCible + 9] = currentEch;
       }
 
       const nbCartesCapture = nbCartes;
@@ -770,7 +874,7 @@ export function useAnimationsDistribution(
       );
       timeoutsCallbacksRef.current.push(timeout);
     },
-    [progressionsSud, donneesWorkletSud],
+    [cartesAtlasSud, progressionsSud, donneesWorkletSud],
   );
 
   // Rejouer l'appel en attente quand l'atlas devient disponible

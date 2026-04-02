@@ -124,6 +124,53 @@ describe("useAnimationsDistribution", () => {
     expect(result.current.nbCartesActivesAdv.value).toBe(24);
   });
 
+  it("conserve les cartes sud deja en main pendant la distribution restante", () => {
+    const atlas: AtlasCartes = {
+      image: {
+        width: () => 1336,
+        height: () => 1215,
+      } as NonNullable<AtlasCartes["image"]>,
+      largeurCellule: 167,
+      hauteurCellule: 243,
+      rectSource: () => ({ x: 0, y: 0, width: 167, height: 243 }),
+      rectDos: () => ({ x: 0, y: 972, width: 167, height: 243 }),
+    };
+    const cartesExistantesSud = creerMain("sud", 5, 40);
+    const nouvellesCartesSud = creerMain("sud", 3, 0);
+
+    const { result } = renderHook(() =>
+      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }),
+    );
+
+    act(() => {
+      result.current.lancerDistribution(
+        {
+          sud: nouvellesCartesSud,
+          ouest: creerMain("ouest", 3, 10),
+          nord: creerMain("nord", 3, 20),
+          est: creerMain("est", 3, 30),
+        },
+        {
+          cartesExistantesSud,
+          nbCartesExistantesSud: 5,
+          nbCartesExistantesAdversaires: {
+            nord: 5,
+            est: 5,
+            ouest: 5,
+          },
+        },
+      );
+    });
+
+    expect(result.current.cartesAtlasSud).toHaveLength(8);
+    expect(result.current.nbCartesActivesSud.value).toBe(8);
+    expect(
+      result.current.cartesAtlasSud
+        .slice(0, 5)
+        .map((carteAtlas) => carteAtlas.carte.rang),
+    ).toEqual(cartesExistantesSud.map((carte) => carte.rang));
+  });
+
   it("decale les cartes adverses deja presentes vers l'eventail final", () => {
     const atlas: AtlasCartes = {
       image: {
@@ -334,5 +381,60 @@ describe("useAnimationsDistribution", () => {
     });
 
     expect(result.current.progressionsSud[4].value).not.toBe(2);
+  });
+
+  it("reordonne les slots sud selon l'ordre trie avant le handoff", () => {
+    const atlas: AtlasCartes = {
+      image: {
+        width: () => 1336,
+        height: () => 1215,
+      } as NonNullable<AtlasCartes["image"]>,
+      largeurCellule: 167,
+      hauteurCellule: 243,
+      rectSource: () => ({ x: 0, y: 0, width: 167, height: 243 }),
+      rectDos: () => ({ x: 0, y: 972, width: 167, height: 243 }),
+    };
+    const mainDistribuee: Carte[] = [
+      { couleur: "coeur", rang: "as" },
+      { couleur: "coeur", rang: "7" },
+      { couleur: "coeur", rang: "roi" },
+      { couleur: "coeur", rang: "9" },
+      { couleur: "coeur", rang: "10" },
+    ];
+    const mainTriee: Carte[] = [
+      { couleur: "coeur", rang: "7" },
+      { couleur: "coeur", rang: "9" },
+      { couleur: "coeur", rang: "10" },
+      { couleur: "coeur", rang: "roi" },
+      { couleur: "coeur", rang: "as" },
+    ];
+
+    const { result } = renderHook(() =>
+      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }),
+    );
+
+    act(() => {
+      result.current.lancerDistribution({
+        sud: mainDistribuee,
+        ouest: creerMain("ouest", 5, 10),
+        nord: creerMain("nord", 5, 20),
+        est: creerMain("est", 5, 30),
+      });
+      jest.runAllTimers();
+    });
+
+    act(() => {
+      result.current.animerTriSud({
+        mainDistribuee,
+        mainTriee,
+        largeurEcran: 1280,
+        hauteurEcran: 720,
+        onTerminee: jest.fn(),
+      });
+    });
+
+    expect(
+      result.current.cartesAtlasSud.map((carteAtlas) => carteAtlas.carte.rang),
+    ).toEqual(mainTriee.map((carte) => carte.rang));
   });
 });
