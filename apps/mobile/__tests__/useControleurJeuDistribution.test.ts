@@ -14,6 +14,10 @@ interface VueBotTest {
 
 type ActionBotTest = { type: "PASSER" } | { type: "JOUER_CARTE"; carte: Carte };
 
+function creerProgressionsFactices(taille: number): Array<{ value: number }> {
+  return Array.from({ length: taille }, () => ({ value: 0 }));
+}
+
 const mockDeciderBot = jest.fn<ActionBotTest, [VueBotTest?]>((_vueBot?: VueBotTest) => ({
   type: "PASSER",
 }));
@@ -28,6 +32,8 @@ const mockGlisserCarteRetournee = jest.fn();
 const mockSurAnimationTerminee = jest.fn();
 const mockAttendreDelaiBot = jest.fn(() => Promise.resolve());
 const mockAnnulerDelai = jest.fn();
+let mockProgressionsAdv = creerProgressionsFactices(24);
+let mockProgressionsSud = creerProgressionsFactices(8);
 let dernierLancementDistribution:
   | {
       mains: Record<"sud" | "ouest" | "nord" | "est", Carte[]>;
@@ -68,10 +74,10 @@ jest.mock("../hooks/useAnimationsDistribution", () => ({
     terminerDistribution: mockTerminerDistribution,
     cartesAtlasAdversaires: [],
     cartesAtlasSud: [],
-    progressionsAdv: [],
+    progressionsAdv: mockProgressionsAdv,
     donneesWorkletAdv: { value: [] },
     nbCartesActivesAdv: { value: 0 },
-    progressionsSud: [],
+    progressionsSud: mockProgressionsSud,
     donneesWorkletSud: { value: [] },
     nbCartesActivesSud: { value: 0 },
     enCours: false,
@@ -169,6 +175,8 @@ describe("useControleurJeu - redistribution", () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.clearAllMocks();
+    mockProgressionsAdv = creerProgressionsFactices(24);
+    mockProgressionsSud = creerProgressionsFactices(8);
     configurerDistributionImmediate();
     mockLancerAnimationRetourPaquet.mockImplementation(
       (_cartes, _arrivee: { x: number; y: number }, onTerminee?: () => void) =>

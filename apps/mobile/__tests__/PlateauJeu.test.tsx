@@ -3,6 +3,13 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import PlateauJeu from "../components/game/PlateauJeu";
 
+function creerProgressionsFactices(taille: number): Array<{ value: number }> {
+  return Array.from({ length: taille }, () => ({ value: 0 }));
+}
+
+const mockProgressionsAdv = creerProgressionsFactices(24);
+const mockProgressionsSud = creerProgressionsFactices(8);
+
 const etatJeuMock = {
   phaseUI: "revelationCarte" as const,
   mainJoueur: [] as Carte[],
@@ -52,11 +59,11 @@ let mockControleur = {
     rectDos: jest.fn(() => ({ x: 0, y: 0, width: 1, height: 1 })),
   },
   cartesAtlasAdversaires: [],
-  progressionsAdv: [],
+  progressionsAdv: mockProgressionsAdv,
   donneesWorkletAdv: { value: [] },
   nbCartesActivesAdv: { value: 0 },
   cartesAtlasSud: [],
-  progressionsSud: [],
+  progressionsSud: mockProgressionsSud,
   donneesWorkletSud: { value: [] },
   nbCartesActivesSud: { value: 0 },
   distributionEnCours: false,

@@ -49,6 +49,11 @@ const mockGlisserCarteRetournee = jest.fn();
 const mockSurAnimationTerminee = jest.fn();
 const mockAttendreDelaiBot = jest.fn(() => Promise.resolve());
 const mockAnnulerDelai = jest.fn();
+function creerProgressionsFactices(taille: number): Array<{ value: number }> {
+  return Array.from({ length: taille }, () => ({ value: 0 }));
+}
+let mockProgressionsAdv = creerProgressionsFactices(24);
+let mockProgressionsSud = creerProgressionsFactices(8);
 
 jest.mock("@belote/bot-engine", () => ({
   deciderBot: (...args: Parameters<typeof mockDeciderBot>) => mockDeciderBot(...args),
@@ -74,10 +79,10 @@ jest.mock("../hooks/useAnimationsDistribution", () => ({
     terminerDistribution: mockTerminerDistribution,
     cartesAtlasAdversaires: [],
     cartesAtlasSud: [],
-    progressionsAdv: [],
+    progressionsAdv: mockProgressionsAdv,
     donneesWorkletAdv: { value: [] },
     nbCartesActivesAdv: { value: 0 },
-    progressionsSud: [],
+    progressionsSud: mockProgressionsSud,
     donneesWorkletSud: { value: [] },
     nbCartesActivesSud: { value: 0 },
     enCours: false,
@@ -329,6 +334,8 @@ describe("useControleurJeu - parties completes", () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.clearAllMocks();
+    mockProgressionsAdv = creerProgressionsFactices(24);
+    mockProgressionsSud = creerProgressionsFactices(8);
     configurerAnimationsImmediat();
     configurerBotJouePremiereCarteJouable();
   });
