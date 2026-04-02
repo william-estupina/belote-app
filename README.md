@@ -198,7 +198,8 @@ Commande confort :
 
 ```bash
 # Demarre l'emulateur, synchronise le bridge, installe l'app,
-# lance Metro puis ouvre l'application
+# lance Metro puis ouvre l'application.
+# Si la dev build est deja installee, le rebuild est saute.
 pnpm mobile:android:start
 ```
 
@@ -207,6 +208,16 @@ Le bridge Android :
 - garde WSL comme source de verite
 - synchronise le code vers un dossier Windows court pour eviter les problemes Gradle/CMake/Ninja sur `\\\\wsl.localhost\\...`
 - lance l'app Android depuis ce miroir Windows uniquement pour le build natif
+- reutilise la dev build deja installee pour les relances rapides
+
+Pour forcer un rebuild natif :
+
+```bash
+pnpm mobile:android:install
+
+# ou, ponctuellement
+BELOTE_ANDROID_FORCE_INSTALL=1 pnpm mobile:android:start
+```
 
 ### Qualité de code
 

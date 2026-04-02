@@ -53,6 +53,7 @@ function construireConfigurationBridge({
   const serial = env.BELOTE_ANDROID_SERIAL ?? env.ANDROID_SERIAL ?? "emulator-5554";
   const avd = env.BELOTE_ANDROID_AVD ?? "belote-api35";
   const portMetro = Number.parseInt(env.BELOTE_ANDROID_METRO_PORT ?? "8081", 10);
+  const schemeDevClient = env.BELOTE_ANDROID_DEV_SCHEME ?? "exp+belote";
 
   return {
     activite,
@@ -78,6 +79,8 @@ function construireConfigurationBridge({
     packageAndroid,
     portMetro,
     serial,
+    schemeDevClient,
+    verbose: env.BELOTE_ANDROID_VERBOSE === "1",
   };
 }
 
@@ -87,6 +90,10 @@ function doitInstallerDependances({
   nodeModulesPresent,
 }) {
   return !nodeModulesPresent || empreinteCourante !== empreintePrecedente;
+}
+
+function doitInstallerApplicationAndroid({ applicationInstallee, forcerInstallation }) {
+  return forcerInstallation || !applicationInstallee;
 }
 
 function construireScriptPowerShellSynchronisation({
@@ -183,6 +190,26 @@ function construireScriptCmdBuildAndroid({
   ].join("\r\n");
 }
 
+function construireUrlDevClient({ portMetro, schemeDevClient }) {
+  return `${schemeDevClient}://expo-development-client/?url=${encodeURIComponent(
+    `http://localhost:${portMetro}`,
+  )}`;
+}
+
+function construireArgumentsOuvertureDevClient({
+  packageAndroid,
+  portMetro,
+  schemeDevClient,
+}) {
+  return [
+    "-a",
+    "android.intent.action.VIEW",
+    "-d",
+    construireUrlDevClient({ portMetro, schemeDevClient }),
+    packageAndroid,
+  ];
+}
+
 function executerCommandeSync(commande, args, options = {}) {
   const resultat = spawnSync(commande, args, {
     encoding: "utf8",
@@ -206,7 +233,7 @@ function executerCommandeSync(commande, args, options = {}) {
   };
 }
 
-function executerScriptCmdTemporaire(contenuScript, prefixeNom) {
+function executerScriptCmdTemporaire(contenuScript, prefixeNom, options = {}) {
   const nomFichier = `${prefixeNom}-${Date.now()}-${Math.random()
     .toString(16)
     .slice(2)}.cmd`;
@@ -216,8 +243,8 @@ function executerScriptCmdTemporaire(contenuScript, prefixeNom) {
   fs.writeFileSync(cheminLinux, `${contenuScript}\r\n`, "utf8");
 
   try {
-    executerCommandeSync("cmd.exe", ["/d", "/c", cheminWindows], {
-      stdio: "inherit",
+    return executerCommandeSync("cmd.exe", ["/d", "/c", cheminWindows], {
+      stdio: options.stdio ?? "inherit",
     });
   } finally {
     if (fs.existsSync(cheminLinux)) {
@@ -334,6 +361,14 @@ function ecrireEtatBridge(cheminBridgeLinux, etat) {
   );
 }
 
+function mettreAJourEtatBridge(cheminBridgeLinux, patchEtat) {
+  const precedent = lireEtatBridge(cheminBridgeLinux) ?? {};
+  ecrireEtatBridge(cheminBridgeLinux, {
+    ...precedent,
+    ...patchEtat,
+  });
+}
+
 function obtenirConfigurationCourante() {
   const repertoireRacine = path.resolve(__dirname, "../../..");
   return construireConfigurationBridge({
@@ -353,6 +388,34 @@ function obtenirEtatAppareil(configuration) {
     ).stdout.trim();
   } catch {
     return null;
+  }
+}
+
+function applicationAndroidInstallee(configuration) {
+  const etatBridge = lireEtatBridge(configuration.cheminBridgeLinux);
+
+  if (etatBridge?.devBuildInstallee === true) {
+    return true;
+  }
+
+  try {
+    const sortie = executerCommandeSync(
+      configuration.adbLinux,
+      [
+        "-s",
+        configuration.serial,
+        "shell",
+        "pm",
+        "list",
+        "packages",
+        configuration.packageAndroid,
+      ],
+      { env: process.env },
+    ).stdout;
+
+    return sortie.includes(`package:${configuration.packageAndroid}`);
+  } catch {
+    return etatBridge?.devBuildInstallee === true;
   }
 }
 
@@ -459,7 +522,7 @@ function synchroniserBridge(configuration) {
   );
   const resultat = spawnSync(cheminRobocopyLinux, argumentsRobocopy, {
     encoding: "utf8",
-    stdio: "inherit",
+    stdio: configuration.verbose ? "inherit" : "pipe",
   });
 
   if (resultat.error) {
@@ -467,6 +530,10 @@ function synchroniserBridge(configuration) {
   }
 
   if ((resultat.status ?? 16) > 7) {
+    if (!configuration.verbose) {
+      process.stdout.write(resultat.stdout ?? "");
+      process.stderr.write(resultat.stderr ?? "");
+    }
     throw new Error(`Robocopy a echoue avec le code ${resultat.status}.`);
   }
 }
@@ -495,9 +562,14 @@ function assurerDependancesBridge(configuration) {
       cheminBridgeWindows: configuration.cheminBridgeWindows,
     }),
     "belote-bridge-install",
+    { stdio: configuration.verbose ? "inherit" : "pipe" },
   );
 
-  ecrireEtatBridge(configuration.cheminBridgeLinux, {
+  if (!configuration.verbose) {
+    console.log("Dependances bridge installees.");
+  }
+
+  mettreAJourEtatBridge(configuration.cheminBridgeLinux, {
     empreinteDependances: empreinteCourante,
   });
 }
@@ -513,12 +585,34 @@ function installerApplicationAndroid(configuration) {
       serial: configuration.serial,
     }),
     "belote-bridge-build",
+    { stdio: "inherit" },
+  );
+
+  mettreAJourEtatBridge(configuration.cheminBridgeLinux, {
+    devBuildInstallee: true,
+  });
+}
+
+function preparerConnexionMetro(configuration) {
+  executerCommandeSync(
+    configuration.adbLinux,
+    [
+      "-s",
+      configuration.serial,
+      "reverse",
+      `tcp:${configuration.portMetro}`,
+      `tcp:${configuration.portMetro}`,
+    ],
+    {
+      env: process.env,
+      stdio: configuration.verbose ? "inherit" : "pipe",
+    },
   );
 }
 
 function ouvrirApplication(configuration) {
-  const cibleActivite = `${configuration.packageAndroid}/${configuration.activite}`;
-  console.log(`Ouverture de ${cibleActivite}...`);
+  preparerConnexionMetro(configuration);
+  console.log(`Ouverture du dev client sur localhost:${configuration.portMetro}...`);
   executerCommandeSync(
     configuration.adbLinux,
     [
@@ -527,8 +621,11 @@ function ouvrirApplication(configuration) {
       "shell",
       "am",
       "start",
-      "-n",
-      cibleActivite,
+      ...construireArgumentsOuvertureDevClient({
+        packageAndroid: configuration.packageAndroid,
+        portMetro: configuration.portMetro,
+        schemeDevClient: configuration.schemeDevClient,
+      }),
     ],
     {
       env: process.env,
@@ -630,7 +727,19 @@ async function lancerMetroSeulement(configuration) {
 
 async function demarrerWorkflowComplet(configuration) {
   await demarrerEmulateur(configuration);
-  installerApplicationAndroid(configuration);
+  const forcerInstallation = process.env.BELOTE_ANDROID_FORCE_INSTALL === "1";
+  const applicationInstallee = applicationAndroidInstallee(configuration);
+
+  if (
+    doitInstallerApplicationAndroid({
+      applicationInstallee,
+      forcerInstallation,
+    })
+  ) {
+    installerApplicationAndroid(configuration);
+  } else {
+    console.log("Dev build deja installee, installation Android ignoree.");
+  }
 
   const statutMetro = await interrogerStatutMetro(configuration.portMetro);
 
@@ -701,12 +810,15 @@ async function executerCommandeCli(commande) {
 
 module.exports = {
   construireArgumentsRobocopy,
+  construireArgumentsOuvertureDevClient,
   construireScriptCmdBuildAndroid,
   construireScriptCmdInstallBridge,
   construireConfigurationBridge,
   construireScriptPowerShellSynchronisation,
+  construireUrlDevClient,
   convertirCheminLinuxVersUncWsl,
   convertirCheminWindowsVersLinuxMonte,
+  doitInstallerApplicationAndroid,
   estErreurAdbRecuperable,
   doitInstallerDependances,
   obtenirConfigurationCourante,
