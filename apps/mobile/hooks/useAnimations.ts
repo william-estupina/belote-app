@@ -248,11 +248,16 @@ export function useAnimations() {
         }
 
         const timeoutPhase2 = setTimeout(() => {
-          compteurId.current += 1;
-          const idRamassage = `ramassage-${compteurId.current}`;
           const carteRepere = cartesPli[0]?.carte;
 
           setCartesEnVol((precedent) => {
+            const cartesPliEnVol = precedent.filter((carteEnVol) => {
+              if (!estCartePliAnimable(carteEnVol.id)) {
+                return false;
+              }
+
+              return cartesPli.some(({ carte }) => estMemeCarte(carte, carteEnVol.carte));
+            });
             const cartesHorsPli = precedent.filter((carteEnVol) => {
               if (!estCartePliAnimable(carteEnVol.id)) {
                 return true;
@@ -262,19 +267,24 @@ export function useAnimations() {
                 estMemeCarte(carte, carteEnVol.carte),
               );
             });
+            const carteCollecte =
+              cartesPliEnVol.find(
+                (carteEnVol) =>
+                  carteRepere && estMemeCarte(carteEnVol.carte, carteRepere),
+              ) ?? cartesPliEnVol[0];
 
-            if (!carteRepere) {
+            if (!carteRepere || !carteCollecte) {
               return cartesHorsPli;
             }
 
-            callbacksFinJeuRef.current.set(idRamassage, () => {
-              setCartesEnVol((prec) => prec.filter((c) => c.id !== idRamassage));
+            callbacksFinJeuRef.current.set(carteCollecte.id, () => {
+              setCartesEnVol((prec) => prec.filter((c) => c.id !== carteCollecte.id));
             });
 
             return [
               ...cartesHorsPli,
               {
-                id: idRamassage,
+                ...carteCollecte,
                 carte: carteRepere,
                 depart: {
                   x: posGagnant.x,
@@ -293,7 +303,7 @@ export function useAnimations() {
                 flipVers: 0,
                 duree: dureeGlissement,
                 easing: "inout-cubic" as const,
-                segment: 0,
+                segment: carteCollecte.segment + 1,
               },
             ];
           });
