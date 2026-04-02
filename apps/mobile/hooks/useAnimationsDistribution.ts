@@ -815,10 +815,6 @@ export function useAnimationsDistribution(
         )
         .filter((carteAtlas): carteAtlas is CarteAtlas => carteAtlas !== undefined);
 
-      if (cartesSudTriees.length === mainTriee.length) {
-        setCartesAtlasSud(cartesSudTriees);
-      }
-
       for (let indexTrie = 0; indexTrie < mainTriee.length; indexTrie += 1) {
         const carte = mainTriee[indexTrie];
         const indexSource = mainDistribuee.findIndex((carteDistribuee) =>
@@ -868,10 +864,12 @@ export function useAnimationsDistribution(
         }
       })();
 
-      const timeout = setTimeout(
-        onTerminee,
-        ANIMATIONS.distribution.dureeReorganisationMain,
-      );
+      const timeout = setTimeout(() => {
+        if (cartesSudTriees.length === mainTriee.length) {
+          setCartesAtlasSud(cartesSudTriees);
+        }
+        onTerminee();
+      }, ANIMATIONS.distribution.dureeReorganisationMain);
       timeoutsCallbacksRef.current.push(timeout);
     },
     [cartesAtlasSud, progressionsSud, donneesWorkletSud],

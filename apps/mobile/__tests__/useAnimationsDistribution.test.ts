@@ -435,6 +435,14 @@ describe("useAnimationsDistribution", () => {
 
     expect(
       result.current.cartesAtlasSud.map((carteAtlas) => carteAtlas.carte.rang),
+    ).toEqual(mainDistribuee.map((carte) => carte.rang));
+
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
+
+    expect(
+      result.current.cartesAtlasSud.map((carteAtlas) => carteAtlas.carte.rang),
     ).toEqual(mainTriee.map((carte) => carte.rang));
   });
 });
