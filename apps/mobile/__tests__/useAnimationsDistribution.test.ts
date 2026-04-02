@@ -171,6 +171,50 @@ describe("useAnimationsDistribution", () => {
     ).toEqual(cartesExistantesSud.map((carte) => carte.rang));
   });
 
+  it("reorganise le premier paquet sud depuis son etat courant sans rejouer l'echelle de vol", () => {
+    const atlas: AtlasCartes = {
+      image: {
+        width: () => 1336,
+        height: () => 1215,
+      } as NonNullable<AtlasCartes["image"]>,
+      largeurCellule: 167,
+      hauteurCellule: 243,
+      rectSource: () => ({ x: 0, y: 0, width: 167, height: 243 }),
+      rectDos: () => ({ x: 0, y: 972, width: 167, height: 243 }),
+    };
+
+    const { result } = renderHook(() =>
+      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }),
+    );
+
+    act(() => {
+      result.current.lancerDistribution({
+        sud: creerMain("sud", 5, 0),
+        ouest: creerMain("ouest", 5, 10),
+        nord: creerMain("nord", 5, 20),
+        est: creerMain("est", 5, 30),
+      });
+    });
+
+    const donneesAvantDecalage = [...result.current.donneesWorkletSud.value];
+
+    act(() => {
+      jest.runAllTimers();
+    });
+
+    for (let index = 0; index < 3; index += 1) {
+      const offset = index * 10;
+      expect(result.current.donneesWorkletSud.value[offset + 6]).toBeCloseTo(
+        donneesAvantDecalage[offset + 7],
+        5,
+      );
+      expect(result.current.donneesWorkletSud.value[offset + 8]).toBeCloseTo(
+        donneesAvantDecalage[offset + 9],
+        5,
+      );
+    }
+  });
+
   it("decale les cartes adverses deja presentes vers l'eventail final", () => {
     const atlas: AtlasCartes = {
       image: {

@@ -684,6 +684,8 @@ export function useAnimationsDistribution(
           const offset = i * STRIDE;
           const departX = donneesPlatSud[offset + 4];
           const departY = donneesPlatSud[offset + 5];
+          const rotationCourante = donneesPlatSud[offset + 7];
+          const echelleCourante = donneesPlatSud[offset + 9];
           shiftDonnees.push(
             departX,
             departY,
@@ -691,10 +693,10 @@ export function useAnimationsDistribution(
             (departY + nouvelleArrivee.y) / 2,
             nouvelleArrivee.x,
             nouvelleArrivee.y,
-            donneesPlatSud[offset + 6],
+            rotationCourante,
             carteDisp.angle,
-            donneesPlatSud[offset + 8],
-            donneesPlatSud[offset + 9],
+            echelleCourante,
+            echelleCourante,
           );
         }
 
