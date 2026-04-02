@@ -54,6 +54,21 @@ describe("useAnimations", () => {
     expect(result.current.cartesEnVol[0].segment).toBe(0);
   });
 
+  it("configure une arrivee de carte au pli plus douce", () => {
+    const { result } = renderHook(() => useAnimations());
+
+    act(() => {
+      result.current.lancerAnimationJeuCarte(CARTE_TEST, "est");
+    });
+
+    expect(result.current.cartesEnVol[0]).toMatchObject({
+      id: "jeu-1",
+      duree: 360,
+      easing: "inout-cubic",
+      segment: 0,
+    });
+  });
+
   it("cree des cartes retour-* face cachee et appelle le callback de fin", () => {
     const surFin = jest.fn();
     const { result } = renderHook(() => useAnimations());

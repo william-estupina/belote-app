@@ -179,6 +179,7 @@ export function useAnimations() {
         },
         faceVisible: true,
         duree: ANIMATIONS.jeuCarte.duree,
+        easing: "inout-cubic",
         segment: 0,
       };
 
