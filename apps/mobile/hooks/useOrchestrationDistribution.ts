@@ -232,7 +232,7 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
 
       let cartesRecues = 0;
       let cartesSudEnvoyees = 0;
-      const cartesSudAccumulees: Carte[] = [];
+      let cartesSudArrivees = 0;
 
       animDistribution.lancerDistribution(mainsRecord, {
         indexDonneur: contexte.indexDonneur,
@@ -264,15 +264,22 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
               },
             }));
           } else {
-            cartesSudAccumulees.push(...cartes);
+            // Masquer les slots canvas sud arrivés pour éviter le doublon visuel,
+            // puis ajouter immédiatement à la main pour permettre l'animation
+            // de réorganisation quand le paquet suivant partira.
+            const slotDebut = cartesSudArrivees;
+            cartesSudArrivees += cartes.length;
+            for (let i = slotDebut; i < cartesSudArrivees; i++) {
+              animDistribution.progressionsSud[i].value = -1;
+            }
+            setEtatJeu((prev) => ({
+              ...prev,
+              mainJoueur: [...prev.mainJoueur, ...cartes],
+            }));
           }
 
           cartesRecues += cartes.length;
           if (cartesRecues >= totalCartesAttendues) {
-            setEtatJeu((prev) => ({
-              ...prev,
-              mainJoueur: [...prev.mainJoueur, ...cartesSudAccumulees],
-            }));
             lancerPhase3(contexte);
           }
         },
