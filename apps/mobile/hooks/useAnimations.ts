@@ -248,16 +248,11 @@ export function useAnimations() {
         }
 
         const timeoutPhase2 = setTimeout(() => {
+          compteurId.current += 1;
+          const idRamassage = `ramassage-${compteurId.current}`;
           const carteRepere = cartesPli[0]?.carte;
 
           setCartesEnVol((precedent) => {
-            const cartesPliEnVol = precedent.filter((carteEnVol) => {
-              if (!estCartePliAnimable(carteEnVol.id)) {
-                return false;
-              }
-
-              return cartesPli.some(({ carte }) => estMemeCarte(carte, carteEnVol.carte));
-            });
             const cartesHorsPli = precedent.filter((carteEnVol) => {
               if (!estCartePliAnimable(carteEnVol.id)) {
                 return true;
@@ -267,24 +262,19 @@ export function useAnimations() {
                 estMemeCarte(carte, carteEnVol.carte),
               );
             });
-            const carteCollecte =
-              cartesPliEnVol.find(
-                (carteEnVol) =>
-                  carteRepere && estMemeCarte(carteEnVol.carte, carteRepere),
-              ) ?? cartesPliEnVol[0];
 
-            if (!carteRepere || !carteCollecte) {
+            if (!carteRepere) {
               return cartesHorsPli;
             }
 
-            callbacksFinJeuRef.current.set(carteCollecte.id, () => {
-              setCartesEnVol((prec) => prec.filter((c) => c.id !== carteCollecte.id));
+            callbacksFinJeuRef.current.set(idRamassage, () => {
+              setCartesEnVol((prec) => prec.filter((c) => c.id !== idRamassage));
             });
 
             return [
               ...cartesHorsPli,
               {
-                ...carteCollecte,
+                id: idRamassage,
                 carte: carteRepere,
                 depart: {
                   x: posGagnant.x,
@@ -298,12 +288,10 @@ export function useAnimations() {
                   rotation: rotationArrivee,
                   echelle: 0.62,
                 },
-                faceVisible: true,
-                flipDe: 180,
-                flipVers: 0,
+                faceVisible: false,
                 duree: dureeGlissement,
                 easing: "inout-cubic" as const,
-                segment: carteCollecte.segment + 1,
+                segment: 0,
               },
             ];
           });

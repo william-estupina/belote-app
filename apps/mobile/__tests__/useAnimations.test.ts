@@ -171,7 +171,7 @@ describe("useAnimations", () => {
       expect(carteApres!.segment).toBe(1);
     });
 
-    it("transforme une carte deja presente en carte de collecte sans en creer une nouvelle", () => {
+    it("fusionne les cartes du pli en une seule carte de collecte avant le depart vers la pile", () => {
       const onTerminee = jest.fn();
       const { delaiPhase2, dureeGlissement } = planifierRamassagePli();
       const { result } = renderHook(() => useAnimations());
@@ -198,11 +198,9 @@ describe("useAnimations", () => {
       });
 
       expect(result.current.cartesEnVol).toHaveLength(1);
-      expect(result.current.cartesEnVol[0].id).toBe("jeu-1");
+      expect(result.current.cartesEnVol[0].id.startsWith("ramassage-")).toBe(true);
       expect(result.current.cartesEnVol[0]).toMatchObject({
-        faceVisible: true,
-        flipDe: 180,
-        flipVers: 0,
+        faceVisible: false,
         depart: {
           x: POSITIONS_PLI.nord.x,
           y: POSITIONS_PLI.nord.y,
@@ -316,7 +314,7 @@ describe("useAnimations", () => {
       expect(carteApresSecondCycle!.segment).toBe(1);
     });
 
-    it("conserve une carte existante pour le glissement courbe vers la pile", () => {
+    it("remplace les quatre cartes convergentes par une seule carte de collecte au debut du glissement", () => {
       const { delaiPhase2 } = planifierRamassagePli();
       const { result } = renderHook(() => useAnimations());
 
@@ -360,11 +358,9 @@ describe("useAnimations", () => {
       });
 
       expect(result.current.cartesEnVol).toHaveLength(1);
-      expect(result.current.cartesEnVol[0].id).toBe("pli-sud-coeur-10");
+      expect(result.current.cartesEnVol[0].id.startsWith("ramassage-")).toBe(true);
       expect(result.current.cartesEnVol[0]).toMatchObject({
-        faceVisible: true,
-        flipDe: 180,
-        flipVers: 0,
+        faceVisible: false,
         depart: {
           x: POSITIONS_PLI.nord.x,
           y: POSITIONS_PLI.nord.y,
