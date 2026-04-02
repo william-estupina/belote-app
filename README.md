@@ -60,6 +60,13 @@ belote/
 - **Android** : Android Studio + un émulateur ou un appareil physique
 - **Expo Go** : installer l'app [Expo Go](https://expo.dev/go) sur votre téléphone pour tester sans build natif
 
+### Pour le workflow Android WSL-first
+
+- travailler depuis **WSL** dans le repo Linux
+- avoir **Android Studio** et le **SDK Android** installes sous Windows
+- disposer d'un AVD Android, par defaut `belote-api35`
+- laisser le bridge utiliser un miroir technique Windows court, par defaut `%USERPROFILE%\\projects\\belote-android-bridge`
+
 ## Installation
 
 ```bash
@@ -130,6 +137,11 @@ npx playwright test --ui
 
 Les tests E2E mobiles utilisent `Maestro` et des flows declares dans `apps/mobile/.maestro/`.
 
+Important :
+
+- `Maestro` automatise des parcours E2E une fois que l'application tourne deja sur un emulateur ou un appareil
+- `Maestro` ne remplace ni l'emulateur Android, ni l'installation initiale de l'application, ni Metro
+
 Prerequis locaux :
 
 - CLI `maestro` disponible dans le `PATH`
@@ -157,6 +169,44 @@ Notes :
 
 - les parcours s'appuient d'abord sur des `testID` React Native pour rester stables
 - dans un checkout Windows via chemin UNC (`\\\\wsl.localhost\\...`), les scripts Maestro passent par PowerShell pour eviter les limites de `cmd.exe`
+
+### Workflow Android WSL-first
+
+Si vous developpez depuis WSL et voulez voir rapidement l'app sur un emulateur Android Windows, utilisez les commandes suivantes depuis la racine du repo WSL :
+
+```bash
+# Demarrer l'emulateur Android Windows et attendre le boot
+pnpm mobile:emulator:start
+
+# Verifier l'etat vu par adb
+pnpm mobile:emulator:status
+
+# Synchroniser le repo WSL vers le miroir Windows court
+pnpm mobile:android:sync
+
+# Builder et installer la dev build Android sans lancer Metro
+pnpm mobile:android:install
+
+# Demarrer Metro dans WSL pour le dev client
+pnpm mobile:android:dev
+
+# Ouvrir l'application deja installee sur l'emulateur
+pnpm mobile:android:open
+```
+
+Commande confort :
+
+```bash
+# Demarre l'emulateur, synchronise le bridge, installe l'app,
+# lance Metro puis ouvre l'application
+pnpm mobile:android:start
+```
+
+Le bridge Android :
+
+- garde WSL comme source de verite
+- synchronise le code vers un dossier Windows court pour eviter les problemes Gradle/CMake/Ninja sur `\\\\wsl.localhost\\...`
+- lance l'app Android depuis ce miroir Windows uniquement pour le build natif
 
 ### Qualité de code
 
@@ -230,12 +280,20 @@ Le QR code pointe vers l'URL directe de l'APK quand EAS la fournit, sinon vers l
 
 ### Option 2 : Émulateur Android
 
-1. Ouvrir Android Studio et lancer un émulateur
-2. Lancer le serveur :
-   ```bash
-   pnpm dev
-   ```
-3. Appuyer sur `a` dans le terminal pour ouvrir sur l'émulateur Android
+Depuis WSL, le plus fiable est d'utiliser le bridge Android :
+
+```bash
+pnpm mobile:android:start
+```
+
+Si vous preferez les commandes detaillees :
+
+```bash
+pnpm mobile:emulator:start
+pnpm mobile:android:install
+pnpm mobile:android:dev
+pnpm mobile:android:open
+```
 
 ### Option 3 : Simulateur iOS (macOS uniquement)
 
