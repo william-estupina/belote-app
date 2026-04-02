@@ -38,12 +38,24 @@ function comparerCouleurs(a: Couleur, b: Couleur): number {
   return ORDRE_PREFERENCE.indexOf(a) - ORDRE_PREFERENCE.indexOf(b);
 }
 
+function obtenirForceCarte(carte: Carte, couleurAtout?: Couleur | null): number {
+  return carte.couleur === couleurAtout
+    ? FORCE_ATOUT[carte.rang]
+    : FORCE_HORS_ATOUT[carte.rang];
+}
+
+function obtenirForceTeteGroupe(
+  groupe: Carte[] | undefined,
+  couleurAtout?: Couleur | null,
+): number {
+  const premiereCarte = groupe?.[0];
+  return premiereCarte ? obtenirForceCarte(premiereCarte, couleurAtout) : -1;
+}
+
 function trierGroupe(groupe: Carte[], couleurAtout?: Couleur | null): Carte[] {
   return [...groupe].sort((a, b) => {
-    const forceA =
-      a.couleur === couleurAtout ? FORCE_ATOUT[a.rang] : FORCE_HORS_ATOUT[a.rang];
-    const forceB =
-      b.couleur === couleurAtout ? FORCE_ATOUT[b.rang] : FORCE_HORS_ATOUT[b.rang];
+    const forceA = obtenirForceCarte(a, couleurAtout);
+    const forceB = obtenirForceCarte(b, couleurAtout);
 
     return forceB - forceA;
   });
@@ -53,6 +65,7 @@ function choisirCouleurSuivante(
   couleursRestantes: Couleur[],
   groupes: Map<Couleur, Carte[]>,
   couleurPrecedente: Couleur,
+  couleurAtout?: Couleur | null,
 ): Couleur {
   const chercherOpposee = couleursRestantes.filter(
     (couleur) => estCouleurNoire(couleur) !== estCouleurNoire(couleurPrecedente),
@@ -60,6 +73,13 @@ function choisirCouleurSuivante(
   const candidates = chercherOpposee.length > 0 ? chercherOpposee : couleursRestantes;
 
   return [...candidates].sort((a, b) => {
+    const forceTeteA = obtenirForceTeteGroupe(groupes.get(a), couleurAtout);
+    const forceTeteB = obtenirForceTeteGroupe(groupes.get(b), couleurAtout);
+    const deltaForce = forceTeteB - forceTeteA;
+    if (deltaForce !== 0) {
+      return deltaForce;
+    }
+
     const deltaTaille = (groupes.get(b)?.length ?? 0) - (groupes.get(a)?.length ?? 0);
     if (deltaTaille !== 0) {
       return deltaTaille;
@@ -72,6 +92,7 @@ function choisirCouleurSuivante(
 function ordonnerCouleursAvecPriorite(
   groupes: Map<Couleur, Carte[]>,
   couleurPrioritaire: Couleur,
+  couleurAtout?: Couleur | null,
 ): Couleur[] {
   const couleursDisponibles = [...groupes.entries()]
     .filter(([, cartes]) => cartes.length > 0)
@@ -91,6 +112,7 @@ function ordonnerCouleursAvecPriorite(
       restantes,
       groupes,
       resultat[resultat.length - 1],
+      couleurAtout,
     );
     resultat.push(suivante);
     restantes.splice(restantes.indexOf(suivante), 1);
@@ -119,7 +141,7 @@ export function trierMainJoueur(
   }
 
   const ordreCouleurs = couleurPrioritaire
-    ? ordonnerCouleursAvecPriorite(groupes, couleurPrioritaire)
+    ? ordonnerCouleursAvecPriorite(groupes, couleurPrioritaire, couleurAtout)
     : ORDRE_COULEURS_ALTERNEES.filter(
         (couleur) => (groupes.get(couleur)?.length ?? 0) > 0,
       );

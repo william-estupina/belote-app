@@ -55,4 +55,53 @@ describe("trierMainJoueur", () => {
       "carreau-roi",
     ]);
   });
+
+  it("privilegie la tete de couleur la plus forte pendant la premiere donne quand plusieurs alternances sont possibles", () => {
+    const main: Carte[] = [
+      { couleur: "coeur", rang: "roi" },
+      { couleur: "coeur", rang: "8" },
+      { couleur: "pique", rang: "as" },
+      { couleur: "trefle", rang: "8" },
+      { couleur: "trefle", rang: "7" },
+      { couleur: "carreau", rang: "10" },
+    ];
+
+    const resultat = trierMainJoueur(main, {
+      couleurPrioritaire: "coeur",
+    });
+
+    expect(idsCartes(resultat)).toEqual([
+      "coeur-roi",
+      "coeur-8",
+      "pique-as",
+      "carreau-10",
+      "trefle-8",
+      "trefle-7",
+    ]);
+  });
+
+  it("privilegie aussi la couleur opposee la plus forte apres l atout reel pendant la donne restante", () => {
+    const main: Carte[] = [
+      { couleur: "trefle", rang: "valet" },
+      { couleur: "trefle", rang: "9" },
+      { couleur: "coeur", rang: "as" },
+      { couleur: "carreau", rang: "roi" },
+      { couleur: "carreau", rang: "dame" },
+      { couleur: "pique", rang: "10" },
+    ];
+
+    const resultat = trierMainJoueur(main, {
+      couleurPrioritaire: "trefle",
+      couleurAtout: "trefle",
+    });
+
+    expect(idsCartes(resultat)).toEqual([
+      "trefle-valet",
+      "trefle-9",
+      "coeur-as",
+      "pique-10",
+      "carreau-roi",
+      "carreau-dame",
+    ]);
+  });
 });
