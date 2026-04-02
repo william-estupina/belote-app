@@ -20,7 +20,6 @@ type ModuleAndroidBridge = {
   }) => string;
   construireScriptCmdBuildAndroid: (options: {
     cheminBridgeWindows: string;
-    portMetro: number;
     serial: string;
   }) => string;
   construireConfigurationBridge: (options: {
@@ -38,6 +37,7 @@ type ModuleAndroidBridge = {
     distributionWsl: string,
   ) => string;
   convertirCheminWindowsVersLinuxMonte: (cheminWindows: string) => string;
+  estErreurAdbRecuperable: (erreur: unknown) => boolean;
   doitInstallerDependances: (options: {
     empreinteCourante: string;
     empreintePrecedente: string | null;
@@ -52,6 +52,7 @@ const {
   construireScriptPowerShellSynchronisation,
   convertirCheminLinuxVersUncWsl,
   convertirCheminWindowsVersLinuxMonte,
+  estErreurAdbRecuperable,
   doitInstallerDependances,
 } = require("../scripts/android-bridge.cjs") as ModuleAndroidBridge;
 
@@ -113,6 +114,18 @@ describe("android-bridge", () => {
         nodeModulesPresent: true,
       }),
     ).toBe(false);
+  });
+
+  it("detecte une erreur adb recuperable quand la connexion est fermee", () => {
+    expect(estErreurAdbRecuperable(new Error("error: closed"))).toBe(true);
+    expect(estErreurAdbRecuperable(new Error("device 'emulator-5554' not found"))).toBe(
+      true,
+    );
+    expect(estErreurAdbRecuperable(new Error("device offline"))).toBe(true);
+  });
+
+  it("n'etiquette pas une erreur de build comme recuperable cote adb", () => {
+    expect(estErreurAdbRecuperable(new Error("BUILD FAILED"))).toBe(false);
   });
 
   it("construit un script robocopy avec source UNC et destination Windows", () => {

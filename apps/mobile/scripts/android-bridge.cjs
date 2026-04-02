@@ -226,6 +226,17 @@ function executerScriptCmdTemporaire(contenuScript, prefixeNom) {
   }
 }
 
+function estErreurAdbRecuperable(erreur) {
+  const message =
+    erreur instanceof Error ? erreur.message : typeof erreur === "string" ? erreur : "";
+
+  return (
+    /error:\s*closed/i.test(message) ||
+    /device '.*' not found/i.test(message) ||
+    /\bdevice offline\b/i.test(message)
+  );
+}
+
 function obtenirUserProfileWindows() {
   return executerCommandeSync("cmd.exe", ["/d", "/c", "echo %USERPROFILE%"], {
     encoding: "utf8",
@@ -370,15 +381,7 @@ async function attendreEmulateurPret(configuration) {
   throw new Error(`L'emulateur ${configuration.serial} n'a pas termine son boot a temps.`);
 }
 
-async function demarrerEmulateur(configuration) {
-  const etat = obtenirEtatAppareil(configuration);
-
-  if (etat === "device") {
-    console.log(`Emulateur deja disponible: ${configuration.serial}`);
-    await attendreEmulateurPret(configuration);
-    return;
-  }
-
+function lancerProcessusEmulateur(configuration) {
   console.log(`Demarrage de l'AVD ${configuration.avd}...`);
   const processus = spawn(
     configuration.emulatorLinux,
@@ -389,8 +392,33 @@ async function demarrerEmulateur(configuration) {
     },
   );
   processus.unref();
+}
 
-  await attendreEmulateurPret(configuration);
+async function demarrerEmulateur(configuration) {
+  for (let tentative = 0; tentative < 2; tentative += 1) {
+    const etat = obtenirEtatAppareil(configuration);
+
+    if (etat === "device") {
+      console.log(`Emulateur deja disponible: ${configuration.serial}`);
+    } else {
+      lancerProcessusEmulateur(configuration);
+    }
+
+    try {
+      await attendreEmulateurPret(configuration);
+      return;
+    } catch (erreur) {
+      if (tentative === 0 && estErreurAdbRecuperable(erreur)) {
+        console.log(
+          `Connexion adb perdue pour ${configuration.serial}, nouvelle tentative...`,
+        );
+        await pause(DELAI_BOUCLE_MS);
+        continue;
+      }
+
+      throw erreur;
+    }
+  }
 }
 
 function afficherStatutEmulateur(configuration) {
@@ -679,6 +707,7 @@ module.exports = {
   construireScriptPowerShellSynchronisation,
   convertirCheminLinuxVersUncWsl,
   convertirCheminWindowsVersLinuxMonte,
+  estErreurAdbRecuperable,
   doitInstallerDependances,
   obtenirConfigurationCourante,
 };
