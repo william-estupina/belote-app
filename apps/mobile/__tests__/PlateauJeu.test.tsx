@@ -67,6 +67,7 @@ let mockControleur = {
   donneesWorkletSud: { value: [] },
   nbCartesActivesSud: { value: 0 },
   distributionEnCours: false,
+  modeRenduCartes: "jeu-interactif" as const,
   jouerCarte: jest.fn(),
   prendre: jest.fn(),
   annoncer: jest.fn(),
@@ -244,5 +245,26 @@ describe("PlateauJeu", () => {
 
     expect(props.carteRetournee).toEqual({ couleur: "coeur", rang: "as" });
     expect(props.opaciteCarteRetournee).toBe(0);
+  });
+
+  it("ne rend pas MainJoueur comme surface principale pendant la cinematique", () => {
+    mockControleur = {
+      ...mockControleur,
+      etatJeu: {
+        ...etatJeuMock,
+        phaseUI: "distribution",
+      },
+      modeRenduCartes: "cinematique-distribution",
+    };
+
+    const { UNSAFE_getAllByType } = render(<PlateauJeu />);
+    const { View } = require("react-native") as typeof import("react-native");
+
+    fireEvent(UNSAFE_getAllByType(View)[0], "layout", {
+      nativeEvent: { layout: { width: 1280, height: 720 } },
+    });
+
+    expect(screen.getByTestId("couche-animation")).toBeTruthy();
+    expect(screen.queryByTestId("main-joueur")).toBeNull();
   });
 });

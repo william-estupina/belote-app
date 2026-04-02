@@ -42,6 +42,8 @@ export type PhaseUI =
   | "scoresManche"
   | "finPartie";
 
+export type ModeRenduCartes = "cinematique-distribution" | "jeu-interactif";
+
 export interface EtatJeu {
   /** Phase actuelle de l'UI */
   phaseUI: PhaseUI;
@@ -121,6 +123,19 @@ interface OptionsControleur {
 // --- Constantes ---
 
 const INDEX_HUMAIN = 0; // sud
+
+function calculerModeRenduCartes(phaseUI: PhaseUI): ModeRenduCartes {
+  if (
+    phaseUI === "jeu" ||
+    phaseUI === "finPli" ||
+    phaseUI === "scoresManche" ||
+    phaseUI === "finPartie"
+  ) {
+    return "jeu-interactif";
+  }
+
+  return "cinematique-distribution";
+}
 
 // --- Hook principal ---
 
@@ -702,6 +717,7 @@ export function useControleurJeu({
 
   return {
     etatJeu,
+    modeRenduCartes: calculerModeRenduCartes(etatJeu.phaseUI),
     // Animations
     cartesEnVol: animations.cartesEnVol,
     surAnimationTerminee: animations.surAnimationTerminee,

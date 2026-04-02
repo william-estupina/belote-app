@@ -35,6 +35,7 @@ export default function PlateauJeu() {
 
   const {
     etatJeu,
+    modeRenduCartes,
     cartesEnVol,
     surAnimationTerminee,
     atlas,
@@ -199,28 +200,30 @@ export default function PlateauJeu() {
           )}
 
           {/* Main du joueur (sud) en éventail — interactive */}
-          <MainJoueur
-            cartes={etatJeu.mainJoueur}
-            largeurEcran={largeur}
-            hauteurEcran={hauteur}
-            animerNouvellesCartes={!distributionEnCours && !etatJeu.triMainDiffere}
-            modeDisposition={
-              distributionEnCours || etatJeu.triMainDiffere ? "reception" : "eventail"
-            }
-            nbCartesDisposition={
-              distributionEnCours
-                ? Math.max(etatJeu.mainJoueur.length, etatJeu.nbCartesAnticipeesJoueur)
-                : undefined
-            }
-            atlas={atlas}
-            cartesJouables={
-              etatJeu.phaseUI === "jeu" && etatJeu.estTourHumain
-                ? etatJeu.cartesJouables
-                : undefined
-            }
-            interactionActive={etatJeu.phaseUI === "jeu" && etatJeu.estTourHumain}
-            onCarteJouee={jouerCarte}
-          />
+          {modeRenduCartes === "jeu-interactif" && (
+            <MainJoueur
+              cartes={etatJeu.mainJoueur}
+              largeurEcran={largeur}
+              hauteurEcran={hauteur}
+              animerNouvellesCartes={!distributionEnCours && !etatJeu.triMainDiffere}
+              modeDisposition={
+                distributionEnCours || etatJeu.triMainDiffere ? "reception" : "eventail"
+              }
+              nbCartesDisposition={
+                distributionEnCours
+                  ? Math.max(etatJeu.mainJoueur.length, etatJeu.nbCartesAnticipeesJoueur)
+                  : undefined
+              }
+              atlas={atlas}
+              cartesJouables={
+                etatJeu.phaseUI === "jeu" && etatJeu.estTourHumain
+                  ? etatJeu.cartesJouables
+                  : undefined
+              }
+              interactionActive={etatJeu.phaseUI === "jeu" && etatJeu.estTourHumain}
+              onCarteJouee={jouerCarte}
+            />
+          )}
 
           {/* Carte retournée visible pendant les enchères */}
           <ReserveCentrale
