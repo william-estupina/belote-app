@@ -200,7 +200,9 @@ describe("useAnimations", () => {
       expect(result.current.cartesEnVol).toHaveLength(1);
       expect(result.current.cartesEnVol[0].id.startsWith("ramassage-")).toBe(true);
       expect(result.current.cartesEnVol[0]).toMatchObject({
-        faceVisible: false,
+        faceVisible: true,
+        flipDe: 180,
+        flipVers: 0,
         depart: {
           x: POSITIONS_PLI.nord.x,
           y: POSITIONS_PLI.nord.y,
@@ -360,7 +362,9 @@ describe("useAnimations", () => {
       expect(result.current.cartesEnVol).toHaveLength(1);
       expect(result.current.cartesEnVol[0].id.startsWith("ramassage-")).toBe(true);
       expect(result.current.cartesEnVol[0]).toMatchObject({
-        faceVisible: false,
+        faceVisible: true,
+        flipDe: 180,
+        flipVers: 0,
         depart: {
           x: POSITIONS_PLI.nord.x,
           y: POSITIONS_PLI.nord.y,
