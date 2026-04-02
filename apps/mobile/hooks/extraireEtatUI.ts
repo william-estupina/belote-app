@@ -178,5 +178,22 @@ export function synchroniserOrdreVisibleMain(
     cartesRestantes.splice(indexCarte, 1);
   }
 
-  return [...mainSynchronisee, ...cartesRestantes];
+  const mainFinale = [...mainSynchronisee, ...cartesRestantes];
+  const aMemeLongueur = mainFinale.length === mainVisible.length;
+  const estDejaSynchronisee =
+    aMemeLongueur &&
+    mainFinale.every((carte, index) => {
+      const carteVisible = mainVisible[index];
+      return (
+        carteVisible !== undefined &&
+        carteVisible.couleur === carte.couleur &&
+        carteVisible.rang === carte.rang
+      );
+    });
+
+  if (estDejaSynchronisee) {
+    return mainVisible as Carte[];
+  }
+
+  return mainFinale;
 }
