@@ -19,7 +19,7 @@ export interface CarteEnVol {
   segment: number;
   flipDe?: number;
   flipVers?: number;
-  easing?: "out-cubic" | "inout-cubic";
+  easing?: "out-cubic" | "inout-cubic" | "out-back-soft";
 }
 
 interface PropsCoucheAnimation {

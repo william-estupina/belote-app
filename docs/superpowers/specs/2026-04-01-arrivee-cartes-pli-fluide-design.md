@@ -26,10 +26,11 @@ On garde:
 - les positions de depart et d'arrivee existantes
 - le cycle de vie actuel de `useAnimations`
 
-On ajuste seulement deux leviers:
+On ajuste seulement trois leviers:
 
 - une duree de vol un peu plus longue pour `ANIMATIONS.jeuCarte`
 - une courbe d'easing plus douce pour les cartes jouees vers le pli
+- un amorti final leger sur la pose, porte par un easing `back` tres discret
 
 Cette approche est retenue car elle est:
 
@@ -64,7 +65,7 @@ Inconvenients:
 
 - demande un ajustement de test supplementaire pour figer le comportement
 
-Recommendation retenue: Option B.
+Recommendation retenue: Option B, avec un amorti final leger.
 
 ### Option C - ajouter une animation de settle en deux temps
 
@@ -87,24 +88,39 @@ Inconvenients:
 ### `apps/mobile/hooks/useAnimations.ts`
 
 - donner explicitement un easing plus doux aux cartes jouees vers le pli
+- basculer sur un easing avec amorti final pour la pose
+
+### `apps/mobile/components/game/CarteAnimee.tsx`
+
+- declarer un easing `out-back-soft`
+- mapper ce profil vers un `Easing.back` tres leger pour amortir l'arrivee sans effet demonstratif
 
 ### `apps/mobile/__tests__/useAnimations.test.ts`
 
 - ajouter un test qui fixe cette configuration
+
+### `apps/mobile/__tests__/CarteAnimee.test.tsx`
+
+- ajouter un test qui fixe le mapping du nouvel easing
 
 ## Strategie de tests
 
 Tester au niveau du hook `useAnimations` que l'animation de jeu creee pour une carte posee:
 
 - utilise la duree attendue
-- utilise l'easing `inout-cubic`
+- utilise l'easing `out-back-soft`
 - conserve les autres caracteristiques du vol actuel
+
+Tester au niveau de `CarteAnimee` que:
+
+- le profil `out-back-soft` s'appuie sur `Easing.back(0.85)`
+- le timing continue a etre pilote via `withTiming`
 
 ## Critere de succes
 
 La correction est reussie si:
 
 - l'arrivee des cartes sur le pli parait un peu plus lente
-- la pose finale parait plus douce
+- la pose finale parait legerement amortie
 - aucun autre cycle d'animation n'est degrade
 - les tests mobiles cibles passent

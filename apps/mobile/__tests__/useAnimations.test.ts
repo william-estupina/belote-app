@@ -64,7 +64,7 @@ describe("useAnimations", () => {
     expect(result.current.cartesEnVol[0]).toMatchObject({
       id: "jeu-1",
       duree: 360,
-      easing: "inout-cubic",
+      easing: "out-back-soft",
       segment: 0,
     });
   });

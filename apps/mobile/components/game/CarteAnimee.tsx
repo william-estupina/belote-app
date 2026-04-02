@@ -41,13 +41,14 @@ interface PropsCarteAnimee {
   onTerminee?: () => void;
   flipDe?: number;
   flipVers?: number;
-  easing?: "out-cubic" | "inout-cubic";
+  easing?: "out-cubic" | "inout-cubic" | "out-back-soft";
   segment?: number;
 }
 
 const EASINGS = {
   "out-cubic": Easing.out(Easing.cubic),
   "inout-cubic": Easing.inOut(Easing.cubic),
+  "out-back-soft": Easing.out(Easing.back(0.85)),
 };
 
 export function CarteAnimee({

@@ -179,7 +179,7 @@ export function useAnimations() {
         },
         faceVisible: true,
         duree: ANIMATIONS.jeuCarte.duree,
-        easing: "inout-cubic",
+        easing: "out-back-soft",
         segment: 0,
       };
 
