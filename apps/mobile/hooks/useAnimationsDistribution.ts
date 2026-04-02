@@ -29,6 +29,7 @@ import {
   obtenirOrdreDistribution,
   obtenirOrigineDistribution,
 } from "./distributionLayoutAtlas";
+import { construireGlissementCarteDepuisEtatCourant } from "./glissementCartes";
 import type { AtlasCartes } from "./useAtlasCartes";
 import { creerCarteFactice } from "./utils-cartes";
 
@@ -277,32 +278,42 @@ export function useAnimationsDistribution(
         for (let index = 0; index < nbExistantes; index += 1) {
           const cibleDepart = ciblesExistantesDepart[index];
           const cibleArrivee = ciblesExistantesArrivee[index];
-          const controle = {
-            x: (cibleDepart.arrivee.x + cibleArrivee.arrivee.x) / 2,
-            y: (cibleDepart.arrivee.y + cibleArrivee.arrivee.y) / 2,
-          };
+          const glissement = construireGlissementCarteDepuisEtatCourant({
+            depart: {
+              x: cibleDepart.arrivee.x,
+              y: cibleDepart.arrivee.y,
+              rotation: cibleDepart.rotationArrivee,
+              echelle: ECHELLE_MAIN_ADVERSE,
+            },
+            arrivee: {
+              x: cibleArrivee.arrivee.x,
+              y: cibleArrivee.arrivee.y,
+              rotation: cibleArrivee.rotationArrivee,
+              echelle: ECHELLE_MAIN_ADVERSE,
+            },
+          });
 
           cartesAdv.push({
             carte: creerCarteFactice(indexCarteCachee),
             joueur: position,
-            depart: cibleDepart.arrivee,
-            arrivee: cibleArrivee.arrivee,
-            controle,
-            rotationDepart: cibleDepart.rotationArrivee,
-            rotationArrivee: cibleArrivee.rotationArrivee,
+            depart: { x: glissement.depart.x, y: glissement.depart.y },
+            arrivee: { x: glissement.arrivee.x, y: glissement.arrivee.y },
+            controle: glissement.controle,
+            rotationDepart: glissement.depart.rotation,
+            rotationArrivee: glissement.arrivee.rotation,
             echelleDepart: ECHELLE_MAIN_ADVERSE,
             echelleArrivee: ECHELLE_MAIN_ADVERSE,
             rectSource: calculerVersoSource(largeurCellule, hauteurCellule),
           });
           donneesPlatAdv.push(
-            cibleDepart.arrivee.x,
-            cibleDepart.arrivee.y,
-            controle.x,
-            controle.y,
-            cibleArrivee.arrivee.x,
-            cibleArrivee.arrivee.y,
-            cibleDepart.rotationArrivee,
-            cibleArrivee.rotationArrivee,
+            glissement.depart.x,
+            glissement.depart.y,
+            glissement.controle.x,
+            glissement.controle.y,
+            glissement.arrivee.x,
+            glissement.arrivee.y,
+            glissement.depart.rotation,
+            glissement.arrivee.rotation,
             ECHELLE_MAIN_ADVERSE,
             ECHELLE_MAIN_ADVERSE,
           );
@@ -355,19 +366,29 @@ export function useAnimationsDistribution(
             largeurCarte: largeurCarteSud,
             hauteurCarte: hauteurCarteSud,
           });
-          const controle = {
-            x: (depart.x + arrivee.x) / 2,
-            y: (depart.y + arrivee.y) / 2,
-          };
+          const glissement = construireGlissementCarteDepuisEtatCourant({
+            depart: {
+              x: depart.x,
+              y: depart.y,
+              rotation: carteDepart.angle,
+              echelle: 1,
+            },
+            arrivee: {
+              x: arrivee.x,
+              y: arrivee.y,
+              rotation: carteArrivee.angle,
+              echelle: 1,
+            },
+          });
 
           cartesSud.push({
             carte,
             joueur: "sud",
-            depart,
-            arrivee,
-            controle,
-            rotationDepart: carteDepart.angle,
-            rotationArrivee: carteArrivee.angle,
+            depart: { x: glissement.depart.x, y: glissement.depart.y },
+            arrivee: { x: glissement.arrivee.x, y: glissement.arrivee.y },
+            controle: glissement.controle,
+            rotationDepart: glissement.depart.rotation,
+            rotationArrivee: glissement.arrivee.rotation,
             echelleDepart: 1,
             echelleArrivee: 1,
             rectSource: calculerRectoSource(
@@ -378,14 +399,14 @@ export function useAnimationsDistribution(
             ),
           });
           donneesPlatSud.push(
-            depart.x,
-            depart.y,
-            controle.x,
-            controle.y,
-            arrivee.x,
-            arrivee.y,
-            carteDepart.angle,
-            carteArrivee.angle,
+            glissement.depart.x,
+            glissement.depart.y,
+            glissement.controle.x,
+            glissement.controle.y,
+            glissement.arrivee.x,
+            glissement.arrivee.y,
+            glissement.depart.rotation,
+            glissement.arrivee.rotation,
             1,
             1,
           );
@@ -686,17 +707,31 @@ export function useAnimationsDistribution(
           const departY = donneesPlatSud[offset + 5];
           const rotationCourante = donneesPlatSud[offset + 7];
           const echelleCourante = donneesPlatSud[offset + 9];
+          const glissement = construireGlissementCarteDepuisEtatCourant({
+            depart: {
+              x: departX,
+              y: departY,
+              rotation: rotationCourante,
+              echelle: echelleCourante,
+            },
+            arrivee: {
+              x: nouvelleArrivee.x,
+              y: nouvelleArrivee.y,
+              rotation: carteDisp.angle,
+              echelle: echelleCourante,
+            },
+          });
           shiftDonnees.push(
-            departX,
-            departY,
-            (departX + nouvelleArrivee.x) / 2,
-            (departY + nouvelleArrivee.y) / 2,
-            nouvelleArrivee.x,
-            nouvelleArrivee.y,
-            rotationCourante,
-            carteDisp.angle,
-            echelleCourante,
-            echelleCourante,
+            glissement.depart.x,
+            glissement.depart.y,
+            glissement.controle.x,
+            glissement.controle.y,
+            glissement.arrivee.x,
+            glissement.arrivee.y,
+            glissement.depart.rotation,
+            glissement.arrivee.rotation,
+            glissement.depart.echelle,
+            glissement.arrivee.echelle,
           );
         }
 
@@ -841,16 +876,31 @@ export function useAnimationsDistribution(
         const currentRot = donneesCourantes[offsetSource + 7];
         const currentEch = donneesCourantes[offsetSource + 9];
 
-        nouvellesDonnees[offsetCible] = currentX;
-        nouvellesDonnees[offsetCible + 1] = currentY;
-        nouvellesDonnees[offsetCible + 2] = (currentX + arriveeTriee.x) / 2;
-        nouvellesDonnees[offsetCible + 3] = (currentY + arriveeTriee.y) / 2;
-        nouvellesDonnees[offsetCible + 4] = arriveeTriee.x;
-        nouvellesDonnees[offsetCible + 5] = arriveeTriee.y;
-        nouvellesDonnees[offsetCible + 6] = currentRot;
-        nouvellesDonnees[offsetCible + 7] = carteDisp.angle;
-        nouvellesDonnees[offsetCible + 8] = currentEch;
-        nouvellesDonnees[offsetCible + 9] = currentEch;
+        const glissement = construireGlissementCarteDepuisEtatCourant({
+          depart: {
+            x: currentX,
+            y: currentY,
+            rotation: currentRot,
+            echelle: currentEch,
+          },
+          arrivee: {
+            x: arriveeTriee.x,
+            y: arriveeTriee.y,
+            rotation: carteDisp.angle,
+            echelle: currentEch,
+          },
+        });
+
+        nouvellesDonnees[offsetCible] = glissement.depart.x;
+        nouvellesDonnees[offsetCible + 1] = glissement.depart.y;
+        nouvellesDonnees[offsetCible + 2] = glissement.controle.x;
+        nouvellesDonnees[offsetCible + 3] = glissement.controle.y;
+        nouvellesDonnees[offsetCible + 4] = glissement.arrivee.x;
+        nouvellesDonnees[offsetCible + 5] = glissement.arrivee.y;
+        nouvellesDonnees[offsetCible + 6] = glissement.depart.rotation;
+        nouvellesDonnees[offsetCible + 7] = glissement.arrivee.rotation;
+        nouvellesDonnees[offsetCible + 8] = glissement.depart.echelle;
+        nouvellesDonnees[offsetCible + 9] = glissement.arrivee.echelle;
       }
 
       const nbCartesCapture = nbCartes;

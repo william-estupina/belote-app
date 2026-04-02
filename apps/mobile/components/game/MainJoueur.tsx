@@ -15,6 +15,7 @@ import {
   RATIO_ASPECT_CARTE,
   RATIO_LARGEUR_CARTE,
 } from "../../constants/layout";
+import { construireGlissementCarteDepuisEtatCourant } from "../../hooks/glissementCartes";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
 import { CarteFaceAtlas } from "./Carte";
 import {
@@ -118,24 +119,55 @@ function CarteEventailAnimee({
       animBottom.value = centreMainBottom;
       animAngle.value = 0;
       animOpacite.value = 0;
+      const glissementEntree = construireGlissementCarteDepuisEtatCourant({
+        depart: {
+          x: centreMainX,
+          y: centreMainBottom,
+          rotation: 0,
+          echelle: 1,
+        },
+        arrivee: {
+          x,
+          y: decalageY,
+          rotation: angle,
+          echelle: 1,
+        },
+      });
 
       const config = {
         duration: ANIMATIONS.distribution.dureeReorganisationMain,
         easing: EASING_REORG,
       };
-      animX.value = withTiming(x, config);
-      animBottom.value = withTiming(decalageY, config);
-      animAngle.value = withTiming(angle, config);
+      animX.value = withTiming(glissementEntree.arrivee.x, config);
+      animBottom.value = withTiming(glissementEntree.arrivee.y, config);
+      animAngle.value = withTiming(glissementEntree.arrivee.rotation, config);
       animOpacite.value = withTiming(1, { duration: DUREE_FONDU_ENTREE_MAIN });
       return;
     }
+    const glissementReorganisation = construireGlissementCarteDepuisEtatCourant({
+      depart: {
+        x: animX.value,
+        y: animBottom.value,
+        rotation: animAngle.value,
+        echelle: 1,
+      },
+      arrivee: {
+        x,
+        y: decalageY,
+        rotation: angle,
+        echelle: 1,
+      },
+    });
     const config = {
       duration: ANIMATIONS.distribution.dureeReorganisationMain,
       easing: EASING_REORG,
     };
-    animX.value = withTiming(x, config);
-    animBottom.value = withTiming(decalageY, config);
-    animAngle.value = withTiming(angle, config);
+    animX.value = glissementReorganisation.depart.x;
+    animBottom.value = glissementReorganisation.depart.y;
+    animAngle.value = glissementReorganisation.depart.rotation;
+    animX.value = withTiming(glissementReorganisation.arrivee.x, config);
+    animBottom.value = withTiming(glissementReorganisation.arrivee.y, config);
+    animAngle.value = withTiming(glissementReorganisation.arrivee.rotation, config);
   }, [
     x,
     decalageY,
