@@ -27,8 +27,8 @@ const FORCE_ATOUT: Record<Rang, number> = {
   "7": 0,
 };
 
-const ORDRE_COULEURS_ALTERNEES: Couleur[] = ["pique", "coeur", "trefle", "carreau"];
-const ORDRE_PREFERENCE: Couleur[] = ["pique", "coeur", "trefle", "carreau"];
+const ORDRE_COULEURS_BASE: Couleur[] = ["pique", "coeur", "carreau", "trefle"];
+const ORDRE_PREFERENCE: Couleur[] = ["pique", "coeur", "carreau", "trefle"];
 
 function estCouleurNoire(couleur: Couleur): boolean {
   return couleur === "pique" || couleur === "trefle";
@@ -57,7 +57,7 @@ function ordonnerCouleursAvecPriorite(
   groupes: Map<Couleur, Carte[]>,
   couleurPrioritaire: Couleur,
 ): Couleur[] {
-  const couleursDisponibles = ORDRE_COULEURS_ALTERNEES.filter(
+  const couleursDisponibles = ORDRE_COULEURS_BASE.filter(
     (couleur) => (groupes.get(couleur)?.length ?? 0) > 0,
   );
 
@@ -110,7 +110,7 @@ export function trierMainJoueur(
   const { couleurPrioritaire, couleurAtout } = options;
   const groupes = new Map<Couleur, Carte[]>();
 
-  for (const couleur of ORDRE_COULEURS_ALTERNEES) {
+  for (const couleur of ORDRE_COULEURS_BASE) {
     groupes.set(couleur, []);
   }
 
@@ -124,9 +124,7 @@ export function trierMainJoueur(
 
   const ordreCouleurs = couleurPrioritaire
     ? ordonnerCouleursAvecPriorite(groupes, couleurPrioritaire)
-    : ORDRE_COULEURS_ALTERNEES.filter(
-        (couleur) => (groupes.get(couleur)?.length ?? 0) > 0,
-      );
+    : ORDRE_COULEURS_BASE.filter((couleur) => (groupes.get(couleur)?.length ?? 0) > 0);
 
   return ordreCouleurs.flatMap((couleur) => groupes.get(couleur) ?? []);
 }

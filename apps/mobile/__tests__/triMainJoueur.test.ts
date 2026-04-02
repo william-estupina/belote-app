@@ -7,6 +7,26 @@ function idsCartes(cartes: Carte[]): string[] {
 }
 
 describe("trierMainJoueur", () => {
+  it("respecte l ordre de couleur historique pique coeur carreau trefle quand aucune couleur n est prioritaire", () => {
+    const main: Carte[] = [
+      { couleur: "trefle", rang: "as" },
+      { couleur: "carreau", rang: "roi" },
+      { couleur: "coeur", rang: "10" },
+      { couleur: "pique", rang: "7" },
+      { couleur: "trefle", rang: "valet" },
+    ];
+
+    const resultat = trierMainJoueur(main);
+
+    expect(idsCartes(resultat)).toEqual([
+      "pique-7",
+      "coeur-10",
+      "carreau-roi",
+      "trefle-as",
+      "trefle-valet",
+    ]);
+  });
+
   it("place la couleur retournee tout a gauche sur les 5 premieres cartes puis alterne noir et rouge si possible", () => {
     const main: Carte[] = [
       { couleur: "carreau", rang: "7" },
