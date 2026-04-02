@@ -2,6 +2,7 @@ import { getCartesJouables } from "@belote/game-logic";
 import type { Carte, PositionJoueur } from "@belote/shared-types";
 import { act, renderHook } from "@testing-library/react-native";
 
+import { trierMainJoueur } from "../hooks/triMainJoueur";
 import { useControleurJeu } from "../hooks/useControleurJeu";
 
 interface VueBotTest {
@@ -265,6 +266,37 @@ describe("useControleurJeu - redistribution", () => {
     expect(result.current.etatJeu.phaseUI).toBe("encheres");
     expect(result.current.etatJeu.phaseEncheres).toBe("encheres1");
     expect(result.current.etatJeu.carteRetournee).not.toBeNull();
+  });
+
+  it("garde l ordre recu jusqu a la fin du retournement initial puis applique le tri historique", async () => {
+    const { result } = renderHook(() =>
+      useControleurJeu({
+        difficulte: "facile",
+        scoreObjectif: 1000,
+        largeurEcran: 1280,
+        hauteurEcran: 720,
+      }),
+    );
+
+    await viderFileEvenements();
+
+    expect(dernierLancementDistribution).toBeDefined();
+    const mainRecue = dernierLancementDistribution!.mains.sud;
+    const couleurPrioritaire = result.current.etatJeu.carteRetournee?.couleur ?? null;
+    const mainTriee = trierMainJoueur(mainRecue, {
+      couleurPrioritaire,
+    });
+
+    expect(result.current.etatJeu.phaseUI).toBe("revelationCarte");
+    expect(result.current.etatJeu.mainJoueur).toEqual(mainRecue);
+    expect(result.current.etatJeu.mainJoueur).not.toEqual(mainTriee);
+
+    act(() => {
+      result.current.onRevelationTerminee();
+    });
+
+    expect(result.current.etatJeu.phaseUI).toBe("encheres");
+    expect(result.current.etatJeu.mainJoueur).toEqual(mainTriee);
   });
 
   it("conserve les 12 cartes restantes dans le paquet a la fin de la donne initiale", async () => {

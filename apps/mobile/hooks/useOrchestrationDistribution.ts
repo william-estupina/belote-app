@@ -10,6 +10,7 @@ import { calculerDispositionReserveCentrale } from "../components/game/reserve-c
 import { ANIMATIONS } from "../constants/layout";
 import { construireCartesRetourPaquet } from "./construireCartesRetourPaquet";
 import { extraireEtatUI } from "./extraireEtatUI";
+import { construireTransitionTriMainInitiale } from "./transition-tri-main-initiale";
 import { trierMainJoueur } from "./triMainJoueur";
 import type { useAnimations } from "./useAnimations";
 import type { useAnimationsDistribution } from "./useAnimationsDistribution";
@@ -86,6 +87,10 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
           couleurPrioritaire: ctx.couleurAtout ?? ctx.carteRetournee?.couleur ?? null,
           couleurAtout: ctx.couleurAtout,
         });
+        const transitionTriMainInitiale = construireTransitionTriMainInitiale(
+          ctx.mains[INDEX_HUMAIN],
+          mainTriee,
+        );
         const dimensionsCourantes = dimensionsEcranRef.current;
 
         animDistribution.animerTriSud({
@@ -100,7 +105,7 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
 
             setEtatJeu((prev) => ({
               ...prev,
-              mainJoueur: mainTriee,
+              mainJoueur: transitionTriMainInitiale.etatAvantTri.mainJoueur,
               phaseUI: "distribution",
               phaseEncheres: null,
               carteRetournee: null,
@@ -111,12 +116,11 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
               },
               cartesRestantesPaquet: 12,
               nbCartesAnticipeesJoueur: ctx.mains[INDEX_HUMAIN].length,
-              triMainDiffere: true,
+              triMainDiffere: transitionTriMainInitiale.etatAvantTri.triMainDiffere,
             }));
 
             const timeoutTerminer = setTimeout(() => {
               animDistribution.terminerDistribution();
-              setEtatJeu((prev) => ({ ...prev, triMainDiffere: false }));
             }, 16);
             timeoutsControleurRef.current.push(timeoutTerminer);
 
@@ -145,8 +149,8 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
           setEtatJeu((prev) => ({
             ...prev,
             ...extraireEtatUI(ctx, etat),
-            mainJoueur: mainTriee,
-            triMainDiffere: false,
+            mainJoueur: transitionTriMainInitiale.etatApresTri.mainJoueur,
+            triMainDiffere: transitionTriMainInitiale.etatApresTri.triMainDiffere,
             nbCartesAdversaires: {
               nord: ctx.mains[2].length,
               est: ctx.mains[3].length,

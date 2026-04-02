@@ -44,14 +44,6 @@ function obtenirForceCarte(carte: Carte, couleurAtout?: Couleur | null): number 
     : FORCE_HORS_ATOUT[carte.rang];
 }
 
-function obtenirForceTeteGroupe(
-  groupe: Carte[] | undefined,
-  couleurAtout?: Couleur | null,
-): number {
-  const premiereCarte = groupe?.[0];
-  return premiereCarte ? obtenirForceCarte(premiereCarte, couleurAtout) : -1;
-}
-
 function trierGroupe(groupe: Carte[], couleurAtout?: Couleur | null): Carte[] {
   return [...groupe].sort((a, b) => {
     const forceA = obtenirForceCarte(a, couleurAtout);
@@ -61,61 +53,51 @@ function trierGroupe(groupe: Carte[], couleurAtout?: Couleur | null): Carte[] {
   });
 }
 
-function choisirCouleurSuivante(
-  couleursRestantes: Couleur[],
-  groupes: Map<Couleur, Carte[]>,
-  couleurPrecedente: Couleur,
-  couleurAtout?: Couleur | null,
-): Couleur {
-  const chercherOpposee = couleursRestantes.filter(
-    (couleur) => estCouleurNoire(couleur) !== estCouleurNoire(couleurPrecedente),
-  );
-  const candidates = chercherOpposee.length > 0 ? chercherOpposee : couleursRestantes;
-
-  return [...candidates].sort((a, b) => {
-    const forceTeteA = obtenirForceTeteGroupe(groupes.get(a), couleurAtout);
-    const forceTeteB = obtenirForceTeteGroupe(groupes.get(b), couleurAtout);
-    const deltaForce = forceTeteB - forceTeteA;
-    if (deltaForce !== 0) {
-      return deltaForce;
-    }
-
-    const deltaTaille = (groupes.get(b)?.length ?? 0) - (groupes.get(a)?.length ?? 0);
-    if (deltaTaille !== 0) {
-      return deltaTaille;
-    }
-
-    return comparerCouleurs(a, b);
-  })[0];
-}
-
 function ordonnerCouleursAvecPriorite(
   groupes: Map<Couleur, Carte[]>,
   couleurPrioritaire: Couleur,
-  couleurAtout?: Couleur | null,
 ): Couleur[] {
-  const couleursDisponibles = [...groupes.entries()]
-    .filter(([, cartes]) => cartes.length > 0)
-    .map(([couleur]) => couleur);
-
-  if (!couleursDisponibles.includes(couleurPrioritaire)) {
-    return couleursDisponibles.sort(comparerCouleurs);
-  }
-
-  const resultat: Couleur[] = [couleurPrioritaire];
-  const restantes = couleursDisponibles.filter(
-    (couleur) => couleur !== couleurPrioritaire,
+  const couleursDisponibles = ORDRE_COULEURS_ALTERNEES.filter(
+    (couleur) => (groupes.get(couleur)?.length ?? 0) > 0,
   );
 
-  while (restantes.length > 0) {
-    const suivante = choisirCouleurSuivante(
-      restantes,
-      groupes,
-      resultat[resultat.length - 1],
-      couleurAtout,
-    );
-    resultat.push(suivante);
-    restantes.splice(restantes.indexOf(suivante), 1);
+  if (!couleursDisponibles.includes(couleurPrioritaire)) {
+    return couleursDisponibles;
+  }
+
+  const noires = (["pique", "trefle"] as Couleur[]).filter(
+    (couleur) => couleur !== couleurPrioritaire && couleursDisponibles.includes(couleur),
+  );
+  const rouges = (["coeur", "carreau"] as Couleur[]).filter(
+    (couleur) => couleur !== couleurPrioritaire && couleursDisponibles.includes(couleur),
+  );
+
+  const resultat: Couleur[] = [couleurPrioritaire];
+  const commencerParNoir = noires.length >= rouges.length;
+  let indexNoir = 0;
+  let indexRouge = 0;
+
+  while (indexNoir < noires.length || indexRouge < rouges.length) {
+    if (commencerParNoir) {
+      if (indexNoir < noires.length) {
+        resultat.push(noires[indexNoir]);
+        indexNoir += 1;
+      }
+      if (indexRouge < rouges.length) {
+        resultat.push(rouges[indexRouge]);
+        indexRouge += 1;
+      }
+      continue;
+    }
+
+    if (indexRouge < rouges.length) {
+      resultat.push(rouges[indexRouge]);
+      indexRouge += 1;
+    }
+    if (indexNoir < noires.length) {
+      resultat.push(noires[indexNoir]);
+      indexNoir += 1;
+    }
   }
 
   return resultat;
@@ -141,7 +123,7 @@ export function trierMainJoueur(
   }
 
   const ordreCouleurs = couleurPrioritaire
-    ? ordonnerCouleursAvecPriorite(groupes, couleurPrioritaire, couleurAtout)
+    ? ordonnerCouleursAvecPriorite(groupes, couleurPrioritaire)
     : ORDRE_COULEURS_ALTERNEES.filter(
         (couleur) => (groupes.get(couleur)?.length ?? 0) > 0,
       );

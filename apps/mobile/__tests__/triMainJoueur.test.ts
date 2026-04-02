@@ -56,13 +56,12 @@ describe("trierMainJoueur", () => {
     ]);
   });
 
-  it("privilegie la tete de couleur la plus forte pendant la premiere donne quand plusieurs alternances sont possibles", () => {
+  it("garde toute la couleur prioritaire a gauche puis conserve l alternance historique des couleurs", () => {
     const main: Carte[] = [
       { couleur: "coeur", rang: "roi" },
       { couleur: "coeur", rang: "8" },
-      { couleur: "pique", rang: "as" },
-      { couleur: "trefle", rang: "8" },
-      { couleur: "trefle", rang: "7" },
+      { couleur: "pique", rang: "7" },
+      { couleur: "trefle", rang: "as" },
       { couleur: "carreau", rang: "10" },
     ];
 
@@ -73,35 +72,32 @@ describe("trierMainJoueur", () => {
     expect(idsCartes(resultat)).toEqual([
       "coeur-roi",
       "coeur-8",
-      "pique-as",
+      "pique-7",
       "carreau-10",
-      "trefle-8",
-      "trefle-7",
+      "trefle-as",
     ]);
   });
 
-  it("privilegie aussi la couleur opposee la plus forte apres l atout reel pendant la donne restante", () => {
+  it("aligne aussi l ordre restant apres l atout sur la vision historique react", () => {
     const main: Carte[] = [
-      { couleur: "trefle", rang: "valet" },
-      { couleur: "trefle", rang: "9" },
-      { couleur: "coeur", rang: "as" },
+      { couleur: "coeur", rang: "valet" },
+      { couleur: "coeur", rang: "9" },
+      { couleur: "pique", rang: "7" },
       { couleur: "carreau", rang: "roi" },
-      { couleur: "carreau", rang: "dame" },
-      { couleur: "pique", rang: "10" },
+      { couleur: "trefle", rang: "as" },
     ];
 
     const resultat = trierMainJoueur(main, {
-      couleurPrioritaire: "trefle",
-      couleurAtout: "trefle",
+      couleurPrioritaire: "coeur",
+      couleurAtout: "coeur",
     });
 
     expect(idsCartes(resultat)).toEqual([
-      "trefle-valet",
-      "trefle-9",
-      "coeur-as",
-      "pique-10",
+      "coeur-valet",
+      "coeur-9",
+      "pique-7",
       "carreau-roi",
-      "carreau-dame",
+      "trefle-as",
     ]);
   });
 });
