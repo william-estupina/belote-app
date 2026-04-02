@@ -107,7 +107,7 @@ export const ANIMATIONS = {
   },
   // Jeu de carte : main -> centre
   jeuCarte: {
-    duree: ralentirDureeAnimationMajeure(300), // duree de l'animation (ms)
+    duree: ralentirDureeAnimationMajeure(350), // duree de l'animation (ms)
   },
   // Ramassage du pli : centre -> gagnant
   ramassagePli: {

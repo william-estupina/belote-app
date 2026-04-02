@@ -54,7 +54,7 @@ describe("useAnimations", () => {
     expect(result.current.cartesEnVol[0].segment).toBe(0);
   });
 
-  it("configure une arrivee de carte au pli plus douce", () => {
+  it("configure une arrivee de carte au pli plus lente sans rebond final", () => {
     const { result } = renderHook(() => useAnimations());
 
     act(() => {
@@ -63,8 +63,8 @@ describe("useAnimations", () => {
 
     expect(result.current.cartesEnVol[0]).toMatchObject({
       id: "jeu-1",
-      duree: 360,
-      easing: "out-back-soft",
+      duree: 420,
+      easing: "out-cubic",
       segment: 0,
     });
   });

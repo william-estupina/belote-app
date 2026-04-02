@@ -141,38 +141,6 @@ describe("CarteAnimee", () => {
     expect(withTimingMock.mock.calls.length).toBeGreaterThan(premiersAppels);
   });
 
-  it("utilise un easing avec amorti final quand il est demande", () => {
-    const withTimingMock = jest.fn(
-      (valeur: number, _config: unknown, surFin?: (termine?: boolean) => void) => {
-        surFin?.(true);
-        return valeur;
-      },
-    );
-    const reanimated = jest.requireMock("react-native-reanimated") as {
-      Easing: { back: jest.Mock; out: jest.Mock };
-      withTiming: jest.Mock;
-    };
-    reanimated.withTiming = withTimingMock;
-
-    render(
-      <CarteAnimee
-        carte={CARTE_TEST}
-        depart={{ x: 0.2, y: 0.2, rotation: 0, echelle: 1 }}
-        arrivee={{ x: 0.5, y: 0.5, rotation: 5, echelle: 0.9 }}
-        faceVisible
-        duree={360}
-        easing={"out-back-soft"}
-        largeurEcran={1200}
-        hauteurEcran={800}
-        atlas={ATLAS_TEST}
-      />,
-    );
-
-    expect(reanimated.Easing.back).toHaveBeenCalledWith(0.85);
-    expect(reanimated.Easing.out).toHaveBeenCalled();
-    expect(withTimingMock).toHaveBeenCalled();
-  });
-
   it("utilise l'atlas pour une carte face en vol quand il est disponible", () => {
     const { getByTestId } = render(
       <CarteAnimee
