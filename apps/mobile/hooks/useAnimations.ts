@@ -235,52 +235,61 @@ export function useAnimations() {
           });
         });
 
-        // Enregistrer les callbacks de convergence -> glissement
-        for (const { carte } of cartesPli) {
-          const carteEnVol = cartesEnVolRef.current.find(
-            (c) => estCartePliAnimable(c.id) && estMemeCarte(c.carte, carte),
+        // Empêche les callbacks de fin de convergence de retirer les cartes réhydratées.
+        for (const { joueur, carte } of cartesPli) {
+          callbacksFinJeuRef.current.set(
+            `pli-${joueur}-${carte.couleur}-${carte.rang}`,
+            () => {},
           );
-          if (carteEnVol) {
-            callbacksFinJeuRef.current.set(carteEnVol.id, () => {
-              // Phase 2 : glissement vers la pile
+        }
+
+        const timeoutPhase2 = setTimeout(() => {
+          setCartesEnVol((precedent) =>
+            precedent.map((carteEnVol) => {
+              if (!estCartePliAnimable(carteEnVol.id)) {
+                return carteEnVol;
+              }
+
+              const idx = cartesPli.findIndex(({ carte }) =>
+                estMemeCarte(carte, carteEnVol.carte),
+              );
+              if (idx === -1) {
+                return carteEnVol;
+              }
+
               const centre = (cartesPli.length - 1) / 2;
-              const idx = cartesPli.findIndex((cp) => estMemeCarte(cp.carte, carte));
               const offsetIdx = idx - centre;
               const microDecalageX = offsetIdx * 0.004;
               const microDecalageY = offsetIdx * 0.002;
 
-              setCartesEnVol((prec) =>
-                prec.map((c) => {
-                  if (c.id !== carteEnVol.id) return c;
-                  return {
-                    ...c,
-                    depart: {
-                      x: posGagnant.x + microDecalageX,
-                      y: posGagnant.y + microDecalageY,
-                      rotation: 0,
-                      echelle: 0.85,
-                    },
-                    arrivee: {
-                      x: posPile.x,
-                      y: posPile.y,
-                      rotation: rotationArrivee,
-                      echelle: 0.6,
-                    },
-                    faceVisible: false,
-                    duree: dureeGlissement,
-                    easing: "inout-cubic" as const,
-                    segment: c.segment + 1,
-                  };
-                }),
-              );
-
-              // Callback fin de glissement : retirer la carte
               callbacksFinJeuRef.current.set(carteEnVol.id, () => {
                 setCartesEnVol((prec) => prec.filter((c) => c.id !== carteEnVol.id));
               });
-            });
-          }
-        }
+
+              return {
+                ...carteEnVol,
+                depart: {
+                  x: posGagnant.x,
+                  y: posGagnant.y,
+                  rotation: 0,
+                  echelle: 0.85,
+                },
+                arrivee: {
+                  x: posPile.x + microDecalageX,
+                  y: posPile.y + microDecalageY,
+                  rotation: rotationArrivee,
+                  echelle: 0.6,
+                },
+                faceVisible: carteEnVol.faceVisible,
+                duree: dureeGlissement,
+                easing: "inout-cubic" as const,
+                segment: carteEnVol.segment + 1,
+              };
+            }),
+          );
+        }, delaiPhase2);
+
+        timeoutsRef.current.push(timeoutPhase2);
 
         // Callback onTerminee global après toutes les phases 2
         if (onTerminee) {

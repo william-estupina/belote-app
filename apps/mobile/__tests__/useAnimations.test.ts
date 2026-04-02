@@ -1,10 +1,17 @@
 import type { Carte } from "@belote/shared-types";
 import { act, renderHook } from "@testing-library/react-native";
 
-import { ANIMATIONS } from "../constants/layout";
+import { ANIMATIONS, POSITIONS_PLI } from "../constants/layout";
+import { planifierRamassagePli } from "../hooks/planRamassagePli";
 import { useAnimations } from "../hooks/useAnimations";
 
 const CARTE_TEST: Carte = { couleur: "pique", rang: "as" };
+const CARTES_PLI_TEST = [
+  { joueur: "sud" as const, carte: { couleur: "coeur", rang: "10" } as const },
+  { joueur: "ouest" as const, carte: { couleur: "trefle", rang: "roi" } as const },
+  { joueur: "nord" as const, carte: { couleur: "carreau", rang: "9" } as const },
+  { joueur: "est" as const, carte: { couleur: "pique", rang: "as" } as const },
+];
 
 describe("useAnimations", () => {
   let requestAnimationFrameOriginal: typeof global.requestAnimationFrame;
@@ -156,7 +163,7 @@ describe("useAnimations", () => {
           [{ joueur: "est", carte: CARTE_TEST }],
           "nord",
         );
-        jest.runAllTimers();
+        jest.advanceTimersByTime(ANIMATIONS.ramassagePli.delaiAvant);
       });
 
       const carteApres = result.current.cartesEnVol.find((c) => c.id === "jeu-1");
@@ -166,6 +173,7 @@ describe("useAnimations", () => {
 
     it("retire les cartes de cartesEnVol apres la phase 2 du ramassage", () => {
       const onTerminee = jest.fn();
+      const { delaiPhase2, dureeGlissement } = planifierRamassagePli();
       const { result } = renderHook(() => useAnimations());
 
       act(() => {
@@ -182,12 +190,11 @@ describe("useAnimations", () => {
           "nord",
           onTerminee,
         );
-        jest.runAllTimers();
+        jest.advanceTimersByTime(ANIMATIONS.ramassagePli.delaiAvant);
       });
 
-      // Simuler fin convergence (segment 1)
       act(() => {
-        result.current.surAnimationTerminee("jeu-1");
+        jest.advanceTimersByTime(delaiPhase2);
       });
 
       // La carte devrait etre en segment 2 (glissement)
@@ -195,12 +202,17 @@ describe("useAnimations", () => {
       expect(carteGlissement).toBeDefined();
       expect(carteGlissement!.segment).toBe(2);
 
-      // Simuler fin glissement (segment 2)
       act(() => {
         result.current.surAnimationTerminee("jeu-1");
       });
 
       expect(result.current.cartesEnVol).toHaveLength(0);
+      expect(onTerminee).not.toHaveBeenCalled();
+
+      act(() => {
+        jest.advanceTimersByTime(dureeGlissement);
+      });
+
       expect(onTerminee).toHaveBeenCalledTimes(1);
     });
 
@@ -226,7 +238,7 @@ describe("useAnimations", () => {
           [{ joueur: "est", carte: CARTE_TEST }],
           "nord",
         );
-        jest.runAllTimers();
+        jest.advanceTimersByTime(ANIMATIONS.ramassagePli.delaiAvant);
       });
 
       const carteApres = result.current.cartesEnVol.find(
@@ -260,11 +272,12 @@ describe("useAnimations", () => {
           [{ joueur: "est", carte: CARTE_TEST }],
           "nord",
         );
-        jest.runAllTimers();
+        jest.advanceTimersByTime(ANIMATIONS.ramassagePli.delaiAvant);
       });
 
       act(() => {
         result.current.surAnimationTerminee("pli-est-pique-as");
+        jest.advanceTimersByTime(planifierRamassagePli().delaiPhase2);
         result.current.surAnimationTerminee("pli-est-pique-as");
       });
 
@@ -276,7 +289,7 @@ describe("useAnimations", () => {
           [{ joueur: "est", carte: CARTE_TEST }],
           "nord",
         );
-        jest.runAllTimers();
+        jest.advanceTimersByTime(ANIMATIONS.ramassagePli.delaiAvant);
       });
 
       const carteApresSecondCycle = result.current.cartesEnVol.find(
@@ -285,6 +298,59 @@ describe("useAnimations", () => {
 
       expect(carteApresSecondCycle).toBeDefined();
       expect(carteApresSecondCycle!.segment).toBe(1);
+    });
+
+    it("bascule toutes les cartes du pli ensemble vers le glissement sans saut visuel", () => {
+      const { delaiPhase2 } = planifierRamassagePli();
+      const { result } = renderHook(() => useAnimations());
+
+      act(() => {
+        result.current.ajouterCartesGelees(
+          CARTES_PLI_TEST.map(({ joueur, carte }) => ({
+            id: `pli-${joueur}-${carte.couleur}-${carte.rang}`,
+            carte,
+            depart: {
+              x: POSITIONS_PLI[joueur].x,
+              y: POSITIONS_PLI[joueur].y,
+              rotation: 0,
+              echelle: 0.9,
+            },
+            arrivee: {
+              x: POSITIONS_PLI[joueur].x,
+              y: POSITIONS_PLI[joueur].y,
+              rotation: 0,
+              echelle: 0.9,
+            },
+            faceVisible: true,
+            duree: 0,
+            segment: 0,
+          })),
+        );
+        result.current.lancerAnimationRamassagePli(CARTES_PLI_TEST, "nord");
+        jest.advanceTimersByTime(ANIMATIONS.ramassagePli.delaiAvant);
+      });
+
+      expect(result.current.cartesEnVol).toHaveLength(4);
+      expect(result.current.cartesEnVol.every((carte) => carte.segment === 1)).toBe(true);
+
+      act(() => {
+        result.current.surAnimationTerminee("pli-sud-coeur-10");
+      });
+
+      expect(result.current.cartesEnVol.every((carte) => carte.segment === 1)).toBe(true);
+
+      act(() => {
+        jest.advanceTimersByTime(delaiPhase2 + 1);
+      });
+
+      expect(result.current.cartesEnVol.every((carte) => carte.segment === 2)).toBe(true);
+      expect(
+        result.current.cartesEnVol.every(
+          (carte) =>
+            carte.depart.x === POSITIONS_PLI.nord.x &&
+            carte.depart.y === POSITIONS_PLI.nord.y,
+        ),
+      ).toBe(true);
     });
   });
 });
