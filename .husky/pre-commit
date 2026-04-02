@@ -2,7 +2,7 @@
 pnpm lint-staged
 
 # Scan des secrets dans les changements staged
-if command -v gitleaks &> /dev/null; then
+if command -v gitleaks >/dev/null 2>&1; then
   gitleaks protect --staged --verbose
 elif [ -f "$HOME/.local/bin/gitleaks.exe" ]; then
   "$HOME/.local/bin/gitleaks.exe" protect --staged --verbose
