@@ -15,6 +15,14 @@ type ConfigurationBridge = {
 };
 
 type ModuleAndroidBridge = {
+  construireScriptCmdInstallBridge: (options: {
+    cheminBridgeWindows: string;
+  }) => string;
+  construireScriptCmdBuildAndroid: (options: {
+    cheminBridgeWindows: string;
+    portMetro: number;
+    serial: string;
+  }) => string;
   construireConfigurationBridge: (options: {
     distributionWsl: string;
     env: NodeJS.ProcessEnv;
@@ -38,6 +46,8 @@ type ModuleAndroidBridge = {
 };
 
 const {
+  construireScriptCmdBuildAndroid,
+  construireScriptCmdInstallBridge,
   construireConfigurationBridge,
   construireScriptPowerShellSynchronisation,
   convertirCheminLinuxVersUncWsl,
@@ -121,5 +131,32 @@ describe("android-bridge", () => {
     );
     expect(script).toContain("'apps', 'mobile', 'android'");
     expect(script).toContain("if ($LASTEXITCODE -gt 7)");
+  });
+
+  it("construit un script cmd pour installer les dependances du bridge", () => {
+    const script = construireScriptCmdInstallBridge({
+      cheminBridgeWindows: "C:\\Users\\lemar\\projects\\belote-android-bridge",
+    });
+
+    expect(script).toContain('@echo off');
+    expect(script).toContain('cd /d "C:\\Users\\lemar\\projects\\belote-android-bridge"');
+    expect(script).toContain("set HUSKY=0");
+    expect(script).toContain("pnpm.cmd install --frozen-lockfile");
+  });
+
+  it("construit un script cmd pour builder Android depuis le bridge", () => {
+    const script = construireScriptCmdBuildAndroid({
+      cheminBridgeWindows: "C:\\Users\\lemar\\projects\\belote-android-bridge",
+      serial: "emulator-5554",
+    });
+
+    expect(script).toContain('cd /d "C:\\Users\\lemar\\projects\\belote-android-bridge"');
+    expect(script).toContain("set CI=1");
+    expect(script).toContain("set HUSKY=0");
+    expect(script).toContain("set ANDROID_SERIAL=emulator-5554");
+    expect(script).toContain(
+      "pnpm.cmd --filter @belote/mobile exec expo run:android --no-install --no-bundler --variant debug",
+    );
+    expect(script).not.toContain("--port");
   });
 });

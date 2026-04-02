@@ -158,6 +158,31 @@ function construireArgumentsRobocopy({ cheminSourceUnc, cheminBridgeWindows }) {
   ];
 }
 
+function construireScriptCmdInstallBridge({ cheminBridgeWindows }) {
+  return [
+    "@echo off",
+    `cd /d "${cheminBridgeWindows}"`,
+    "if errorlevel 1 exit /b %errorlevel%",
+    "set HUSKY=0",
+    "pnpm.cmd install --frozen-lockfile",
+  ].join("\r\n");
+}
+
+function construireScriptCmdBuildAndroid({
+  cheminBridgeWindows,
+  serial,
+}) {
+  return [
+    "@echo off",
+    `cd /d "${cheminBridgeWindows}"`,
+    "if errorlevel 1 exit /b %errorlevel%",
+    "set CI=1",
+    "set HUSKY=0",
+    `set ANDROID_SERIAL=${serial}`,
+    "pnpm.cmd --filter @belote/mobile exec expo run:android --no-install --no-bundler --variant debug",
+  ].join("\r\n");
+}
+
 function executerCommandeSync(commande, args, options = {}) {
   const resultat = spawnSync(commande, args, {
     encoding: "utf8",
@@ -179,6 +204,26 @@ function executerCommandeSync(commande, args, options = {}) {
     stderr: resultat.stderr ?? "",
     stdout: resultat.stdout ?? "",
   };
+}
+
+function executerScriptCmdTemporaire(contenuScript, prefixeNom) {
+  const nomFichier = `${prefixeNom}-${Date.now()}-${Math.random()
+    .toString(16)
+    .slice(2)}.cmd`;
+  const cheminWindows = path.win32.join(process.env.TEMP ?? "C:\\Windows\\Temp", nomFichier);
+  const cheminLinux = convertirCheminWindowsVersLinuxMonte(cheminWindows);
+
+  fs.writeFileSync(cheminLinux, `${contenuScript}\r\n`, "utf8");
+
+  try {
+    executerCommandeSync("cmd.exe", ["/d", "/c", cheminWindows], {
+      stdio: "inherit",
+    });
+  } finally {
+    if (fs.existsSync(cheminLinux)) {
+      fs.unlinkSync(cheminLinux);
+    }
+  }
 }
 
 function obtenirUserProfileWindows() {
@@ -417,14 +462,11 @@ function assurerDependancesBridge(configuration) {
   }
 
   console.log("Installation des dependances bridge...");
-  executerCommandeSync(
-    "cmd.exe",
-    [
-      "/d",
-      "/c",
-      `cd /d "${configuration.cheminBridgeWindows}" && set HUSKY=0 && pnpm.cmd install --frozen-lockfile`,
-    ],
-    { stdio: "inherit" },
+  executerScriptCmdTemporaire(
+    construireScriptCmdInstallBridge({
+      cheminBridgeWindows: configuration.cheminBridgeWindows,
+    }),
+    "belote-bridge-install",
   );
 
   ecrireEtatBridge(configuration.cheminBridgeLinux, {
@@ -437,14 +479,12 @@ function installerApplicationAndroid(configuration) {
   assurerDependancesBridge(configuration);
 
   console.log("Build et installation Android...");
-  executerCommandeSync(
-    "cmd.exe",
-    [
-      "/d",
-      "/c",
-      `cd /d "${configuration.cheminBridgeWindows}" && set CI=1 && set HUSKY=0 && set ANDROID_SERIAL=${configuration.serial} && pnpm.cmd --filter @belote/mobile exec expo run:android --no-install --no-bundler --variant debug --port ${configuration.portMetro}`,
-    ],
-    { stdio: "inherit" },
+  executerScriptCmdTemporaire(
+    construireScriptCmdBuildAndroid({
+      cheminBridgeWindows: configuration.cheminBridgeWindows,
+      serial: configuration.serial,
+    }),
+    "belote-bridge-build",
   );
 }
 
@@ -633,6 +673,8 @@ async function executerCommandeCli(commande) {
 
 module.exports = {
   construireArgumentsRobocopy,
+  construireScriptCmdBuildAndroid,
+  construireScriptCmdInstallBridge,
   construireConfigurationBridge,
   construireScriptPowerShellSynchronisation,
   convertirCheminLinuxVersUncWsl,
