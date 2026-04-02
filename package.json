@@ -4,6 +4,7 @@
   "packageManager": "pnpm@10.32.1",
   "scripts": {
     "dev": "pnpm --filter @belote/mobile dev",
+    "dev:web": "pnpm --filter @belote/mobile dev:web",
     "build": "turbo build",
     "mobile:verifier:bundle:android": "pnpm --filter @belote/mobile verifier:bundle:android",
     "mobile:build:android": "pnpm --filter @belote/mobile build:android",

@@ -80,10 +80,7 @@ pnpm install
 pnpm dev
 
 # Lancer uniquement en web
-pnpm --filter @belote/mobile dev:web
-
-# Lancer uniquement l'app mobile
-pnpm --filter @belote/mobile dev
+pnpm dev:web
 ```
 
 ### Tests
@@ -236,7 +233,7 @@ Le QR code pointe vers l'URL directe de l'APK quand EAS la fournit, sinon vers l
 1. Ouvrir Android Studio et lancer un émulateur
 2. Lancer le serveur :
    ```bash
-   pnpm --filter @belote/mobile dev
+   pnpm dev
    ```
 3. Appuyer sur `a` dans le terminal pour ouvrir sur l'émulateur Android
 
@@ -245,7 +242,7 @@ Le QR code pointe vers l'URL directe de l'APK quand EAS la fournit, sinon vers l
 1. Ouvrir Xcode et lancer un simulateur
 2. Lancer le serveur :
    ```bash
-   pnpm --filter @belote/mobile dev
+   pnpm dev
    ```
 3. Appuyer sur `i` dans le terminal pour ouvrir sur le simulateur iOS
 
@@ -273,7 +270,7 @@ eas build --platform android --profile preview
 ## Lancer l'app sur le web
 
 ```bash
-pnpm --filter @belote/mobile dev:web
+pnpm dev:web
 ```
 
 Ouvrir [http://localhost:8081](http://localhost:8081) dans le navigateur.
