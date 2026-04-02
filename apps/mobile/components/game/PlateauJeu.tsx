@@ -288,6 +288,7 @@ export default function PlateauJeu() {
             donneesWorkletSud={donneesWorkletSud}
             nbCartesActivesSud={nbCartesActivesSud}
             distributionEnCours={distributionEnCours}
+            modeRenduCartes={modeRenduCartes}
           />
 
           {/* Panneau d'enchères (quand c'est au joueur humain de décider) */}

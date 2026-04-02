@@ -40,6 +40,9 @@ const mockDeciderBot = jest.fn<ActionBotTest, [VueBotTest?]>((_vueBot?: VueBotTe
 }));
 const mockLancerDistribution = jest.fn();
 const mockTerminerDistribution = jest.fn();
+const mockAnimerTriSud = jest.fn(({ onTerminee }: { onTerminee: () => void }) =>
+  setTimeout(onTerminee, 0),
+);
 const mockAjouterCartesGelees = jest.fn();
 const mockAnnulerAnimations = jest.fn();
 const mockLancerAnimationJeuCarte = jest.fn();
@@ -76,6 +79,7 @@ jest.mock("../hooks/useAnimations", () => ({
 jest.mock("../hooks/useAnimationsDistribution", () => ({
   useAnimationsDistribution: () => ({
     lancerDistribution: mockLancerDistribution,
+    animerTriSud: mockAnimerTriSud,
     terminerDistribution: mockTerminerDistribution,
     cartesAtlasAdversaires: [],
     cartesAtlasSud: [],
@@ -334,6 +338,9 @@ describe("useControleurJeu - parties completes", () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.clearAllMocks();
+    mockAnimerTriSud.mockImplementation(({ onTerminee }: { onTerminee: () => void }) =>
+      setTimeout(onTerminee, 0),
+    );
     mockProgressionsAdv = creerProgressionsFactices(24);
     mockProgressionsSud = creerProgressionsFactices(8);
     configurerAnimationsImmediat();

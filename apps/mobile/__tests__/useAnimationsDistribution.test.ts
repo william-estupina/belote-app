@@ -25,6 +25,7 @@ jest.mock("react-native-reanimated", () => ({
     cubic: "cubic",
     out: <T>(valeur: T) => valeur,
   },
+  runOnUI: (callback: () => void) => callback,
   makeMutable: <T>(valeur: T) => {
     let valeurCourante = valeur;
     const sharedValue: SharedValueMock<T> = {
@@ -73,6 +74,17 @@ function creerMain(position: PositionJoueur, quantite: number, base: number): Ca
 }
 
 describe("useAnimationsDistribution", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
+    jest.useRealTimers();
+  });
+
   it("conserve les cartes adverses deja en main pendant la distribution restante", () => {
     const atlas: AtlasCartes = {
       image: {
@@ -290,5 +302,37 @@ describe("useAnimationsDistribution", () => {
         duration: ANIMATIONS.distribution.dureeCarte,
       },
     });
+  });
+
+  it("ne masque pas le dernier paquet sud a la fin de la distribution", () => {
+    const atlas: AtlasCartes = {
+      image: {
+        width: () => 1336,
+        height: () => 1215,
+      } as NonNullable<AtlasCartes["image"]>,
+      largeurCellule: 167,
+      hauteurCellule: 243,
+      rectSource: () => ({ x: 0, y: 0, width: 167, height: 243 }),
+      rectDos: () => ({ x: 0, y: 972, width: 167, height: 243 }),
+    };
+
+    const { result } = renderHook(() =>
+      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }),
+    );
+
+    act(() => {
+      result.current.lancerDistribution({
+        sud: creerMain("sud", 5, 0),
+        ouest: creerMain("ouest", 5, 10),
+        nord: creerMain("nord", 5, 20),
+        est: creerMain("est", 5, 30),
+      });
+    });
+
+    act(() => {
+      jest.runAllTimers();
+    });
+
+    expect(result.current.progressionsSud[4].value).not.toBe(2);
   });
 });

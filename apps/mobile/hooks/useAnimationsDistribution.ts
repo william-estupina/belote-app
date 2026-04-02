@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Easing,
   makeMutable,
+  runOnUI,
   type SharedValue,
   withDelay,
   withTiming,
@@ -68,6 +69,13 @@ export interface ResultatAnimationsDistribution {
       cartesVisibles?: Carte[];
     },
   ) => void;
+  animerTriSud: (params: {
+    mainDistribuee: Carte[];
+    mainTriee: Carte[];
+    largeurEcran: number;
+    hauteurEcran: number;
+    onTerminee: () => void;
+  }) => void;
   /** Signale la fin de la distribution (retire le canvas). À appeler après le tri. */
   terminerDistribution: () => void;
   cartesAtlasAdversaires: CarteAtlas[];
@@ -506,10 +514,8 @@ export function useAnimationsDistribution(
       }
 
       // Planifier les callbacks.
-      // Les cartes sud restent visibles dans l'Atlas (progression = 1) après leur arrivée.
-      // Le masquage (progression = 2) se fait au départ du paquet sud suivant,
-      // laissant un chevauchement visuel invisible grâce au Shadow Skia identique à MainJoueur.
-      // Le dernier paquet sud est masqué dans le callback de fin.
+      // Les cartes sud restent visibles dans l'Atlas (progression = 1) après leur arrivée,
+      // jusqu'à ce que animerTriSud les masque après le tri.
       let delaiFinDistributionMs = 0;
 
       // Indexer les paquets sud et leurs plages dans le pool
@@ -550,34 +556,91 @@ export function useAnimationsDistribution(
         }
       }
 
-      // Masquer chaque paquet sud au départ du paquet sud suivant
-      for (let k = 0; k < paquetsSud.length - 1; k++) {
-        const indices = indicesSudParPaquet[k];
-        const delaiMasquage = paquetsSud[k + 1].delaiDepartMs;
-        const timeout = setTimeout(() => {
-          for (let i = indices.debut; i <= indices.fin; i++) {
-            progressionsSud[i].value = 2;
+      // Décaler les cartes du premier paquet sud vers leur position dans le layout final
+      // (5 cartes) au départ du second paquet, en réanimant leur progression dans l'Atlas.
+      if (paquetsSud.length >= 2) {
+        const premierPaquetIndices = indicesSudParPaquet[0];
+        const delaiDecalage = paquetsSud[1].delaiDepartMs;
+        const nbCartesSudTotal = cartesSud.length;
+        const largeurCarteDecalage = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
+        const hauteurCarteDecalage = Math.round(
+          largeurCarteDecalage * RATIO_ASPECT_CARTE,
+        );
+
+        const dispositionDecalage = calculerDispositionMainJoueur({
+          mode: "reception",
+          nbCartes: nbCartesExistantesSud + nbCartesSudTotal,
+          largeurEcran,
+          hauteurEcran,
+          largeurCarte: largeurCarteDecalage,
+          hauteurCarte: hauteurCarteDecalage,
+        });
+
+        const shiftDonnees: number[] = [];
+        for (let i = premierPaquetIndices.debut; i <= premierPaquetIndices.fin; i++) {
+          const carteDisp = dispositionDecalage.cartes[nbCartesExistantesSud + i];
+          const nouvelleArrivee = calculerPointAncrageCarteMainJoueurNormalisee({
+            x: carteDisp.x,
+            decalageY: carteDisp.decalageY,
+            largeurEcran,
+            hauteurEcran,
+            largeurCarte: largeurCarteDecalage,
+            hauteurCarte: hauteurCarteDecalage,
+          });
+          const offset = i * STRIDE;
+          const departX = donneesPlatSud[offset + 4];
+          const departY = donneesPlatSud[offset + 5];
+          shiftDonnees.push(
+            departX,
+            departY,
+            (departX + nouvelleArrivee.x) / 2,
+            (departY + nouvelleArrivee.y) / 2,
+            nouvelleArrivee.x,
+            nouvelleArrivee.y,
+            donneesPlatSud[offset + 6],
+            carteDisp.angle,
+            donneesPlatSud[offset + 8],
+            donneesPlatSud[offset + 9],
+          );
+        }
+
+        const timeoutDecalage = setTimeout(() => {
+          const donneesCourantes = donneesWorkletSud.value;
+          const nouvellesDonnees = [...donneesCourantes];
+          for (let i = premierPaquetIndices.debut; i <= premierPaquetIndices.fin; i++) {
+            const sdOffset = (i - premierPaquetIndices.debut) * STRIDE;
+            const poolOffset = i * STRIDE;
+            for (let j = 0; j < STRIDE; j++) {
+              nouvellesDonnees[poolOffset + j] = shiftDonnees[sdOffset + j];
+            }
           }
-        }, delaiMasquage);
-        timeoutsCallbacksRef.current.push(timeout);
+          const debut = premierPaquetIndices.debut;
+          const fin = premierPaquetIndices.fin;
+          const duree = distribution.dureeReorganisationMain;
+          runOnUI(() => {
+            donneesWorkletSud.value = nouvellesDonnees;
+            for (let i = debut; i <= fin; i++) {
+              progressionsSud[i].value = 0;
+              progressionsSud[i].value = withTiming(1, {
+                duration: duree,
+                easing: EASING_OUT_CUBIC,
+              });
+            }
+          })();
+        }, delaiDecalage);
+        timeoutsCallbacksRef.current.push(timeoutDecalage);
       }
 
-      // Callback de fin : masquer le dernier paquet sud et notifier.
+      // Callback de fin : notifier la fin de distribution.
+      // Les cartes sud ne sont PAS masquées ici — c'est animerTriSud qui s'en charge
+      // après le tri, pour éviter tout trou visuel.
       // Note : setEnCours(false) n'est PAS appelé ici — c'est le contrôleur
       // qui appelle terminerDistribution() après le tri, pour éviter un
       // re-layout intermédiaire avec les cartes non triées.
-      const DELAI_SECURITE_DEMONTAGE = 100;
-      const delaiFinMs = delaiFinDistributionMs + DELAI_SECURITE_DEMONTAGE;
-      const dernierIndicesSud =
-        paquetsSud.length > 0 ? indicesSudParPaquet[paquetsSud.length - 1] : null;
-
-      if (dernierIndicesSud || options?.onTerminee) {
+      if (options?.onTerminee) {
+        const DELAI_SECURITE_DEMONTAGE = 100;
+        const delaiFinMs = delaiFinDistributionMs + DELAI_SECURITE_DEMONTAGE;
         const timeoutFin = setTimeout(() => {
-          if (dernierIndicesSud) {
-            for (let i = dernierIndicesSud.debut; i <= dernierIndicesSud.fin; i++) {
-              progressionsSud[i].value = 2;
-            }
-          }
           options?.onTerminee?.();
         }, delaiFinMs);
         timeoutsCallbacksRef.current.push(timeoutFin);
@@ -618,6 +681,98 @@ export function useAnimationsDistribution(
     setEnCours(false);
   }, []);
 
+  const animerTriSud = useCallback(
+    ({
+      mainDistribuee,
+      mainTriee,
+      largeurEcran,
+      hauteurEcran,
+      onTerminee,
+    }: {
+      mainDistribuee: Carte[];
+      mainTriee: Carte[];
+      largeurEcran: number;
+      hauteurEcran: number;
+      onTerminee: () => void;
+    }) => {
+      const nbCartes = mainDistribuee.length;
+      if (nbCartes === 0 || largeurEcran === 0 || hauteurEcran === 0) {
+        onTerminee();
+        return;
+      }
+
+      const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
+      const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
+
+      const dispositionTriee = calculerDispositionMainJoueur({
+        mode: "eventail",
+        nbCartes: mainTriee.length,
+        largeurEcran,
+        hauteurEcran,
+        largeurCarte,
+        hauteurCarte,
+      });
+
+      const donneesCourantes = donneesWorkletSud.value;
+      const nouvellesDonnees = [...donneesCourantes];
+
+      for (let i = 0; i < nbCartes; i++) {
+        const carte = mainDistribuee[i];
+        const indexTrie = mainTriee.findIndex(
+          (c) => c.couleur === carte.couleur && c.rang === carte.rang,
+        );
+        if (indexTrie < 0) continue;
+
+        const carteDisp = dispositionTriee.cartes[indexTrie];
+        const arriveeTriee = calculerPointAncrageCarteMainJoueurNormalisee({
+          x: carteDisp.x,
+          decalageY: carteDisp.decalageY,
+          largeurEcran,
+          hauteurEcran,
+          largeurCarte,
+          hauteurCarte,
+        });
+
+        const offset = i * STRIDE;
+        const currentX = donneesCourantes[offset + 4];
+        const currentY = donneesCourantes[offset + 5];
+        const currentRot = donneesCourantes[offset + 7];
+        const currentEch = donneesCourantes[offset + 9];
+
+        nouvellesDonnees[offset] = currentX;
+        nouvellesDonnees[offset + 1] = currentY;
+        nouvellesDonnees[offset + 2] = (currentX + arriveeTriee.x) / 2;
+        nouvellesDonnees[offset + 3] = (currentY + arriveeTriee.y) / 2;
+        nouvellesDonnees[offset + 4] = arriveeTriee.x;
+        nouvellesDonnees[offset + 5] = arriveeTriee.y;
+        nouvellesDonnees[offset + 6] = currentRot;
+        nouvellesDonnees[offset + 7] = carteDisp.angle;
+        nouvellesDonnees[offset + 8] = currentEch;
+        nouvellesDonnees[offset + 9] = currentEch;
+      }
+
+      const nbCartesCapture = nbCartes;
+      const dureeReorg = ANIMATIONS.distribution.dureeReorganisationMain;
+      runOnUI(() => {
+        donneesWorkletSud.value = nouvellesDonnees;
+        for (let i = 0; i < nbCartesCapture; i++) {
+          progressionsSud[i].value = 0;
+          progressionsSud[i].value = withTiming(1, {
+            duration: dureeReorg,
+            easing: EASING_OUT_CUBIC,
+          });
+        }
+      })();
+
+      const timeout = setTimeout(
+        onTerminee,
+        ANIMATIONS.distribution.dureeReorganisationMain,
+      );
+      timeoutsCallbacksRef.current.push(timeout);
+    },
+    [progressionsSud, donneesWorkletSud],
+  );
+
   // Rejouer l'appel en attente quand l'atlas devient disponible
   useEffect(() => {
     const enAttente = appelEnAttenteRef.current;
@@ -638,6 +793,7 @@ export function useAnimationsDistribution(
 
   return {
     lancerDistribution,
+    animerTriSud,
     terminerDistribution,
     cartesAtlasAdversaires,
     cartesAtlasSud,

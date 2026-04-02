@@ -4,6 +4,7 @@ import type { SharedValue } from "react-native-reanimated";
 
 import type { CarteAtlas } from "../../hooks/useAnimationsDistribution";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
+import type { ModeRenduCartes } from "../../hooks/useControleurJeu";
 import { CanvasAdversaires } from "./CanvasAdversaires";
 import { CarteAnimee, type PositionCarte } from "./CarteAnimee";
 import { DistributionCanvasSud } from "./DistributionCanvasSud";
@@ -40,6 +41,7 @@ interface PropsCoucheAnimation {
   donneesWorkletSud?: SharedValue<number[]>;
   nbCartesActivesSud?: SharedValue<number>;
   distributionEnCours?: boolean;
+  modeRenduCartes?: ModeRenduCartes;
 }
 
 export function CoucheAnimation({
@@ -58,9 +60,11 @@ export function CoucheAnimation({
   donneesWorkletSud,
   nbCartesActivesSud,
   distributionEnCours,
+  modeRenduCartes,
 }: PropsCoucheAnimation) {
+  const afficherSceneAtlas = modeRenduCartes === "cinematique-distribution";
   const aDistributionSud =
-    distributionEnCours &&
+    (distributionEnCours || afficherSceneAtlas) &&
     cartesAtlasSud &&
     progressionsSud &&
     donneesWorkletSud &&
@@ -82,6 +86,7 @@ export function CoucheAnimation({
         zIndex: 50,
       }}
       pointerEvents="none"
+      testID={afficherSceneAtlas ? "couche-animation-scene-atlas" : undefined}
     >
       {/* Canvas adversaires permanent (zIndex bas) */}
       {afficherCanvasAdversaires && (

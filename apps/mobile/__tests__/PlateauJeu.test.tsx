@@ -3,6 +3,9 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import PlateauJeu from "../components/game/PlateauJeu";
 
+type PhaseUIMock = "distribution" | "revelationCarte";
+type ModeRenduCartesMock = "cinematique-distribution" | "jeu-interactif";
+
 function creerProgressionsFactices(taille: number): Array<{ value: number }> {
   return Array.from({ length: taille }, () => ({ value: 0 }));
 }
@@ -11,7 +14,7 @@ const mockProgressionsAdv = creerProgressionsFactices(24);
 const mockProgressionsSud = creerProgressionsFactices(8);
 
 const etatJeuMock = {
-  phaseUI: "revelationCarte" as const,
+  phaseUI: "revelationCarte" as PhaseUIMock,
   mainJoueur: [] as Carte[],
   nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
   pliEnCours: [],
@@ -67,7 +70,7 @@ let mockControleur = {
   donneesWorkletSud: { value: [] },
   nbCartesActivesSud: { value: 0 },
   distributionEnCours: false,
-  modeRenduCartes: "jeu-interactif" as const,
+  modeRenduCartes: "jeu-interactif" as ModeRenduCartesMock,
   jouerCarte: jest.fn(),
   prendre: jest.fn(),
   annoncer: jest.fn(),
