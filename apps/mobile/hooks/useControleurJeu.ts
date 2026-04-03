@@ -624,6 +624,12 @@ export function useControleurJeu({
           surPretAffichage: (idAnimation) => {
             if (estDemonte.current) return;
             setCartesMasqueesMainJoueur([carte]);
+            setEtatJeu((prev) => ({
+              ...prev,
+              mainJoueur: prev.mainJoueur.filter(
+                (carteMain) => !estMemeCarte(carteMain, carte),
+              ),
+            }));
             animations.demarrerAnimationJeuCarte(idAnimation);
           },
         },

@@ -296,11 +296,13 @@ describe("useControleurJeu - redistribution", () => {
     expect(result.current.etatJeu.cartesRestantesPaquet).toBe(12);
   });
 
-  it("conserve la carte sud dans la main jusqu a la fin de son animation de pose", async () => {
+  it("retire la carte sud de la main des le depart visuel puis l ajoute au pli a l arrivee", async () => {
     let terminerAnimationJeu: (() => void) | undefined;
+    let surPretAffichage: ((idAnimation: string) => void) | undefined;
     mockLancerAnimationJeuCarte.mockImplementation(
-      (_carte, _joueur, onTerminee?: () => void) => {
+      (_carte, _joueur, onTerminee?: () => void, _depart, options) => {
         terminerAnimationJeu = onTerminee;
+        surPretAffichage = options?.surPretAffichage;
       },
     );
 
@@ -337,6 +339,14 @@ describe("useControleurJeu - redistribution", () => {
     expect(result.current.etatJeu.mainJoueur).toContainEqual(carteJouee);
     expect(result.current.etatJeu.estTourHumain).toBe(false);
     expect(result.current.etatJeu.cartesJouables).toEqual([]);
+    expect(result.current.etatJeu.pliEnCours).toEqual([]);
+
+    act(() => {
+      surPretAffichage?.("jeu-1");
+    });
+
+    expect(result.current.etatJeu.mainJoueur).not.toContainEqual(carteJouee);
+    expect(result.current.etatJeu.pliEnCours).toEqual([]);
 
     act(() => {
       terminerAnimationJeu?.();
@@ -441,6 +451,7 @@ describe("useControleurJeu - redistribution", () => {
 
     expect(result.current.cartesEnPoseMainJoueur).toEqual([carteJouee]);
     expect(result.current.cartesMasqueesMainJoueur).toEqual([carteJouee]);
+    expect(result.current.etatJeu.mainJoueur).not.toContainEqual(carteJouee);
     expect(mockDemarrerAnimationJeuCarte).toHaveBeenCalledWith("jeu-1");
   });
 
