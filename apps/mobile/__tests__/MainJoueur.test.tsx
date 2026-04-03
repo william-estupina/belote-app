@@ -233,10 +233,18 @@ describe("MainJoueur", () => {
       largeurCarte,
       hauteurCarte,
     });
-    const carteDisposition = disposition.cartes[1];
-    const yAttendu =
+    const carteDisposition = disposition.cartes[0];
+    const angleRadians = (carteDisposition.angle * Math.PI) / 180;
+    const xCentreCarte = carteDisposition.x + largeurCarte / 2;
+    const yCentreCarte =
       1 -
       (carteDisposition.decalageY + hauteurCarte / 2 - hauteurCarte * 0.15) /
+        hauteurEcran;
+    const xAttendu =
+      (xCentreCarte + (hauteurCarte / 2 + 8) * Math.sin(angleRadians)) / largeurEcran;
+    const yAttendu =
+      yCentreCarte +
+      ((hauteurCarte / 2) * (1 - Math.cos(angleRadians)) - 8 * Math.cos(angleRadians)) /
         hauteurEcran;
 
     render(
@@ -251,13 +259,13 @@ describe("MainJoueur", () => {
       />,
     );
 
-    fireEvent.press(screen.getByTestId("carte-main-coeur-roi"));
+    fireEvent.press(screen.getByTestId("carte-main-pique-as"));
 
     expect(surCarteJouee).toHaveBeenCalledWith(
-      CARTES[1],
+      CARTES[0],
       expect.objectContaining({
-        x: (carteDisposition.x + largeurCarte / 2) / largeurEcran,
-        y: yAttendu - 8 / hauteurEcran,
+        x: xAttendu,
+        y: yAttendu,
         rotation: carteDisposition.angle,
         echelle: 1,
       }),

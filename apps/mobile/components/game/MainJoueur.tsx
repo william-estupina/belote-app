@@ -60,6 +60,40 @@ function estEnPose(carte: Carte, cartesEnPose?: Carte[]): boolean {
 
 const EASING_REORG = Easing.inOut(Easing.cubic);
 
+function calculerDepartAnimationCarteEventail(params: {
+  xProp: number;
+  yProp: number;
+  angle: number;
+  hauteurCarte: number;
+  largeurEcran: number;
+  hauteurEcran: number;
+  decalageSoulevement: number;
+}): DepartAnimationJeuCarte {
+  const {
+    xProp,
+    yProp,
+    angle,
+    hauteurCarte,
+    largeurEcran,
+    hauteurEcran,
+    decalageSoulevement,
+  } = params;
+  const angleRadians = (angle * Math.PI) / 180;
+  const decalageX =
+    ((hauteurCarte / 2 + decalageSoulevement) * Math.sin(angleRadians)) / largeurEcran;
+  const decalageY =
+    ((hauteurCarte / 2) * (1 - Math.cos(angleRadians)) -
+      decalageSoulevement * Math.cos(angleRadians)) /
+    hauteurEcran;
+
+  return {
+    x: xProp + decalageX,
+    y: yProp + decalageY,
+    rotation: angle,
+    echelle: 1,
+  };
+}
+
 // --- Sous-composant animé pour une carte dans l'éventail ---
 
 interface PropsCarteEventail {
@@ -109,6 +143,7 @@ function CarteEventailAnimee({
   zIndex,
   onCarteJouee,
 }: PropsCarteEventail) {
+  const DECALAGE_SOULEVEMENT_CARTE = 8;
   const estPremierRendu = useRef(true);
   const estInteractive = interactionActive && jouable && !estMasquee && !!onCarteJouee;
 
@@ -214,17 +249,26 @@ function CarteEventailAnimee({
         disabled={!estInteractive}
         accessibilityState={{ disabled: !estInteractive }}
         onPress={() =>
-          onCarteJouee?.(carte, {
-            x: xProp,
-            y: yProp - 8 / hauteurEcran,
-            rotation: angle,
-            echelle,
-          })
+          onCarteJouee?.(
+            carte,
+            calculerDepartAnimationCarteEventail({
+              xProp,
+              yProp,
+              angle,
+              hauteurCarte,
+              largeurEcran,
+              hauteurEcran,
+              decalageSoulevement: DECALAGE_SOULEVEMENT_CARTE,
+            }),
+          )
         }
         testID={`carte-main-${carte.couleur}-${carte.rang}`}
         style={({ pressed }) => ({
           opacity: estMasquee ? 0 : 1,
-          transform: estEnPose || (pressed && estInteractive) ? [{ translateY: -8 }] : [],
+          transform:
+            estEnPose || (pressed && estInteractive)
+              ? [{ translateY: -DECALAGE_SOULEVEMENT_CARTE }]
+              : [],
         })}
       >
         <CarteFaceAtlas
