@@ -17,6 +17,7 @@ import {
 } from "../../constants/layout";
 import { construireGlissementCarteDepuisEtatCourant } from "../../hooks/glissementCartes";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
+import { estMemeCarte } from "../../hooks/utils-cartes";
 import { CarteFaceAtlas } from "./Carte";
 import {
   calculerDispositionMainJoueur,
@@ -38,6 +39,7 @@ interface PropsMainJoueur {
   animerNouvellesCartes?: boolean;
   modeDisposition?: ModeDispositionMainJoueur;
   nbCartesDisposition?: number;
+  cartesMasquees?: Carte[];
   atlas: AtlasCartes;
   onCarteJouee?: (carte: Carte, position: PositionProportionnelle) => void;
 }
@@ -46,6 +48,11 @@ interface PropsMainJoueur {
 function estJouable(carte: Carte, cartesJouables?: Carte[]): boolean {
   if (!cartesJouables) return true;
   return cartesJouables.some((c) => c.rang === carte.rang && c.couleur === carte.couleur);
+}
+
+function estMasquee(carte: Carte, cartesMasquees?: Carte[]): boolean {
+  if (!cartesMasquees || cartesMasquees.length === 0) return false;
+  return cartesMasquees.some((carteMasquee) => estMemeCarte(carteMasquee, carte));
 }
 
 const EASING_REORG = Easing.inOut(Easing.cubic);
@@ -63,6 +70,7 @@ interface PropsCarteEventail {
   hauteurConteneur: number;
   jouable: boolean;
   grisee: boolean;
+  estMasquee: boolean;
   interactionActive: boolean;
   animerEntree: boolean;
   atlas: AtlasCartes;
@@ -83,6 +91,7 @@ function CarteEventailAnimee({
   hauteurConteneur,
   jouable,
   grisee,
+  estMasquee,
   interactionActive,
   animerEntree,
   atlas,
@@ -92,7 +101,7 @@ function CarteEventailAnimee({
   onCarteJouee,
 }: PropsCarteEventail) {
   const estPremierRendu = useRef(true);
-  const estInteractive = interactionActive && jouable && !!onCarteJouee;
+  const estInteractive = interactionActive && jouable && !estMasquee && !!onCarteJouee;
 
   // Position d'entrée : centre de la main (là où les cartes animées atterrissent)
   const centreMainX = largeurEcran * POSITIONS_MAINS.sud.x - largeurCarte / 2;
@@ -194,9 +203,11 @@ function CarteEventailAnimee({
     <Animated.View style={styleAnime}>
       <Pressable
         disabled={!estInteractive}
+        accessibilityState={{ disabled: !estInteractive }}
         onPress={() => onCarteJouee?.(carte, { x: xProp, y: yProp })}
         testID={`carte-main-${carte.couleur}-${carte.rang}`}
         style={({ pressed }) => ({
+          opacity: estMasquee ? 0 : 1,
           transform: pressed && estInteractive ? [{ translateY: -8 }] : [],
         })}
       >
@@ -223,6 +234,7 @@ export function MainJoueur({
   animerNouvellesCartes = true,
   modeDisposition = "eventail",
   nbCartesDisposition,
+  cartesMasquees,
   atlas,
   onCarteJouee,
 }: PropsMainJoueur) {
@@ -262,6 +274,7 @@ export function MainJoueur({
 
         const jouable = estJouable(carte, cartesJouables);
         const grisee = interactionActive && !jouable;
+        const carteEstMasquee = estMasquee(carte, cartesMasquees);
 
         // Position proportionnelle du centre de la carte sur l'écran
         const xProp = (x + largeurCarte / 2) / largeurEcran;
@@ -282,6 +295,7 @@ export function MainJoueur({
             hauteurConteneur={disposition.hauteurConteneur}
             jouable={jouable}
             grisee={grisee}
+            estMasquee={carteEstMasquee}
             interactionActive={interactionActive}
             animerEntree={animerNouvellesCartes}
             atlas={atlas}

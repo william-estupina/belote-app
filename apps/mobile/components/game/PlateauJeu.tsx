@@ -36,6 +36,7 @@ export default function PlateauJeu() {
   const {
     etatJeu,
     modeRenduCartes,
+    cartesMasqueesMainJoueur,
     cartesEnVol,
     surAnimationTerminee,
     atlas,
@@ -214,6 +215,7 @@ export default function PlateauJeu() {
                   ? Math.max(etatJeu.mainJoueur.length, etatJeu.nbCartesAnticipeesJoueur)
                   : undefined
               }
+              cartesMasquees={cartesMasqueesMainJoueur}
               atlas={atlas}
               cartesJouables={
                 etatJeu.phaseUI === "jeu" && etatJeu.estTourHumain

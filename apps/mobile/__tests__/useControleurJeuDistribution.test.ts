@@ -318,6 +318,68 @@ describe("useControleurJeu - redistribution", () => {
     expect(result.current.etatJeu.cartesRestantesPaquet).toBe(12);
   });
 
+  it("conserve la carte sud dans la main jusqu a la fin de son animation de pose", async () => {
+    let terminerAnimationJeu: (() => void) | undefined;
+    mockLancerAnimationJeuCarte.mockImplementation(
+      (_carte, _joueur, onTerminee?: () => void) => {
+        terminerAnimationJeu = onTerminee;
+      },
+    );
+
+    const { result } = renderHook(() =>
+      useControleurJeu({
+        difficulte: "facile",
+        scoreObjectif: 1000,
+        largeurEcran: 1280,
+        hauteurEcran: 720,
+      }),
+    );
+
+    await viderFileEvenements();
+
+    act(() => {
+      result.current.onRevelationTerminee();
+    });
+
+    await viderFileEvenements();
+
+    expect(result.current.etatJeu.phaseUI).toBe("encheres");
+    expect(result.current.etatJeu.estTourHumain).toBe(true);
+
+    act(() => {
+      result.current.prendre();
+    });
+
+    await viderFileEvenements(30);
+
+    expect(result.current.etatJeu.phaseUI).toBe("jeu");
+    expect(result.current.etatJeu.estTourHumain).toBe(true);
+    expect(result.current.etatJeu.cartesJouables.length).toBeGreaterThan(0);
+
+    const carteJouee = result.current.etatJeu.cartesJouables[0];
+
+    act(() => {
+      result.current.jouerCarte(carteJouee);
+    });
+
+    expect(mockLancerAnimationJeuCarte).toHaveBeenCalledTimes(1);
+    expect(result.current.etatJeu.mainJoueur).toContainEqual(carteJouee);
+    expect(result.current.etatJeu.estTourHumain).toBe(false);
+    expect(result.current.etatJeu.cartesJouables).toEqual([]);
+
+    act(() => {
+      terminerAnimationJeu?.();
+    });
+
+    await viderFileEvenements();
+
+    expect(result.current.etatJeu.mainJoueur).not.toContainEqual(carteJouee);
+    expect(result.current.etatJeu.pliEnCours).toContainEqual({
+      joueur: "sud",
+      carte: carteJouee,
+    });
+  });
+
   it("reste en mode cinematique-distribution jusqu'au handoff final", async () => {
     const { result } = renderHook(() =>
       useControleurJeu({
