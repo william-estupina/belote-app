@@ -448,7 +448,7 @@ export function useAnimationsDistribution(
             position === "sud"
               ? calculerDispositionMainJoueur({
                   mode: "reception",
-                  nbCartes: nbCartesExistantesSud + mains[position].length,
+                  nbCartes: nbCartesExistantesSud + indexCarte + nbCartesPaquet,
                   largeurEcran,
                   hauteurEcran,
                   largeurCarte,
