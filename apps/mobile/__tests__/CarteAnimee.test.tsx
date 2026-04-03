@@ -97,6 +97,31 @@ describe("CarteAnimee", () => {
     global.requestAnimationFrame = requestAnimationFrameOriginal;
   });
 
+  it("reste visible a sa position de depart sans ombre parasite tant qu elle est en pause", () => {
+    const { toJSON } = render(
+      <CarteAnimee
+        carte={CARTE_TEST}
+        depart={{ x: 0.2, y: 0.2, rotation: 0, echelle: 1 }}
+        arrivee={{ x: 0.5, y: 0.5, rotation: 5, echelle: 0.9 }}
+        faceVisible
+        duree={300}
+        largeurEcran={1200}
+        hauteurEcran={800}
+        atlas={ATLAS_TEST}
+        estEnPause
+        estVisible
+      />,
+    );
+
+    const arbre = toJSON() as { props: { style: object } };
+
+    expect(arbre.props.style).toMatchObject({
+      opacity: 1,
+      shadowOpacity: 0,
+      elevation: 0,
+    });
+  });
+
   it("differe le callback de fin au frame suivant pour eviter un trou visuel", () => {
     const surFin = jest.fn();
     const callbacksAnimationFrame: FrameRequestCallback[] = [];

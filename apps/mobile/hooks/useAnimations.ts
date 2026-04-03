@@ -193,7 +193,7 @@ export function useAnimations() {
         },
         faceVisible: true,
         estEnPause: options?.demarrageDiffere ?? false,
-        estVisible: options?.demarrageDiffere ? false : true,
+        estVisible: true,
         duree: ANIMATIONS.jeuCarte.duree,
         easing: "out-cubic",
         segment: 0,

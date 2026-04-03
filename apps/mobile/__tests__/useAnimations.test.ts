@@ -112,7 +112,7 @@ describe("useAnimations", () => {
     expect(result.current.cartesEnVol[0]).toMatchObject({
       id: "jeu-1",
       estEnPause: true,
-      estVisible: false,
+      estVisible: true,
       segment: 0,
     });
 

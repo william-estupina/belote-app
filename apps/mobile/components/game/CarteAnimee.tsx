@@ -193,9 +193,9 @@ export function CarteAnimee({
       zIndex: 100,
       shadowColor: "#000",
       shadowOffset: { width: 1, height: 2 },
-      shadowOpacity: 0.4,
-      shadowRadius: 3,
-      elevation: 4,
+      shadowOpacity: estEnPause ? 0 : 0.4,
+      shadowRadius: estEnPause ? 0 : 3,
+      elevation: estEnPause ? 0 : 4,
     };
   });
 
