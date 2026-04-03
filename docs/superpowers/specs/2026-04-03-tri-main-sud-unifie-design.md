@@ -12,13 +12,14 @@ Remplacer les deux comportements actuels de tri/ordonnancement de la main sud pa
 - La premiere couleur est toujours l atout si connu, sinon la couleur de la carte retournee si elle existe.
 - Pour les couleurs restantes, on alterne noir et rouge quand c est possible.
 - Quand plusieurs choix donnent une alternance valide, on garde un ordre canonique stable : `pique`, `coeur`, `carreau`, `trefle`.
+- La reception visuelle des cartes sud reste toujours dans l ordre de donne.
+- Le tri partage ne s applique qu au moment de l animation de tri, jamais pendant l arrivee des cartes.
 
 ## Decision d architecture
 
 - `apps/mobile/hooks/triMainJoueur.ts` reste la source de verite du classement.
-- La distribution atlas recoit explicitement l ordre final voulu pour la main sud.
-- Les cartes sud deja visibles et les nouvelles cartes sud sont placees directement vers leur indice final dans cet ordre partage.
-- Le tri final atlas reste appele, mais devient un filet de securite idempotent plutot qu une seconde logique concurrente.
+- La distribution atlas conserve l ordre de donne pendant la reception sud.
+- Le tri final atlas reste l unique moment ou l ordre partage est applique visuellement.
 
 ## Verification visee
 

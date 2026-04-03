@@ -4,7 +4,7 @@
 
 **Goal:** Utiliser un seul ordre de reference pour la main sud dans le tri React et dans la distribution atlas.
 
-**Architecture:** Le tri reste centralise dans `triMainJoueur`. L orchestration de distribution calcule l ordre final sud et le transmet au moteur atlas afin que les cartes existantes et les cartes nouvellement distribuees convergent vers les memes indices finaux que la main React.
+**Architecture:** Le tri reste centralise dans `triMainJoueur`. La distribution sud conserve l ordre de donne pendant la reception, puis l animation de tri applique l ordre partage a la fois pour l atlas et pour la main React.
 
 **Tech Stack:** TypeScript strict, React Native, Jest, jest-expo
 

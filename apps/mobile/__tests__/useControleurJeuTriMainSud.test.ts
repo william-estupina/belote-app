@@ -1,7 +1,6 @@
 import type { Carte, PositionJoueur } from "@belote/shared-types";
 import { act, renderHook } from "@testing-library/react-native";
 
-import { trierMainJoueur } from "../hooks/triMainJoueur";
 import { useControleurJeu } from "../hooks/useControleurJeu";
 
 interface VueBotTest {
@@ -117,6 +116,28 @@ function configurerDistributionImmediate(): void {
   );
 }
 
+function trouverDernierAppelDistributionRestante():
+  | [
+      Record<"sud" | "ouest" | "nord" | "est", Carte[]>,
+      { mainSudOrdonnee?: Carte[] } | undefined,
+    ]
+  | undefined {
+  for (let index = mockLancerDistribution.mock.calls.length - 1; index >= 0; index -= 1) {
+    const appel = mockLancerDistribution.mock.calls[index] as
+      | [
+          Record<"sud" | "ouest" | "nord" | "est", Carte[]>,
+          { mainSudOrdonnee?: Carte[] } | undefined,
+        ]
+      | undefined;
+
+    if (appel?.[0]?.sud?.length === 3) {
+      return appel;
+    }
+  }
+
+  return undefined;
+}
+
 async function viderFileEvenements(iterations = 12): Promise<void> {
   for (let index = 0; index < iterations; index += 1) {
     await act(async () => {
@@ -142,7 +163,30 @@ describe("useControleurJeu - tri main sud", () => {
     jest.useRealTimers();
   });
 
-  it("transmet le meme ordre sud trie a la distribution atlas des la donne initiale", async () => {
+  it("ne transmet pas l ordre de tri final a la donne initiale avant l animation de tri", async () => {
+    renderHook(() =>
+      useControleurJeu({
+        difficulte: "facile",
+        scoreObjectif: 1000,
+        largeurEcran: 1280,
+        hauteurEcran: 720,
+      }),
+    );
+
+    await viderFileEvenements();
+
+    const premierAppelDistribution = mockLancerDistribution.mock.calls[0] as
+      | [
+          Record<"sud" | "ouest" | "nord" | "est", Carte[]>,
+          { mainSudOrdonnee?: Carte[] } | undefined,
+        ]
+      | undefined;
+
+    expect(premierAppelDistribution).toBeDefined();
+    expect(premierAppelDistribution?.[1]?.mainSudOrdonnee).toBeUndefined();
+  });
+
+  it("ne transmet pas l ordre de tri final pendant la reception des 3 dernieres cartes", async () => {
     const { result } = renderHook(() =>
       useControleurJeu({
         difficulte: "facile",
@@ -154,24 +198,21 @@ describe("useControleurJeu - tri main sud", () => {
 
     await viderFileEvenements();
 
-    const appelAvecOrdreSud = mockLancerDistribution.mock.calls.find(
-      (appel) => appel[1]?.mainSudOrdonnee !== undefined,
-    ) as
-      | [
-          Record<"sud" | "ouest" | "nord" | "est", Carte[]>,
-          { mainSudOrdonnee?: Carte[] } | undefined,
-        ]
-      | undefined;
+    act(() => {
+      result.current.onRevelationTerminee();
+    });
 
-    expect(appelAvecOrdreSud).toBeDefined();
+    await viderFileEvenements();
 
-    const mainRecue = appelAvecOrdreSud?.[0].sud ?? [];
-    const couleurPrioritaire = result.current.etatJeu.carteRetournee?.couleur ?? null;
+    act(() => {
+      result.current.prendre();
+    });
 
-    expect(appelAvecOrdreSud?.[1]?.mainSudOrdonnee).toEqual(
-      trierMainJoueur(mainRecue, {
-        couleurPrioritaire,
-      }),
-    );
+    await viderFileEvenements(20);
+
+    const appelDistributionRestante = trouverDernierAppelDistributionRestante();
+
+    expect(appelDistributionRestante).toBeDefined();
+    expect(appelDistributionRestante?.[1]?.mainSudOrdonnee).toBeUndefined();
   });
 });
