@@ -34,6 +34,7 @@ interface PropsCarteAnimee {
   arrivee: PositionCarte;
   faceVisible: boolean;
   estEnPause?: boolean;
+  estVisible?: boolean;
   delai?: number;
   duree: number;
   largeurEcran: number;
@@ -59,6 +60,7 @@ export function CarteAnimee({
   arrivee,
   faceVisible,
   estEnPause = false,
+  estVisible = true,
   delai = 0,
   duree,
   largeurEcran,
@@ -186,6 +188,7 @@ export function CarteAnimee({
       position: "absolute" as const,
       left: position.x * largeurEcran - largeurCarte / 2,
       top: position.y * hauteurEcran - hauteurCarte / 2,
+      opacity: estVisible ? 1 : 0,
       transform: [{ rotate: `${rotation}deg` }, { scale: echelle }],
       zIndex: 100,
       shadowColor: "#000",

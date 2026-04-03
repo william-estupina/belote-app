@@ -16,6 +16,7 @@ export interface CarteEnVol {
   arrivee: PositionCarte;
   faceVisible: boolean;
   estEnPause?: boolean;
+  estVisible?: boolean;
   delai?: number;
   duree: number;
   segment: number;
@@ -127,6 +128,7 @@ export function CoucheAnimation({
           arrivee={vol.arrivee}
           faceVisible={vol.faceVisible}
           estEnPause={vol.estEnPause}
+          estVisible={vol.estVisible}
           delai={vol.delai}
           duree={vol.duree}
           segment={vol.segment}

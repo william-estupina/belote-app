@@ -580,23 +580,6 @@ export function useControleurJeu({
       }));
       setCartesEnPoseMainJoueur([carte]);
 
-      const planifierDemarrageAnimation = (idAnimation: string) => {
-        const lancer = () => {
-          if (estDemonte.current) return;
-          animations.demarrerAnimationJeuCarte(idAnimation);
-        };
-
-        if (typeof globalThis.requestAnimationFrame === "function") {
-          globalThis.requestAnimationFrame(() => {
-            lancer();
-          });
-          return;
-        }
-
-        const timeout = setTimeout(lancer, 0);
-        timeoutsControleurRef.current.push(timeout);
-      };
-
       // Preparer l'overlay d'animation, puis masquer la source juste avant son depart
       animations.lancerAnimationJeuCarte(
         carte,
@@ -632,7 +615,7 @@ export function useControleurJeu({
             if (estDemonte.current) return;
             setCartesEnPoseMainJoueur([]);
             setCartesMasqueesMainJoueur([carte]);
-            planifierDemarrageAnimation(idAnimation);
+            animations.demarrerAnimationJeuCarte(idAnimation);
           },
         },
       );

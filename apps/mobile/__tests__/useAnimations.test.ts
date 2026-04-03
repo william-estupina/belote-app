@@ -112,6 +112,7 @@ describe("useAnimations", () => {
     expect(result.current.cartesEnVol[0]).toMatchObject({
       id: "jeu-1",
       estEnPause: true,
+      estVisible: false,
       segment: 0,
     });
 
@@ -122,6 +123,7 @@ describe("useAnimations", () => {
     expect(result.current.cartesEnVol[0]).toMatchObject({
       id: "jeu-1",
       estEnPause: false,
+      estVisible: true,
       segment: 1,
     });
   });

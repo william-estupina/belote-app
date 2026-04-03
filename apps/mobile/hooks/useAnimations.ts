@@ -193,6 +193,7 @@ export function useAnimations() {
         },
         faceVisible: true,
         estEnPause: options?.demarrageDiffere ?? false,
+        estVisible: options?.demarrageDiffere ? false : true,
         duree: ANIMATIONS.jeuCarte.duree,
         easing: "out-cubic",
         segment: 0,
@@ -231,6 +232,7 @@ export function useAnimations() {
         return {
           ...carteEnVol,
           estEnPause: false,
+          estVisible: true,
           segment: carteEnVol.segment + 1,
         };
       }),

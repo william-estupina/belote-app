@@ -488,12 +488,6 @@ describe("useControleurJeu - redistribution", () => {
 
     expect(result.current.cartesEnPoseMainJoueur).toEqual([]);
     expect(result.current.cartesMasqueesMainJoueur).toEqual([carteJouee]);
-    expect(mockDemarrerAnimationJeuCarte).not.toHaveBeenCalled();
-
-    act(() => {
-      jest.runOnlyPendingTimers();
-    });
-
     expect(mockDemarrerAnimationJeuCarte).toHaveBeenCalledWith("jeu-1");
   });
 
