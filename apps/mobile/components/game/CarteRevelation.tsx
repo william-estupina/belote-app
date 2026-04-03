@@ -28,12 +28,14 @@ interface PropsCarteRevelation {
 }
 
 // Durées de référence des 3 phases (ms)
-const DUREE_SOULEVEMENT = 200;
-const DUREE_FLIP = 300;
-const DUREE_PLACEMENT = 350;
-const DUREE_TOTALE_REF = DUREE_SOULEVEMENT + DUREE_FLIP + DUREE_PLACEMENT;
+const DUREE_DETACHEMENT = 120;
+const DUREE_FLIP = 220;
+const DUREE_GLISSEMENT = 220;
+const DUREE_TOTALE_REF = DUREE_DETACHEMENT + DUREE_FLIP + DUREE_GLISSEMENT;
 // Soulevement vertical en pixels
-const PX_SOULEVEMENT = 8;
+const PX_SOULEVEMENT = 3;
+const RATIO_JALON_X_1 = 0.225;
+const RATIO_JALON_X_2 = 0.6;
 
 export function CarteRevelation({
   carte,
@@ -58,26 +60,32 @@ export function CarteRevelation({
   });
 
   // Durées effectives (ms) — en mode inverse avec dureeTotale fourni, on scale proportionnellement
-  const dureeSoulevement =
+  const dureeDetachement =
     inverse && dureeTotale !== undefined
-      ? Math.round((DUREE_SOULEVEMENT / DUREE_TOTALE_REF) * dureeTotale)
-      : DUREE_SOULEVEMENT;
+      ? Math.round((DUREE_DETACHEMENT / DUREE_TOTALE_REF) * dureeTotale)
+      : DUREE_DETACHEMENT;
   const dureeFlip =
     inverse && dureeTotale !== undefined
       ? Math.round((DUREE_FLIP / DUREE_TOTALE_REF) * dureeTotale)
       : DUREE_FLIP;
-  const dureePlacement =
+  const dureeGlissement =
     inverse && dureeTotale !== undefined
-      ? dureeTotale - dureeSoulevement - dureeFlip
-      : DUREE_PLACEMENT;
+      ? dureeTotale - dureeDetachement - dureeFlip
+      : DUREE_GLISSEMENT;
+
+  const deltaX = arriveeX - departX;
+  const jalonX1 = departX + deltaX * RATIO_JALON_X_1;
+  const jalonX2 = departX + deltaX * RATIO_JALON_X_2;
+  const jalonYDepart = departY - PX_SOULEVEMENT;
+  const jalonYArrivee = arriveeY - PX_SOULEVEMENT / 2;
 
   useEffect(() => {
     progres.value = withSequence(
-      withTiming(1, { duration: dureeSoulevement, easing: Easing.out(Easing.ease) }),
+      withTiming(1, { duration: dureeDetachement, easing: Easing.out(Easing.cubic) }),
       withTiming(2, { duration: dureeFlip, easing: Easing.inOut(Easing.ease) }),
       withTiming(
         3,
-        { duration: dureePlacement, easing: Easing.inOut(Easing.cubic) },
+        { duration: dureeGlissement, easing: Easing.inOut(Easing.cubic) },
         (fini) => {
           "worklet";
           if (fini) {
@@ -98,33 +106,27 @@ export function CarteRevelation({
         animationFrameRef.current = null;
       }
     };
-  }, [progres, inverse, dureeTotale]);
+  }, [dureeDetachement, dureeFlip, dureeGlissement, progres]);
 
   // Position et échelle du conteneur
   const styleConteneur = useAnimatedStyle(() => {
     const p = progres.value;
 
     const x = inverse
-      ? interpolate(p, [0, 1, 2, 3], [arriveeX, departX, departX, departX])
-      : interpolate(p, [0, 1, 2, 3], [departX, departX, departX, arriveeX]);
+      ? interpolate(p, [0, 1, 2, 3], [arriveeX, jalonX2, jalonX1, departX])
+      : interpolate(p, [0, 1, 2, 3], [departX, jalonX1, jalonX2, arriveeX]);
 
     const y = inverse
-      ? interpolate(
-          p,
-          [0, 1, 2, 3],
-          [arriveeY, arriveeY - PX_SOULEVEMENT, arriveeY - PX_SOULEVEMENT, departY],
-        )
-      : interpolate(
-          p,
-          [0, 1, 2, 3],
-          [departY, departY - PX_SOULEVEMENT, departY - PX_SOULEVEMENT, arriveeY],
-        );
+      ? interpolate(p, [0, 1, 2, 3], [arriveeY, jalonYArrivee, jalonYDepart, departY])
+      : interpolate(p, [0, 1, 2, 3], [departY, jalonYDepart, jalonYArrivee, arriveeY]);
 
     const echelle = inverse
-      ? interpolate(p, [0, 1, 2, 3], [1.0, 1.0, 1.0, 0.85])
-      : interpolate(p, [0, 1, 2, 3], [0.85, 1.0, 1.0, 1.0]);
+      ? interpolate(p, [0, 1, 2, 3], [1, 1.01, 1, 0.96])
+      : interpolate(p, [0, 1, 2, 3], [0.96, 1, 1.01, 1]);
 
-    const rotation = interpolate(p, [0, 1, 2, 3], [0, -5, -5, 0]);
+    const rotation = inverse
+      ? interpolate(p, [0, 1, 2, 3], [0, 1, 2, 0])
+      : interpolate(p, [0, 1, 2, 3], [0, -2, -1, 0]);
 
     return {
       position: "absolute" as const,
@@ -144,11 +146,11 @@ export function CarteRevelation({
   const styleDos = useAnimatedStyle(() => {
     const p = progres.value;
     const rotY = inverse
-      ? interpolate(p, [1, 1.5, 2], [-90, -90, 0], "clamp")
-      : interpolate(p, [1, 1.5, 2], [0, 90, 90], "clamp");
+      ? interpolate(p, [1, 1.45, 2], [-90, -90, 0], "clamp")
+      : interpolate(p, [1, 1.55, 2], [0, 90, 90], "clamp");
     const opacity = inverse
-      ? interpolate(p, [1, 1.5, 1.6, 2], [0, 0, 1, 1], "clamp")
-      : interpolate(p, [0, 1, 1.4, 1.5], [1, 1, 1, 0], "clamp");
+      ? interpolate(p, [1, 1.4, 1.6, 2], [0, 0.15, 1, 1], "clamp")
+      : interpolate(p, [0, 1, 1.35, 1.7], [1, 1, 0.45, 0], "clamp");
     return {
       position: "absolute" as const,
       width: largeurCarte,
@@ -163,11 +165,11 @@ export function CarteRevelation({
   const styleFace = useAnimatedStyle(() => {
     const p = progres.value;
     const rotY = inverse
-      ? interpolate(p, [1, 1.5, 2], [0, 90, 90], "clamp")
-      : interpolate(p, [1, 1.5, 2], [-90, -90, 0], "clamp");
+      ? interpolate(p, [1, 1.55, 2], [0, 90, 90], "clamp")
+      : interpolate(p, [1, 1.45, 2], [-90, -90, 0], "clamp");
     const opacity = inverse
-      ? interpolate(p, [0, 1, 1.4, 1.5], [1, 1, 1, 0], "clamp")
-      : interpolate(p, [1, 1.5, 1.6, 2], [0, 0, 1, 1], "clamp");
+      ? interpolate(p, [0, 1, 1.35, 1.7], [1, 1, 0.45, 0], "clamp")
+      : interpolate(p, [1, 1.4, 1.6, 2], [0, 0.15, 1, 1], "clamp");
     return {
       position: "absolute" as const,
       width: largeurCarte,
