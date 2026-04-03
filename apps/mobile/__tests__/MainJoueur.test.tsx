@@ -197,6 +197,43 @@ describe("MainJoueur", () => {
     );
   });
 
+  it("accelere le resserrement quand une carte quitte la main sud", () => {
+    const { rerender } = render(
+      <MainJoueur
+        cartes={CARTES}
+        largeurEcran={1400}
+        hauteurEcran={1000}
+        cartesJouables={CARTES}
+        interactionActive={false}
+        atlas={MOCK_ATLAS}
+        onCarteJouee={() => {}}
+      />,
+    );
+
+    mockWithTiming.mockClear();
+
+    rerender(
+      <MainJoueur
+        cartes={CARTES.slice(0, 2)}
+        largeurEcran={1400}
+        hauteurEcran={1000}
+        cartesJouables={CARTES.slice(0, 2)}
+        interactionActive={false}
+        atlas={MOCK_ATLAS}
+        onCarteJouee={() => {}}
+      />,
+    );
+
+    expect(mockWithTiming).toHaveBeenCalledWith(
+      expect.any(Number),
+      expect.objectContaining({ duration: 120 }),
+    );
+    expect(mockWithTiming).not.toHaveBeenCalledWith(
+      expect.any(Number),
+      expect.objectContaining({ duration: 210 }),
+    );
+  });
+
   it("masque uniquement la carte en cours de pose tout en conservant son emplacement", () => {
     render(
       <MainJoueur

@@ -117,6 +117,7 @@ interface PropsCarteEventail {
   yProp: number;
   echelle: number;
   zIndex: number;
+  dureeReorganisation: number;
   onCarteJouee?: (carte: Carte, departAnimation: DepartAnimationJeuCarte) => void;
 }
 
@@ -141,6 +142,7 @@ function CarteEventailAnimee({
   yProp,
   echelle,
   zIndex,
+  dureeReorganisation,
   onCarteJouee,
 }: PropsCarteEventail) {
   const DECALAGE_SOULEVEMENT_CARTE = 8;
@@ -188,7 +190,7 @@ function CarteEventailAnimee({
       });
 
       const config = {
-        duration: ANIMATIONS.distribution.dureeReorganisationMain,
+        duration: dureeReorganisation,
         easing: EASING_REORG,
       };
       animX.value = withTiming(glissementEntree.arrivee.x, config);
@@ -212,7 +214,7 @@ function CarteEventailAnimee({
       },
     });
     const config = {
-      duration: ANIMATIONS.distribution.dureeReorganisationMain,
+      duration: dureeReorganisation,
       easing: EASING_REORG,
     };
     animX.value = glissementReorganisation.depart.x;
@@ -231,6 +233,7 @@ function CarteEventailAnimee({
     animAngle,
     animOpacite,
     centreMainX,
+    dureeReorganisation,
   ]);
 
   const styleAnime = useAnimatedStyle(() => ({
@@ -300,6 +303,7 @@ export function MainJoueur({
   onCarteJouee,
 }: PropsMainJoueur) {
   const nbCartes = cartes.length;
+  const nbCartesPrecedentRef = useRef(nbCartes);
   if (nbCartes === 0) return null;
   const nbCartesPourDisposition = Math.max(nbCartes, nbCartesDisposition ?? nbCartes);
 
@@ -314,6 +318,14 @@ export function MainJoueur({
     largeurCarte,
     hauteurCarte,
   });
+  const resserrementApresRetrait = nbCartes < nbCartesPrecedentRef.current;
+  const dureeReorganisation = resserrementApresRetrait
+    ? ANIMATIONS.distribution.dureeResserrementApresJeu
+    : ANIMATIONS.distribution.dureeReorganisationMain;
+
+  useEffect(() => {
+    nbCartesPrecedentRef.current = nbCartes;
+  }, [nbCartes]);
 
   return (
     <View
@@ -368,6 +380,7 @@ export function MainJoueur({
             yProp={yProp}
             echelle={echelle}
             zIndex={index}
+            dureeReorganisation={dureeReorganisation}
             onCarteJouee={onCarteJouee}
           />
         );
