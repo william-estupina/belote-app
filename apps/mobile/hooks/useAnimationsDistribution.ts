@@ -62,6 +62,7 @@ export interface ResultatAnimationsDistribution {
     mains: Record<PositionJoueur, Carte[]>,
     options?: {
       indexDonneur?: number;
+      mainSudOrdonnee?: Carte[];
       cartesExistantesSud?: Carte[];
       nbCartesExistantesSud?: number;
       nbCartesExistantesAdversaires?: Partial<Record<"nord" | "est" | "ouest", number>>;
@@ -99,6 +100,17 @@ const EASING_OUT_CUBIC = Easing.out(Easing.cubic);
 
 function cartesSontEgales(carteA: Carte, carteB: Carte): boolean {
   return carteA.couleur === carteB.couleur && carteA.rang === carteB.rang;
+}
+
+function trouverIndexCarte(
+  cartes: ReadonlyArray<Carte> | undefined,
+  carteRecherchee: Carte,
+): number {
+  if (!cartes) {
+    return -1;
+  }
+
+  return cartes.findIndex((carte) => cartesSontEgales(carte, carteRecherchee));
 }
 
 /**
@@ -145,6 +157,7 @@ export function useAnimationsDistribution(
     mains: Record<PositionJoueur, Carte[]>;
     options?: {
       indexDonneur?: number;
+      mainSudOrdonnee?: Carte[];
       cartesExistantesSud?: Carte[];
       nbCartesExistantesSud?: number;
       nbCartesExistantesAdversaires?: Partial<Record<"nord" | "est" | "ouest", number>>;
@@ -160,6 +173,7 @@ export function useAnimationsDistribution(
       mains: Record<PositionJoueur, Carte[]>,
       options?: {
         indexDonneur?: number;
+        mainSudOrdonnee?: Carte[];
         cartesExistantesSud?: Carte[];
         nbCartesExistantesSud?: number;
         nbCartesExistantesAdversaires?: Partial<Record<"nord" | "est" | "ouest", number>>;
@@ -218,6 +232,7 @@ export function useAnimationsDistribution(
       const { ecartX, ecartRotation } = distribution.eventailVol;
       const decalage = distribution.arcDistribution.decalagePerpendiculaire;
       const indexDonneur = options?.indexDonneur ?? 0;
+      const mainSudOrdonnee = options?.mainSudOrdonnee;
       const cartesExistantesSud = options?.cartesExistantesSud ?? [];
       const nbCartesExistantesSud =
         options?.nbCartesExistantesSud ?? cartesExistantesSud.length;
@@ -339,7 +354,7 @@ export function useAnimationsDistribution(
         });
         const dispositionArriveeSud = calculerDispositionMainJoueur({
           mode: "eventail",
-          nbCartes: nbCartesExistantesSud + mains.sud.length,
+          nbCartes: mainSudOrdonnee?.length ?? nbCartesExistantesSud + mains.sud.length,
           largeurEcran,
           hauteurEcran,
           largeurCarte: largeurCarteSud,
@@ -349,7 +364,9 @@ export function useAnimationsDistribution(
         for (let index = 0; index < cartesExistantesSud.length; index += 1) {
           const carte = cartesExistantesSud[index];
           const carteDepart = dispositionDepartSud.cartes[index];
-          const carteArrivee = dispositionArriveeSud.cartes[index];
+          const indexArrivee = trouverIndexCarte(mainSudOrdonnee, carte);
+          const carteArrivee =
+            dispositionArriveeSud.cartes[indexArrivee >= 0 ? indexArrivee : index];
           const depart = calculerPointAncrageCarteMainJoueurNormalisee({
             x: carteDepart.x,
             decalageY: carteDepart.decalageY,
@@ -448,7 +465,9 @@ export function useAnimationsDistribution(
             position === "sud"
               ? calculerDispositionMainJoueur({
                   mode: "reception",
-                  nbCartes: nbCartesExistantesSud + indexCarte + nbCartesPaquet,
+                  nbCartes:
+                    mainSudOrdonnee?.length ??
+                    nbCartesExistantesSud + mains[position].length,
                   largeurEcran,
                   hauteurEcran,
                   largeurCarte,
@@ -487,9 +506,14 @@ export function useAnimationsDistribution(
             const departX = origineDistribution.x + offsetIdx * ecartX * perpX;
             const departY = origineDistribution.y + offsetIdx * ecartX * perpY;
             const depart: PointNormalise = { x: departX, y: departY };
+            const indexFinalSud = estSud ? trouverIndexCarte(mainSudOrdonnee, carte) : -1;
             const dispositionCarteSud =
               estSud && dispositionSud
-                ? dispositionSud.cartes[nbCartesExistantesSud + indexCarte + idx]
+                ? dispositionSud.cartes[
+                    indexFinalSud >= 0
+                      ? indexFinalSud
+                      : nbCartesExistantesSud + indexCarte + idx
+                  ]
                 : null;
             const cibleAdv = ciblesAdversaire?.[idx] ?? null;
             const arrivee: PointNormalise =

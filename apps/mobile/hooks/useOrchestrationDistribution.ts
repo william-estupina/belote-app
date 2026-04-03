@@ -33,6 +33,13 @@ function conserverHistoriqueEncheresAvantRedistribution(etat: EtatJeu) {
   ];
 }
 
+function trierMainSudDepuisContexte(contexte: ContextePartie): Carte[] {
+  return trierMainJoueur(contexte.mains[INDEX_HUMAIN], {
+    couleurPrioritaire: contexte.couleurAtout ?? contexte.carteRetournee?.couleur ?? null,
+    couleurAtout: contexte.couleurAtout,
+  });
+}
+
 interface RefsPartagees {
   acteurRef: React.MutableRefObject<Actor<typeof machineBelote> | null>;
   etatJeuRef: React.MutableRefObject<EtatJeu>;
@@ -185,6 +192,7 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
     (contexte: ContextePartie) => {
       animationDistribEnCours.current = true;
       nbPlisVus.current = 0;
+      const mainSudOrdonnee = trierMainSudDepuisContexte(contexte);
 
       const mainsRecord: Record<PositionJoueur, Carte[]> = {
         sud: contexte.mains[0],
@@ -221,6 +229,7 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
 
       animDistribution.lancerDistribution(mainsRecord, {
         indexDonneur: contexte.indexDonneur,
+        mainSudOrdonnee,
         cartesVisibles: mainsRecord.sud,
         onPaquetDepart: (position, cartes) => {
           if (estDemonte.current) return;
@@ -448,6 +457,7 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
   const lancerDistributionRestanteAnimee = useCallback(
     (contexte: ContextePartie) => {
       animationDistribEnCours.current = true;
+      const mainSudOrdonnee = trierMainSudDepuisContexte(contexte);
 
       const indexPreneur = contexte.indexPreneur!;
       const positionPreneur = POSITIONS_JOUEUR[indexPreneur];
@@ -567,6 +577,7 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
 
         animDistribution.lancerDistribution(mainsADistribuer, {
           indexDonneur: contexte.indexDonneur,
+          mainSudOrdonnee,
           cartesExistantesSud,
           nbCartesExistantesSud,
           nbCartesExistantesAdversaires,

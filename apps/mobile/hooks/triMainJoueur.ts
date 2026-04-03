@@ -28,14 +28,14 @@ const FORCE_ATOUT: Record<Rang, number> = {
 };
 
 const ORDRE_COULEURS_BASE: Couleur[] = ["pique", "coeur", "carreau", "trefle"];
-const ORDRE_PREFERENCE: Couleur[] = ["pique", "coeur", "carreau", "trefle"];
+const ORDRE_CANONIQUE_COULEURS: Couleur[] = ["pique", "coeur", "carreau", "trefle"];
 
 function estCouleurNoire(couleur: Couleur): boolean {
   return couleur === "pique" || couleur === "trefle";
 }
 
 function comparerCouleurs(a: Couleur, b: Couleur): number {
-  return ORDRE_PREFERENCE.indexOf(a) - ORDRE_PREFERENCE.indexOf(b);
+  return ORDRE_CANONIQUE_COULEURS.indexOf(a) - ORDRE_CANONIQUE_COULEURS.indexOf(b);
 }
 
 function obtenirForceCarte(carte: Carte, couleurAtout?: Couleur | null): number {
@@ -65,39 +65,27 @@ function ordonnerCouleursAvecPriorite(
     return couleursDisponibles;
   }
 
-  const noires = (["pique", "trefle"] as Couleur[]).filter(
-    (couleur) => couleur !== couleurPrioritaire && couleursDisponibles.includes(couleur),
-  );
-  const rouges = (["coeur", "carreau"] as Couleur[]).filter(
-    (couleur) => couleur !== couleurPrioritaire && couleursDisponibles.includes(couleur),
-  );
-
   const resultat: Couleur[] = [couleurPrioritaire];
-  const commencerParNoir = noires.length >= rouges.length;
-  let indexNoir = 0;
-  let indexRouge = 0;
+  const couleursRestantes = couleursDisponibles.filter(
+    (couleur) => couleur !== couleurPrioritaire,
+  );
 
-  while (indexNoir < noires.length || indexRouge < rouges.length) {
-    if (commencerParNoir) {
-      if (indexNoir < noires.length) {
-        resultat.push(noires[indexNoir]);
-        indexNoir += 1;
-      }
-      if (indexRouge < rouges.length) {
-        resultat.push(rouges[indexRouge]);
-        indexRouge += 1;
-      }
-      continue;
+  while (couleursRestantes.length > 0) {
+    const derniereCouleur = resultat[resultat.length - 1];
+    const chercherNoire = !estCouleurNoire(derniereCouleur);
+    const candidates = couleursRestantes
+      .filter((couleur) => estCouleurNoire(couleur) === chercherNoire)
+      .sort(comparerCouleurs);
+    const fallback = [...couleursRestantes].sort(comparerCouleurs);
+    const prochaineCouleur = candidates[0] ?? fallback[0];
+
+    if (!prochaineCouleur) {
+      break;
     }
 
-    if (indexRouge < rouges.length) {
-      resultat.push(rouges[indexRouge]);
-      indexRouge += 1;
-    }
-    if (indexNoir < noires.length) {
-      resultat.push(noires[indexNoir]);
-      indexNoir += 1;
-    }
+    resultat.push(prochaineCouleur);
+    const indexCouleur = couleursRestantes.indexOf(prochaineCouleur);
+    couleursRestantes.splice(indexCouleur, 1);
   }
 
   return resultat;
