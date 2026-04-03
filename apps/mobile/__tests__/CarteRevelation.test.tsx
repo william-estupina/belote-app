@@ -24,15 +24,13 @@ jest.mock("react-native-reanimated", () => {
     runOnJS: (fonction: (...args: unknown[]) => unknown) => fonction,
     useSharedValue: (valeur: number) => ({ value: valeur }),
     useAnimatedStyle: (calculStyle: () => unknown) => calculStyle(),
-    withTiming: (
-      valeur: number,
-      _config: unknown,
-      surFin?: (termine?: boolean) => void,
-    ) => {
-      surFin?.(true);
-      return valeur;
-    },
-    withSequence: (...valeurs: unknown[]) => valeurs.at(-1),
+    withTiming: jest.fn(
+      (valeur: number, _config: unknown, surFin?: (termine?: boolean) => void) => {
+        surFin?.(true);
+        return valeur;
+      },
+    ),
+    withSequence: jest.fn((...valeurs: unknown[]) => valeurs.at(-1)),
   };
 });
 
@@ -178,8 +176,8 @@ describe("CarteRevelation", () => {
         (call: unknown[]) =>
           Array.isArray(call[2]) &&
           (call[2] as number[])[0] === 180 &&
-          (call[2] as number[])[1] === 100 &&
-          (call[2] as number[])[2] === 100 &&
+          (call[2] as number[])[1] === 148 &&
+          (call[2] as number[])[2] === 118 &&
           (call[2] as number[])[3] === 100,
       );
 
@@ -206,14 +204,92 @@ describe("CarteRevelation", () => {
         />,
       );
 
-      // En mode inverse, styleDos utilise la formule de styleFace original :
-      // rotY = interpolate(p, [1,1.5,2], [-90,-90,0], "clamp") → output[0] = -90
       expect(animated.interpolate).toHaveBeenCalledWith(
         expect.anything(),
-        [1, 1.5, 2],
+        [1, 1.45, 2],
         [-90, -90, 0],
         "clamp",
       );
     });
+  });
+
+  it("configure une revelation fluide plus courte avec un flip centre dans le trajet", () => {
+    const animated = require("react-native-reanimated");
+    animated.withTiming.mockClear();
+    animated.interpolate.mockClear();
+
+    render(
+      <CarteRevelation
+        carte={CARTE_TEST}
+        departX={100}
+        departY={200}
+        arriveeX={180}
+        arriveeY={220}
+        largeurCarte={80}
+        hauteurCarte={116}
+        atlas={ATLAS_TEST}
+        onTerminee={() => {}}
+      />,
+    );
+
+    expect(animated.withTiming).toHaveBeenNthCalledWith(
+      1,
+      1,
+      expect.objectContaining({ duration: 120 }),
+    );
+    expect(animated.withTiming).toHaveBeenNthCalledWith(
+      2,
+      2,
+      expect.objectContaining({ duration: 220 }),
+    );
+    expect(animated.withTiming).toHaveBeenNthCalledWith(
+      3,
+      3,
+      expect.objectContaining({ duration: 220 }),
+      expect.any(Function),
+    );
+    expect(animated.interpolate).toHaveBeenCalledWith(
+      expect.anything(),
+      [0, 1, 2, 3],
+      [100, 118, 148, 180],
+    );
+  });
+
+  it("recalibre aussi le mode inverse avec les durees proportionnelles de la version fluide", () => {
+    const animated = require("react-native-reanimated");
+    animated.withTiming.mockClear();
+
+    render(
+      <CarteRevelation
+        inverse
+        carte={CARTE_TEST}
+        departX={100}
+        departY={200}
+        arriveeX={180}
+        arriveeY={220}
+        largeurCarte={80}
+        hauteurCarte={116}
+        atlas={ATLAS_TEST}
+        dureeTotale={500}
+        onTerminee={() => {}}
+      />,
+    );
+
+    expect(animated.withTiming).toHaveBeenNthCalledWith(
+      1,
+      1,
+      expect.objectContaining({ duration: 107 }),
+    );
+    expect(animated.withTiming).toHaveBeenNthCalledWith(
+      2,
+      2,
+      expect.objectContaining({ duration: 196 }),
+    );
+    expect(animated.withTiming).toHaveBeenNthCalledWith(
+      3,
+      3,
+      expect.objectContaining({ duration: 197 }),
+      expect.any(Function),
+    );
   });
 });

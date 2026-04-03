@@ -194,4 +194,26 @@ describe("MainJoueur", () => {
       expect.objectContaining({ duration: 50 }),
     );
   });
+
+  it("masque uniquement la carte en cours de pose tout en conservant son emplacement", () => {
+    render(
+      <MainJoueur
+        cartes={CARTES}
+        cartesMasquees={[CARTES[1]]}
+        largeurEcran={1400}
+        hauteurEcran={1000}
+        cartesJouables={CARTES}
+        interactionActive={false}
+        atlas={MOCK_ATLAS}
+        onCarteJouee={() => {}}
+      />,
+    );
+
+    expect(screen.getByTestId("carte-main-coeur-roi").props.style).toEqual(
+      expect.objectContaining({ opacity: 0 }),
+    );
+    expect(screen.getByTestId("carte-main-pique-as").props.style).toEqual(
+      expect.objectContaining({ opacity: 1 }),
+    );
+  });
 });

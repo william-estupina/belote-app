@@ -28,6 +28,7 @@ import { useAnimationsDistribution } from "./useAnimationsDistribution";
 import { useAtlasCartes } from "./useAtlasCartes";
 import { useDelaiBot } from "./useDelaiBot";
 import { useOrchestrationDistribution } from "./useOrchestrationDistribution";
+import { estMemeCarte } from "./utils-cartes";
 
 // --- Types exposés ---
 
@@ -186,6 +187,7 @@ export function useControleurJeu({
     cleTransitionDernierPli: 0,
     afficherActionsEnchereRedistribution: false,
   });
+  const [cartesMasqueesMainJoueur, setCartesMasqueesMainJoueur] = useState<Carte[]>([]);
   const etatJeuRef = useRef(etatJeu);
   etatJeuRef.current = etatJeu;
   const dimensionsEcranRef = useRef({ largeur: largeurEcran, hauteur: hauteurEcran });
@@ -566,12 +568,11 @@ export function useControleurJeu({
       if (snap.value !== "jeu") return;
       if (snap.context.indexJoueurActif !== INDEX_HUMAIN) return;
 
-      // Retirer la carte de la main visuellement juste avant l'animation.
+      // Conserver la disposition de la main jusqu'à la fin de l'animation
+      // pour que la carte semble partir directement de l'éventail.
+      setCartesMasqueesMainJoueur([carte]);
       setEtatJeu((prev) => ({
         ...prev,
-        mainJoueur: prev.mainJoueur.filter(
-          (c) => c.rang !== carte.rang || c.couleur !== carte.couleur,
-        ),
         cartesJouables: [],
         estTourHumain: false,
       }));
@@ -582,9 +583,21 @@ export function useControleurJeu({
         "sud",
         () => {
           if (estDemonte.current) return;
+          setCartesMasqueesMainJoueur((precedent) =>
+            precedent.filter((carteMasquee) => !estMemeCarte(carteMasquee, carte)),
+          );
 
           // Ajouter la carte au pli visuellement
-          setEtatJeu((prev) => ajouterCarteAuPliVisuel(prev, "sud", carte));
+          setEtatJeu((prev) =>
+            ajouterCarteAuPliVisuel(
+              {
+                ...prev,
+                mainJoueur: prev.mainJoueur.filter((c) => !estMemeCarte(c, carte)),
+              },
+              "sud",
+              carte,
+            ),
+          );
 
           // Envoyer l'événement à la machine
           acteur.send({ type: "JOUER_CARTE", carte });
@@ -718,6 +731,7 @@ export function useControleurJeu({
   return {
     etatJeu,
     modeRenduCartes: calculerModeRenduCartes(etatJeu.phaseUI),
+    cartesMasqueesMainJoueur,
     // Animations
     cartesEnVol: animations.cartesEnVol,
     surAnimationTerminee: animations.surAnimationTerminee,
