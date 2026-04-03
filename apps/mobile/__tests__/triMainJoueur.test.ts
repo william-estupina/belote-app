@@ -76,6 +76,26 @@ describe("trierMainJoueur", () => {
     ]);
   });
 
+  it("alterne rouge puis noir apres une couleur prioritaire noire quand c est possible", () => {
+    const main: Carte[] = [
+      { couleur: "pique", rang: "as" },
+      { couleur: "trefle", rang: "roi" },
+      { couleur: "coeur", rang: "10" },
+      { couleur: "pique", rang: "7" },
+    ];
+
+    const resultat = trierMainJoueur(main, {
+      couleurPrioritaire: "pique",
+    });
+
+    expect(idsCartes(resultat)).toEqual([
+      "pique-as",
+      "pique-7",
+      "coeur-10",
+      "trefle-roi",
+    ]);
+  });
+
   it("garde toute la couleur prioritaire a gauche puis conserve l alternance historique des couleurs", () => {
     const main: Carte[] = [
       { couleur: "coeur", rang: "roi" },
