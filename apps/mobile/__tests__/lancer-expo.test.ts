@@ -52,7 +52,7 @@ describe("lancer-expo", () => {
         "Ubuntu-24.04",
         "bash",
         "-lc",
-        "cd '/home/westupina/projects/belote/apps/mobile' && pnpm exec expo start --web --host lan",
+        'export PNPM_HOME="${PNPM_HOME:-$HOME/.local/share/pnpm}" && export NVM_DIR="${NVM_DIR:-$HOME/.nvm}" && export PATH="$PNPM_HOME:$HOME/.local/bin:$HOME/bin:/usr/local/bin:/usr/bin:/bin:$PATH" && if [ -s "$NVM_DIR/nvm.sh" ]; then . "$NVM_DIR/nvm.sh" >/dev/null 2>&1 && nvm use --silent default >/dev/null 2>&1 || nvm use --silent node >/dev/null 2>&1 || true; fi && hash -r && cd \'/home/westupina/projects/belote/apps/mobile\' && pnpm exec expo start --web --host lan',
       ],
     });
   });

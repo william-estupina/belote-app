@@ -18,6 +18,17 @@ function echapperCheminBash(chemin) {
   return `'${chemin.replace(/'/g, `'\"'\"'`)}'`;
 }
 
+function construireCommandePreparationWsl(cheminLinux) {
+  return [
+    'export PNPM_HOME="${PNPM_HOME:-$HOME/.local/share/pnpm}"',
+    'export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"',
+    'export PATH="$PNPM_HOME:$HOME/.local/bin:$HOME/bin:/usr/local/bin:/usr/bin:/bin:$PATH"',
+    'if [ -s "$NVM_DIR/nvm.sh" ]; then . "$NVM_DIR/nvm.sh" >/dev/null 2>&1 && nvm use --silent default >/dev/null 2>&1 || nvm use --silent node >/dev/null 2>&1 || true; fi',
+    "hash -r",
+    `cd ${echapperCheminBash(cheminLinux)}`,
+  ].join(" && ");
+}
+
 function construireCommandeExpo(argsExpo, cwd, plateforme = process.platform) {
   if (plateforme === "win32") {
     const cheminWsl = convertirCheminWslDepuisWindows(cwd);
@@ -30,7 +41,9 @@ function construireCommandeExpo(argsExpo, cwd, plateforme = process.platform) {
           cheminWsl.distribution,
           "bash",
           "-lc",
-          `cd ${echapperCheminBash(cheminWsl.cheminLinux)} && pnpm exec expo ${argsExpo.join(" ")}`,
+          `${construireCommandePreparationWsl(
+            cheminWsl.cheminLinux,
+          )} && pnpm exec expo ${argsExpo.join(" ")}`,
         ],
       };
     }
