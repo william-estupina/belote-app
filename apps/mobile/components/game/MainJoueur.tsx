@@ -35,6 +35,7 @@ interface PropsMainJoueur {
   modeDisposition?: ModeDispositionMainJoueur;
   nbCartesDisposition?: number;
   cartesMasquees?: Carte[];
+  cartesEnPose?: Carte[];
   atlas: AtlasCartes;
   onCarteJouee?: (carte: Carte, departAnimation: DepartAnimationJeuCarte) => void;
 }
@@ -50,6 +51,13 @@ function estMasquee(carte: Carte, cartesMasquees?: Carte[]): boolean {
   return cartesMasquees.some((carteMasquee) => estMemeCarte(carteMasquee, carte));
 }
 
+function estEnPose(carte: Carte, cartesEnPose?: Carte[]): boolean {
+  if (!cartesEnPose || cartesEnPose.length === 0) return false;
+  return cartesEnPose.some((carteEnPoseCourante) =>
+    estMemeCarte(carteEnPoseCourante, carte),
+  );
+}
+
 const EASING_REORG = Easing.inOut(Easing.cubic);
 
 // --- Sous-composant animé pour une carte dans l'éventail ---
@@ -62,10 +70,12 @@ interface PropsCarteEventail {
   largeurCarte: number;
   hauteurCarte: number;
   largeurEcran: number;
+  hauteurEcran: number;
   hauteurConteneur: number;
   jouable: boolean;
   grisee: boolean;
   estMasquee: boolean;
+  estEnPose: boolean;
   interactionActive: boolean;
   animerEntree: boolean;
   atlas: AtlasCartes;
@@ -84,10 +94,12 @@ function CarteEventailAnimee({
   largeurCarte,
   hauteurCarte,
   largeurEcran,
+  hauteurEcran,
   hauteurConteneur,
   jouable,
   grisee,
   estMasquee,
+  estEnPose,
   interactionActive,
   animerEntree,
   atlas,
@@ -204,7 +216,7 @@ function CarteEventailAnimee({
         onPress={() =>
           onCarteJouee?.(carte, {
             x: xProp,
-            y: yProp,
+            y: yProp - 8 / hauteurEcran,
             rotation: angle,
             echelle,
           })
@@ -212,7 +224,7 @@ function CarteEventailAnimee({
         testID={`carte-main-${carte.couleur}-${carte.rang}`}
         style={({ pressed }) => ({
           opacity: estMasquee ? 0 : 1,
-          transform: pressed && estInteractive ? [{ translateY: -8 }] : [],
+          transform: estEnPose || (pressed && estInteractive) ? [{ translateY: -8 }] : [],
         })}
       >
         <CarteFaceAtlas
@@ -239,6 +251,7 @@ export function MainJoueur({
   modeDisposition = "eventail",
   nbCartesDisposition,
   cartesMasquees,
+  cartesEnPose,
   atlas,
   onCarteJouee,
 }: PropsMainJoueur) {
@@ -279,6 +292,7 @@ export function MainJoueur({
         const jouable = estJouable(carte, cartesJouables);
         const grisee = interactionActive && !jouable;
         const carteEstMasquee = estMasquee(carte, cartesMasquees);
+        const carteEstEnPose = estEnPose(carte, cartesEnPose);
         const echelle = 1;
 
         // Position proportionnelle du centre de la carte sur l'écran
@@ -297,10 +311,12 @@ export function MainJoueur({
             largeurCarte={largeurCarte}
             hauteurCarte={hauteurCarte}
             largeurEcran={largeurEcran}
+            hauteurEcran={hauteurEcran}
             hauteurConteneur={disposition.hauteurConteneur}
             jouable={jouable}
             grisee={grisee}
             estMasquee={carteEstMasquee}
+            estEnPose={carteEstEnPose}
             interactionActive={interactionActive}
             animerEntree={animerNouvellesCartes}
             atlas={atlas}

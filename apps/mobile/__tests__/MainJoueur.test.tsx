@@ -257,10 +257,33 @@ describe("MainJoueur", () => {
       CARTES[1],
       expect.objectContaining({
         x: (carteDisposition.x + largeurCarte / 2) / largeurEcran,
-        y: yAttendu,
+        y: yAttendu - 8 / hauteurEcran,
         rotation: carteDisposition.angle,
         echelle: 1,
       }),
     );
+  });
+
+  it("conserve le soulevement de la carte pendant l attente du relais", () => {
+    render(
+      <MainJoueur
+        cartes={CARTES}
+        cartesEnPose={[CARTES[1]]}
+        largeurEcran={1400}
+        hauteurEcran={1000}
+        cartesJouables={CARTES}
+        interactionActive={false}
+        atlas={MOCK_ATLAS}
+        onCarteJouee={() => {}}
+      />,
+    );
+
+    const styleCarteEnPose = screen.getByTestId("carte-main-coeur-roi").props.style;
+    const styleCarteNormale = screen.getByTestId("carte-main-pique-as").props.style;
+
+    expect(styleCarteEnPose).toEqual(
+      expect.objectContaining({ transform: [{ translateY: -8 }] }),
+    );
+    expect(styleCarteNormale).toEqual(expect.objectContaining({ transform: [] }));
   });
 });

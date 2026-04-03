@@ -478,6 +478,7 @@ describe("useControleurJeu - redistribution", () => {
       result.current.jouerCarte(carteJouee, departAnimation);
     });
 
+    expect(result.current.cartesEnPoseMainJoueur).toEqual([carteJouee]);
     expect(result.current.cartesMasqueesMainJoueur).toEqual([]);
     expect(mockDemarrerAnimationJeuCarte).not.toHaveBeenCalled();
 
@@ -485,6 +486,7 @@ describe("useControleurJeu - redistribution", () => {
       surPretAffichage?.("jeu-1");
     });
 
+    expect(result.current.cartesEnPoseMainJoueur).toEqual([]);
     expect(result.current.cartesMasqueesMainJoueur).toEqual([carteJouee]);
     expect(mockDemarrerAnimationJeuCarte).not.toHaveBeenCalled();
 

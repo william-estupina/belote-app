@@ -192,6 +192,7 @@ export function useControleurJeu({
     afficherActionsEnchereRedistribution: false,
   });
   const [cartesMasqueesMainJoueur, setCartesMasqueesMainJoueur] = useState<Carte[]>([]);
+  const [cartesEnPoseMainJoueur, setCartesEnPoseMainJoueur] = useState<Carte[]>([]);
   const etatJeuRef = useRef(etatJeu);
   etatJeuRef.current = etatJeu;
   const dimensionsEcranRef = useRef({ largeur: largeurEcran, hauteur: hauteurEcran });
@@ -577,6 +578,7 @@ export function useControleurJeu({
         cartesJouables: [],
         estTourHumain: false,
       }));
+      setCartesEnPoseMainJoueur([carte]);
 
       const planifierDemarrageAnimation = (idAnimation: string) => {
         const lancer = () => {
@@ -601,6 +603,9 @@ export function useControleurJeu({
         "sud",
         () => {
           if (estDemonte.current) return;
+          setCartesEnPoseMainJoueur((precedent) =>
+            precedent.filter((carteEnPose) => !estMemeCarte(carteEnPose, carte)),
+          );
           setCartesMasqueesMainJoueur((precedent) =>
             precedent.filter((carteMasquee) => !estMemeCarte(carteMasquee, carte)),
           );
@@ -625,6 +630,7 @@ export function useControleurJeu({
           demarrageDiffere: true,
           surPretAffichage: (idAnimation) => {
             if (estDemonte.current) return;
+            setCartesEnPoseMainJoueur([]);
             setCartesMasqueesMainJoueur([carte]);
             planifierDemarrageAnimation(idAnimation);
           },
@@ -758,6 +764,7 @@ export function useControleurJeu({
     etatJeu,
     modeRenduCartes: calculerModeRenduCartes(etatJeu.phaseUI),
     cartesMasqueesMainJoueur,
+    cartesEnPoseMainJoueur,
     // Animations
     cartesEnVol: animations.cartesEnVol,
     surAnimationTerminee: animations.surAnimationTerminee,

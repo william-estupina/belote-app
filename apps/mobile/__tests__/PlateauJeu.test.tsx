@@ -52,6 +52,7 @@ const etatJeuMock = {
 
 let mockControleur = {
   etatJeu: etatJeuMock,
+  cartesEnPoseMainJoueur: [],
   cartesEnVol: [],
   surAnimationTerminee: jest.fn(),
   surCarteJeuPreteAffichage: jest.fn(),

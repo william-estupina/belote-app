@@ -37,6 +37,7 @@ export default function PlateauJeu() {
     etatJeu,
     modeRenduCartes,
     cartesMasqueesMainJoueur,
+    cartesEnPoseMainJoueur,
     cartesEnVol,
     surAnimationTerminee,
     surCarteJeuPreteAffichage,
@@ -217,6 +218,7 @@ export default function PlateauJeu() {
                   : undefined
               }
               cartesMasquees={cartesMasqueesMainJoueur}
+              cartesEnPose={cartesEnPoseMainJoueur}
               atlas={atlas}
               cartesJouables={
                 etatJeu.phaseUI === "jeu" && etatJeu.estTourHumain
