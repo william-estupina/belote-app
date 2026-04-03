@@ -15,6 +15,7 @@ import { estMemeCarte } from "./utils-cartes";
 const POSITIONS_JOUEUR: PositionJoueur[] = ["sud", "ouest", "nord", "est"];
 
 export type CarteDuPli = { joueur: PositionJoueur; carte: Carte };
+export type DepartAnimationJeuCarte = CarteEnVol["depart"];
 export interface CarteRetourPaquet {
   carte: Carte;
   depart: CarteEnVol["depart"];
@@ -154,11 +155,16 @@ export function useAnimations() {
       carte: Carte,
       joueur: PositionJoueur,
       onTerminee?: () => void,
-      positionDepartCustom?: { x: number; y: number },
+      departPersonnalise?: DepartAnimationJeuCarte,
     ) => {
       compteurId.current += 1;
       const id = `jeu-${compteurId.current}`;
-      const posDepart = positionDepartCustom ?? POSITIONS_MAINS[joueur];
+      const posDepart: DepartAnimationJeuCarte = departPersonnalise ?? {
+        x: POSITIONS_MAINS[joueur].x,
+        y: POSITIONS_MAINS[joueur].y,
+        rotation: 0,
+        echelle: 1,
+      };
       const posArrivee = POSITIONS_PLI[joueur];
       const { decalageX, decalageY, rotation } = variationCartePli(
         carte.couleur,
@@ -169,12 +175,7 @@ export function useAnimations() {
       const vol: CarteEnVol = {
         id,
         carte,
-        depart: {
-          x: posDepart.x,
-          y: posDepart.y,
-          rotation: 0,
-          echelle: 1,
-        },
+        depart: posDepart,
         arrivee: {
           x: posArrivee.x + decalageX,
           y: posArrivee.y + decalageY,

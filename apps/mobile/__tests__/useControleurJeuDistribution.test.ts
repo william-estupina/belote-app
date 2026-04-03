@@ -380,6 +380,51 @@ describe("useControleurJeu - redistribution", () => {
     });
   });
 
+  it("relaie un depart complet a l animation de pose de la carte sud", async () => {
+    const departAnimation = {
+      x: 0.37,
+      y: 0.83,
+      rotation: -14,
+      echelle: 1,
+    };
+
+    const { result } = renderHook(() =>
+      useControleurJeu({
+        difficulte: "facile",
+        scoreObjectif: 1000,
+        largeurEcran: 1280,
+        hauteurEcran: 720,
+      }),
+    );
+
+    await viderFileEvenements();
+
+    act(() => {
+      result.current.onRevelationTerminee();
+    });
+
+    await viderFileEvenements();
+
+    act(() => {
+      result.current.prendre();
+    });
+
+    await viderFileEvenements(30);
+
+    const carteJouee = result.current.etatJeu.cartesJouables[0];
+
+    act(() => {
+      result.current.jouerCarte(carteJouee, departAnimation);
+    });
+
+    expect(mockLancerAnimationJeuCarte).toHaveBeenCalledWith(
+      carteJouee,
+      "sud",
+      expect.any(Function),
+      departAnimation,
+    );
+  });
+
   it("reste en mode cinematique-distribution jusqu'au handoff final", async () => {
     const { result } = renderHook(() =>
       useControleurJeu({

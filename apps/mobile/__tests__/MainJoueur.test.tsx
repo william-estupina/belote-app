@@ -1,8 +1,10 @@
 import type { Carte } from "@belote/shared-types";
-import { render, screen } from "@testing-library/react-native";
+import { fireEvent, render, screen } from "@testing-library/react-native";
 import type { ComponentProps } from "react";
 
 import { MainJoueur } from "../components/game/MainJoueur";
+import { calculerDispositionMainJoueur } from "../components/game/mainJoueurDisposition";
+import { RATIO_ASPECT_CARTE, RATIO_LARGEUR_CARTE } from "../constants/layout";
 
 const mockMontagesCarte: string[] = [];
 const mockDemontagesCarte: string[] = [];
@@ -214,6 +216,51 @@ describe("MainJoueur", () => {
     );
     expect(screen.getByTestId("carte-main-pique-as").props.style).toEqual(
       expect.objectContaining({ opacity: 1 }),
+    );
+  });
+
+  it("remonte l etat visuel complet de la carte jouee", () => {
+    const surCarteJouee = jest.fn();
+    const largeurEcran = 1400;
+    const hauteurEcran = 1000;
+    const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
+    const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
+    const disposition = calculerDispositionMainJoueur({
+      mode: "eventail",
+      nbCartes: CARTES.length,
+      largeurEcran,
+      hauteurEcran,
+      largeurCarte,
+      hauteurCarte,
+    });
+    const carteDisposition = disposition.cartes[1];
+    const yAttendu =
+      1 -
+      (carteDisposition.decalageY + hauteurCarte / 2 - hauteurCarte * 0.15) /
+        hauteurEcran;
+
+    render(
+      <MainJoueur
+        cartes={CARTES}
+        largeurEcran={largeurEcran}
+        hauteurEcran={hauteurEcran}
+        cartesJouables={CARTES}
+        interactionActive
+        atlas={MOCK_ATLAS}
+        onCarteJouee={surCarteJouee}
+      />,
+    );
+
+    fireEvent.press(screen.getByTestId("carte-main-coeur-roi"));
+
+    expect(surCarteJouee).toHaveBeenCalledWith(
+      CARTES[1],
+      expect.objectContaining({
+        x: (carteDisposition.x + largeurCarte / 2) / largeurEcran,
+        y: yAttendu,
+        rotation: carteDisposition.angle,
+        echelle: 1,
+      }),
     );
   });
 });

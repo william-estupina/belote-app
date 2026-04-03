@@ -16,6 +16,7 @@ import {
   RATIO_LARGEUR_CARTE,
 } from "../../constants/layout";
 import { construireGlissementCarteDepuisEtatCourant } from "../../hooks/glissementCartes";
+import type { DepartAnimationJeuCarte } from "../../hooks/useAnimations";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
 import { estMemeCarte } from "../../hooks/utils-cartes";
 import { CarteFaceAtlas } from "./Carte";
@@ -23,12 +24,6 @@ import {
   calculerDispositionMainJoueur,
   type ModeDispositionMainJoueur,
 } from "./mainJoueurDisposition";
-
-/** Position proportionnelle (0–1) d'une carte sur l'écran */
-export interface PositionProportionnelle {
-  x: number;
-  y: number;
-}
 
 interface PropsMainJoueur {
   cartes: Carte[];
@@ -41,7 +36,7 @@ interface PropsMainJoueur {
   nbCartesDisposition?: number;
   cartesMasquees?: Carte[];
   atlas: AtlasCartes;
-  onCarteJouee?: (carte: Carte, position: PositionProportionnelle) => void;
+  onCarteJouee?: (carte: Carte, departAnimation: DepartAnimationJeuCarte) => void;
 }
 
 /** Vérifie si une carte est dans la liste des cartes jouables */
@@ -76,8 +71,9 @@ interface PropsCarteEventail {
   atlas: AtlasCartes;
   xProp: number;
   yProp: number;
+  echelle: number;
   zIndex: number;
-  onCarteJouee?: (carte: Carte, position: PositionProportionnelle) => void;
+  onCarteJouee?: (carte: Carte, departAnimation: DepartAnimationJeuCarte) => void;
 }
 
 function CarteEventailAnimee({
@@ -97,6 +93,7 @@ function CarteEventailAnimee({
   atlas,
   xProp,
   yProp,
+  echelle,
   zIndex,
   onCarteJouee,
 }: PropsCarteEventail) {
@@ -204,7 +201,14 @@ function CarteEventailAnimee({
       <Pressable
         disabled={!estInteractive}
         accessibilityState={{ disabled: !estInteractive }}
-        onPress={() => onCarteJouee?.(carte, { x: xProp, y: yProp })}
+        onPress={() =>
+          onCarteJouee?.(carte, {
+            x: xProp,
+            y: yProp,
+            rotation: angle,
+            echelle,
+          })
+        }
         testID={`carte-main-${carte.couleur}-${carte.rang}`}
         style={({ pressed }) => ({
           opacity: estMasquee ? 0 : 1,
@@ -275,6 +279,7 @@ export function MainJoueur({
         const jouable = estJouable(carte, cartesJouables);
         const grisee = interactionActive && !jouable;
         const carteEstMasquee = estMasquee(carte, cartesMasquees);
+        const echelle = 1;
 
         // Position proportionnelle du centre de la carte sur l'écran
         const xProp = (x + largeurCarte / 2) / largeurEcran;
@@ -301,6 +306,7 @@ export function MainJoueur({
             atlas={atlas}
             xProp={xProp}
             yProp={yProp}
+            echelle={echelle}
             zIndex={index}
             onCarteJouee={onCarteJouee}
           />

@@ -76,6 +76,30 @@ describe("useAnimations", () => {
     });
   });
 
+  it("conserve un depart personnalise complet pour la carte sud", () => {
+    const departPersonnalise = {
+      x: 0.37,
+      y: 0.83,
+      rotation: -14,
+      echelle: 1,
+    };
+    const { result } = renderHook(() => useAnimations());
+
+    act(() => {
+      result.current.lancerAnimationJeuCarte(
+        CARTE_TEST,
+        "sud",
+        undefined,
+        departPersonnalise,
+      );
+    });
+
+    expect(result.current.cartesEnVol[0]).toMatchObject({
+      id: "jeu-1",
+      depart: departPersonnalise,
+    });
+  });
+
   it("cree des cartes retour-* face cachee et appelle le callback de fin", () => {
     const surFin = jest.fn();
     const { result } = renderHook(() => useAnimations());

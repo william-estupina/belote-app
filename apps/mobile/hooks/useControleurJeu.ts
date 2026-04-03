@@ -23,7 +23,11 @@ import {
 } from "./extraireEtatUI";
 import { calculerDureeTotaleRamassagePli } from "./planRamassagePli";
 import type { ResumeFinManche } from "./resume-fin-manche";
-import { construireCartesGeleesDepuisPli, useAnimations } from "./useAnimations";
+import {
+  construireCartesGeleesDepuisPli,
+  type DepartAnimationJeuCarte,
+  useAnimations,
+} from "./useAnimations";
 import { useAnimationsDistribution } from "./useAnimationsDistribution";
 import { useAtlasCartes } from "./useAtlasCartes";
 import { useDelaiBot } from "./useDelaiBot";
@@ -560,7 +564,7 @@ export function useControleurJeu({
 
   /** Le joueur humain joue une carte */
   const jouerCarte = useCallback(
-    async (carte: Carte, positionDepart?: { x: number; y: number }) => {
+    async (carte: Carte, departAnimation?: DepartAnimationJeuCarte) => {
       const acteur = acteurRef.current;
       if (!acteur) return;
 
@@ -602,7 +606,7 @@ export function useControleurJeu({
           // Envoyer l'événement à la machine
           acteur.send({ type: "JOUER_CARTE", carte });
         },
-        positionDepart,
+        departAnimation,
       );
     },
     [animations],
