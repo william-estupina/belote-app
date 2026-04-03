@@ -1,14 +1,10 @@
 // Pile visuelle des plis remportés par une équipe
 import type { IdEquipe } from "@belote/shared-types";
 import { memo } from "react";
-import { Platform, View } from "react-native";
+import { View } from "react-native";
 
-import {
-  POSITIONS_PILES,
-  RATIO_ASPECT_CARTE,
-  RATIO_LARGEUR_CARTE,
-} from "../../constants/layout";
 import { CarteDos } from "./Carte";
+import { calculerGeometriePilePlis } from "./pile-plis-geometrie";
 
 interface PropsPilePlis {
   equipe: IdEquipe;
@@ -17,32 +13,27 @@ interface PropsPilePlis {
   hauteurEcran: number;
 }
 
-const estWeb = Platform.OS === "web";
-
-// Décalage par carte empilée (en pixels)
-const DECALAGE_PAR_PLI = estWeb ? 3 : 2;
-// Nombre max de cartes visibles dans la pile
-const MAX_CARTES_VISIBLES = 8;
 export const PilePlis = memo(function PilePlis({
   equipe,
   nbPlis,
   largeurEcran,
   hauteurEcran,
 }: PropsPilePlis) {
-  const pos = POSITIONS_PILES[equipe];
-  const largeurCarte = largeurEcran * RATIO_LARGEUR_CARTE * 0.65;
-  const hauteurCarte = largeurCarte * RATIO_ASPECT_CARTE;
-  const nbVisibles = Math.min(nbPlis, MAX_CARTES_VISIBLES);
-
-  // Equipe2 (ouest) : cartes tournées à 90° comme la main du joueur ouest
-  const estTourne = equipe === "equipe2";
-
-  // Dimensions visuelles après rotation éventuelle
-  const largeurVisuelle = estTourne ? hauteurCarte : largeurCarte;
-  const hauteurVisuelle = estTourne ? largeurCarte : hauteurCarte;
-
-  // La pile grandit vers le haut
-  const hauteurPile = hauteurVisuelle + nbVisibles * DECALAGE_PAR_PLI;
+  const {
+    estTourne,
+    nbVisibles,
+    largeurCarte,
+    hauteurCarte,
+    largeurVisuelle,
+    hauteurVisuelle,
+    decalageParPli,
+    cadrePile,
+  } = calculerGeometriePilePlis({
+    equipe,
+    nbPlis,
+    largeurEcran,
+    hauteurEcran,
+  });
 
   if (nbPlis === 0) {
     // Emplacement vide
@@ -50,8 +41,8 @@ export const PilePlis = memo(function PilePlis({
       <View
         style={{
           position: "absolute",
-          left: pos.x * largeurEcran - largeurVisuelle / 2,
-          top: pos.y * hauteurEcran - hauteurVisuelle / 2,
+          left: cadrePile.left,
+          top: cadrePile.top,
           width: largeurVisuelle,
           height: hauteurVisuelle,
           borderWidth: 1.5,
@@ -70,10 +61,10 @@ export const PilePlis = memo(function PilePlis({
     <View
       style={{
         position: "absolute",
-        left: pos.x * largeurEcran - largeurVisuelle / 2,
-        top: pos.y * hauteurEcran - hauteurPile + hauteurVisuelle / 2,
-        width: largeurVisuelle,
-        height: hauteurPile,
+        left: cadrePile.left,
+        top: cadrePile.top,
+        width: cadrePile.width,
+        height: cadrePile.height,
         zIndex: 5,
       }}
       pointerEvents="none"
@@ -83,7 +74,7 @@ export const PilePlis = memo(function PilePlis({
           key={i}
           style={{
             position: "absolute",
-            bottom: i * DECALAGE_PAR_PLI,
+            bottom: i * decalageParPli,
             left: (largeurVisuelle - largeurCarte) / 2,
             width: largeurCarte,
             height: hauteurCarte,

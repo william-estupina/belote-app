@@ -214,6 +214,41 @@ describe("useAnimations", () => {
   });
 
   describe("ramassage in-place", () => {
+    it("glisse vers le prochain pli visible de la pile adverse plutot que vers son centre brut", () => {
+      const { delaiPhase2 } = planifierRamassagePli();
+      const { result } = renderHook(() =>
+        useAnimations({ largeurEcran: 1200, hauteurEcran: 800 }),
+      );
+
+      act(() => {
+        result.current.ajouterCartesGelees([
+          {
+            id: "pli-est-pique-as",
+            carte: CARTE_TEST,
+            depart: { x: 0.58, y: 0.47, rotation: 8, echelle: 0.9 },
+            arrivee: { x: 0.58, y: 0.47, rotation: 8, echelle: 0.9 },
+            faceVisible: true,
+            duree: 0,
+            segment: 0,
+          },
+        ]);
+        result.current.lancerAnimationRamassagePli(
+          [{ joueur: "est", carte: CARTE_TEST }],
+          "est",
+          undefined,
+          undefined,
+          1,
+        );
+        jest.advanceTimersByTime(ANIMATIONS.ramassagePli.delaiAvant + delaiPhase2);
+      });
+
+      expect(result.current.cartesEnVol).toHaveLength(1);
+      expect(result.current.cartesEnVol[0].id).toMatch(/^ramassage-/);
+      expect(result.current.cartesEnVol[0].arrivee.x).toBeCloseTo(0.08, 5);
+      expect(result.current.cartesEnVol[0].arrivee.y).toBeCloseTo(0.19776, 5);
+      expect(result.current.cartesEnVol[0].arrivee.rotation).toBe(90);
+    });
+
     it("met a jour les cartes jeu-* existantes pour la convergence (segment 1)", () => {
       const { result } = renderHook(() => useAnimations());
 

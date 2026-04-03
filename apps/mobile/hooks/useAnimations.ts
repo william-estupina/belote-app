@@ -2,6 +2,7 @@ import type { Carte, PositionJoueur } from "@belote/shared-types";
 import { useCallback, useRef, useState } from "react";
 
 import type { CarteEnVol } from "../components/game/CoucheAnimation";
+import { calculerCibleAnimationPilePlis } from "../components/game/pile-plis-geometrie";
 import {
   ANIMATIONS,
   POSITIONS_MAINS,
@@ -27,6 +28,11 @@ export interface CarteRetourPaquet {
   faceVisible?: boolean;
   flipDe?: number;
   flipVers?: number;
+}
+
+interface DimensionsAnimations {
+  largeurEcran: number;
+  hauteurEcran: number;
 }
 
 function arrondirPosition(valeur: number): number {
@@ -76,7 +82,7 @@ export function construireCartesGeleesDepuisPli(
     });
 }
 
-export function useAnimations() {
+export function useAnimations(dimensionsEcran?: DimensionsAnimations) {
   const [cartesEnVol, setCartesEnVol] = useState<CarteEnVol[]>([]);
   const cartesEnVolRef = useRef<CarteEnVol[]>([]);
   cartesEnVolRef.current = cartesEnVol;
@@ -245,12 +251,24 @@ export function useAnimations() {
       gagnant: PositionJoueur,
       onTerminee?: () => void,
       onDebutRamassage?: () => void,
+      nbPlisAvantRamassage = 0,
     ) => {
       const indexGagnant = POSITIONS_JOUEUR.indexOf(gagnant);
       const equipe = indexGagnant % 2 === 0 ? "equipe1" : "equipe2";
       const posPile = POSITIONS_PILES[equipe];
       const rotationArrivee = equipe === "equipe2" ? 90 : 0;
       const posGagnant = POSITIONS_PLI[gagnant];
+      const ciblePile =
+        dimensionsEcran &&
+        dimensionsEcran.largeurEcran > 0 &&
+        dimensionsEcran.hauteurEcran > 0
+          ? calculerCibleAnimationPilePlis({
+              equipe,
+              nbPlisAvantRamassage,
+              largeurEcran: dimensionsEcran.largeurEcran,
+              hauteurEcran: dimensionsEcran.hauteurEcran,
+            })
+          : posPile;
       const { dureeConvergence, dureeGlissement, delaiPhase2 } = planifierRamassagePli();
 
       const timeout = setTimeout(() => {
@@ -326,8 +344,8 @@ export function useAnimations() {
                   echelle: 0.85,
                 },
                 arrivee: {
-                  x: posPile.x,
-                  y: posPile.y,
+                  x: ciblePile.x,
+                  y: ciblePile.y,
                   rotation: rotationArrivee,
                   echelle: 0.62,
                 },
@@ -351,7 +369,7 @@ export function useAnimations() {
 
       timeoutsRef.current.push(timeout);
     },
-    [],
+    [dimensionsEcran],
   );
 
   const lancerAnimationRetourPaquet = useCallback(

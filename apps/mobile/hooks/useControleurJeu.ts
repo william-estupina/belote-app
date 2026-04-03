@@ -36,6 +36,10 @@ import { estMemeCarte } from "./utils-cartes";
 
 // --- Types exposés ---
 
+function positionVersEquipe(position: PositionJoueur): "equipe1" | "equipe2" {
+  return position === "sud" || position === "nord" ? "equipe1" : "equipe2";
+}
+
 export type PhaseUI =
   | "inactif"
   | "distribution"
@@ -199,7 +203,10 @@ export function useControleurJeu({
   const timerBeloteRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Animations
-  const animations = useAnimations();
+  const animations = useAnimations({
+    largeurEcran,
+    hauteurEcran,
+  });
   const atlas = useAtlasCartes();
   const animDistribution = useAnimationsDistribution(atlas, {
     largeur: largeurEcran,
@@ -366,6 +373,11 @@ export function useControleurJeu({
         return;
       }
       const dureeTransitionDernierPliMs = calculerDureeTotaleRamassagePli();
+      const equipeGagnante = positionVersEquipe(dernierPli.gagnant);
+      const nbPlisAvantRamassage =
+        equipeGagnante === "equipe1"
+          ? etatJeuRef.current.plisEquipe1
+          : etatJeuRef.current.plisEquipe2;
 
       animations.lancerAnimationRamassagePli(
         dernierPli.cartes,
@@ -410,6 +422,7 @@ export function useControleurJeu({
             pliEnCours: [],
           }));
         },
+        nbPlisAvantRamassage,
       );
     },
     [animations, jouerBotSiNecessaire],
