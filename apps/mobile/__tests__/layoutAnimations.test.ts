@@ -5,12 +5,11 @@ describe("ANIMATIONS.distribution", () => {
     expect(ANIMATIONS.distribution.dureeCarte).toBe(480);
     expect(ANIMATIONS.distribution.delaiEntreJoueurs).toBe(300);
     expect(ANIMATIONS.distribution.dureeReorganisationMain).toBe(210);
-    expect(ANIMATIONS.distribution.pauseAvantTri).toBe(150);
     expect(ANIMATIONS.distribution.dureeSlideRetournee).toBe(360);
     expect(ANIMATIONS.distribution.dureeRetourPaquet).toBe(1200);
     expect(ANIMATIONS.distribution.delaiEntreVaguesRetourPaquet).toBe(360);
     expect(ANIMATIONS.distribution.pauseApresRetourPaquet).toBe(300);
-    expect(ANIMATIONS.jeuCarte.duree).toBe(240);
+    expect(ANIMATIONS.jeuCarte.duree).toBe(420);
     expect(ANIMATIONS.ramassagePli.duree).toBe(360);
     expect(ANIMATIONS.ramassagePli.delaiAvant).toBe(400);
     expect(ANIMATIONS.pauseAvantEncheres).toBe(900);

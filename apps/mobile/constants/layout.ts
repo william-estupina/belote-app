@@ -93,9 +93,7 @@ export const ANIMATIONS = {
       ecartX: 0.03, // ecart horizontal entre cartes adjacentes (fraction ecran)
       ecartRotation: 10, // ecart de rotation entre cartes adjacentes (degres)
     },
-    dureeReorganisationMain: dureeAnimationMajeure(350), // duree du placement/tri visuel dans la main du joueur (ms)
-    // Tri apres distribution
-    pauseAvantTri: dureeAnimationMajeure(250), // pause avant animation de tri (ms)
+    dureeReorganisationMain: dureeAnimationMajeure(350), // duree du placement visuel dans la main du joueur (ms)
     // Distribution restante -> slide carte retournee
     dureeSlideRetournee: dureeAnimationMajeure(600), // duree du slide vers main preneur (ms)
     dureeRetourPaquet: ralentirDureeAnimationMajeure(1000), // duree du rappel des mains vers le paquet (ms)

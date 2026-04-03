@@ -71,14 +71,7 @@ export interface ResultatAnimationsDistribution {
       cartesVisibles?: Carte[];
     },
   ) => void;
-  animerTriSud: (params: {
-    mainDistribuee: Carte[];
-    mainTriee: Carte[];
-    largeurEcran: number;
-    hauteurEcran: number;
-    onTerminee: () => void;
-  }) => void;
-  /** Signale la fin de la distribution (retire le canvas). À appeler après le tri. */
+  /** Signale la fin de la distribution (retire le canvas). */
   terminerDistribution: () => void;
   cartesAtlasAdversaires: CarteAtlas[];
   cartesAtlasSud: CarteAtlas[];
@@ -96,10 +89,6 @@ export interface ResultatAnimationsDistribution {
 const MAX_CARTES_ADV = 24; // 8 cartes × 3 adversaires
 const MAX_CARTES_SUD = 8;
 const EASING_OUT_CUBIC = Easing.out(Easing.cubic);
-
-function cartesSontEgales(carteA: Carte, carteB: Carte): boolean {
-  return carteA.couleur === carteB.couleur && carteA.rang === carteB.rang;
-}
 
 /**
  * Hook d'orchestration de la distribution via Skia Atlas.
@@ -630,7 +619,7 @@ export function useAnimationsDistribution(
 
       // Planifier les callbacks.
       // Les cartes sud restent visibles dans l'Atlas (progression = 1) après leur arrivée,
-      // jusqu'à ce que animerTriSud les masque après le tri.
+      // jusqu'au handoff final piloté par le contrôleur.
       let delaiFinDistributionMs = 0;
 
       // Indexer les paquets sud et leurs plages dans le pool
@@ -763,11 +752,9 @@ export function useAnimationsDistribution(
       }
 
       // Callback de fin : notifier la fin de distribution.
-      // Les cartes sud ne sont PAS masquées ici — c'est animerTriSud qui s'en charge
-      // après le tri, pour éviter tout trou visuel.
+      // Les cartes sud ne sont PAS masquées ici pour éviter tout trou visuel.
       // Note : setEnCours(false) n'est PAS appelé ici — c'est le contrôleur
-      // qui appelle terminerDistribution() après le tri, pour éviter un
-      // re-layout intermédiaire avec les cartes non triées.
+      // qui appelle terminerDistribution() au moment du handoff final.
       if (options?.onTerminee) {
         const DELAI_SECURITE_DEMONTAGE = 100;
         const delaiFinMs = delaiFinDistributionMs + DELAI_SECURITE_DEMONTAGE;
@@ -812,121 +799,6 @@ export function useAnimationsDistribution(
     setEnCours(false);
   }, []);
 
-  const animerTriSud = useCallback(
-    ({
-      mainDistribuee,
-      mainTriee,
-      largeurEcran,
-      hauteurEcran,
-      onTerminee,
-    }: {
-      mainDistribuee: Carte[];
-      mainTriee: Carte[];
-      largeurEcran: number;
-      hauteurEcran: number;
-      onTerminee: () => void;
-    }) => {
-      const nbCartes = mainDistribuee.length;
-      if (nbCartes === 0 || largeurEcran === 0 || hauteurEcran === 0) {
-        onTerminee();
-        return;
-      }
-
-      const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
-      const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
-
-      const dispositionTriee = calculerDispositionMainJoueur({
-        mode: "eventail",
-        nbCartes: mainTriee.length,
-        largeurEcran,
-        hauteurEcran,
-        largeurCarte,
-        hauteurCarte,
-      });
-
-      const donneesCourantes = donneesWorkletSud.value;
-      const nouvellesDonnees = [...donneesCourantes];
-      const cartesSudTriees = mainTriee
-        .map((carte) =>
-          cartesAtlasSud.find((carteAtlas) => cartesSontEgales(carteAtlas.carte, carte)),
-        )
-        .filter((carteAtlas): carteAtlas is CarteAtlas => carteAtlas !== undefined);
-
-      for (let indexTrie = 0; indexTrie < mainTriee.length; indexTrie += 1) {
-        const carte = mainTriee[indexTrie];
-        const indexSource = mainDistribuee.findIndex((carteDistribuee) =>
-          cartesSontEgales(carteDistribuee, carte),
-        );
-        if (indexSource < 0) continue;
-
-        const carteDisp = dispositionTriee.cartes[indexTrie];
-        const arriveeTriee = calculerPointAncrageCarteMainJoueurNormalisee({
-          x: carteDisp.x,
-          decalageY: carteDisp.decalageY,
-          largeurEcran,
-          hauteurEcran,
-          largeurCarte,
-          hauteurCarte,
-        });
-
-        const offsetSource = indexSource * STRIDE;
-        const offsetCible = indexTrie * STRIDE;
-        const currentX = donneesCourantes[offsetSource + 4];
-        const currentY = donneesCourantes[offsetSource + 5];
-        const currentRot = donneesCourantes[offsetSource + 7];
-        const currentEch = donneesCourantes[offsetSource + 9];
-
-        const glissement = construireGlissementCarteDepuisEtatCourant({
-          depart: {
-            x: currentX,
-            y: currentY,
-            rotation: currentRot,
-            echelle: currentEch,
-          },
-          arrivee: {
-            x: arriveeTriee.x,
-            y: arriveeTriee.y,
-            rotation: carteDisp.angle,
-            echelle: currentEch,
-          },
-        });
-
-        nouvellesDonnees[offsetCible] = glissement.depart.x;
-        nouvellesDonnees[offsetCible + 1] = glissement.depart.y;
-        nouvellesDonnees[offsetCible + 2] = glissement.controle.x;
-        nouvellesDonnees[offsetCible + 3] = glissement.controle.y;
-        nouvellesDonnees[offsetCible + 4] = glissement.arrivee.x;
-        nouvellesDonnees[offsetCible + 5] = glissement.arrivee.y;
-        nouvellesDonnees[offsetCible + 6] = glissement.depart.rotation;
-        nouvellesDonnees[offsetCible + 7] = glissement.arrivee.rotation;
-        nouvellesDonnees[offsetCible + 8] = glissement.depart.echelle;
-        nouvellesDonnees[offsetCible + 9] = glissement.arrivee.echelle;
-      }
-
-      const nbCartesCapture = nbCartes;
-      const dureeReorg = ANIMATIONS.distribution.dureeReorganisationMain;
-      runOnUI(() => {
-        donneesWorkletSud.value = nouvellesDonnees;
-        for (let i = 0; i < nbCartesCapture; i++) {
-          progressionsSud[i].value = 0;
-          progressionsSud[i].value = withTiming(1, {
-            duration: dureeReorg,
-            easing: EASING_OUT_CUBIC,
-          });
-        }
-      })();
-
-      const timeout = setTimeout(() => {
-        if (cartesSudTriees.length === mainTriee.length) {
-          setCartesAtlasSud(cartesSudTriees);
-        }
-        onTerminee();
-      }, ANIMATIONS.distribution.dureeReorganisationMain);
-      timeoutsCallbacksRef.current.push(timeout);
-    },
-    [cartesAtlasSud, progressionsSud, donneesWorkletSud],
-  );
-
   // Rejouer l'appel en attente quand l'atlas devient disponible
   useEffect(() => {
     const enAttente = appelEnAttenteRef.current;
@@ -947,7 +819,6 @@ export function useAnimationsDistribution(
 
   return {
     lancerDistribution,
-    animerTriSud,
     terminerDistribution,
     cartesAtlasAdversaires,
     cartesAtlasSud,

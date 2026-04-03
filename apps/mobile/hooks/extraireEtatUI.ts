@@ -4,7 +4,6 @@ import type { ActionBot, Carte, PositionJoueur } from "@belote/shared-types";
 import { POSITIONS_JOUEUR } from "@belote/shared-types";
 
 import { construireResumeFinManche } from "./resume-fin-manche";
-import { trierMainJoueur } from "./triMainJoueur";
 import type { EtatJeu, PhaseUI } from "./useControleurJeu";
 
 const INDEX_HUMAIN = 0;
@@ -76,11 +75,7 @@ export function extraireEtatUI(
 
   return {
     phaseUI,
-    mainJoueur: trierMainJoueur(contexte.mains[INDEX_HUMAIN], {
-      couleurPrioritaire:
-        contexte.couleurAtout ?? contexte.carteRetournee?.couleur ?? null,
-      couleurAtout: contexte.couleurAtout,
-    }),
+    mainJoueur: contexte.mains[INDEX_HUMAIN],
     nbCartesAdversaires: {
       nord: contexte.mains[2].length,
       est: contexte.mains[3].length,

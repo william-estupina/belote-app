@@ -41,7 +41,6 @@ function creerEtat(): EtatJeu {
     cartesRestantesPaquet: 0,
     indexDonneur: 1,
     nbCartesAnticipeesJoueur: 0,
-    triMainDiffere: false,
     dernierPliVisible: null,
     precedentDernierPliVisible: null,
     transitionDernierPliActive: false,

@@ -41,7 +41,6 @@ const etatJeuMock = {
   cartesRestantesPaquet: 12,
   indexDonneur: 0,
   nbCartesAnticipeesJoueur: 0,
-  triMainDiffere: false,
   dernierPliVisible: null,
   precedentDernierPliVisible: null,
   transitionDernierPliActive: false,

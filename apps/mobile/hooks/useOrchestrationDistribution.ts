@@ -10,8 +10,6 @@ import { calculerDispositionReserveCentrale } from "../components/game/reserve-c
 import { ANIMATIONS } from "../constants/layout";
 import { construireCartesRetourPaquet } from "./construireCartesRetourPaquet";
 import { extraireEtatUI } from "./extraireEtatUI";
-import { construireTransitionTriMainInitiale } from "./transition-tri-main-initiale";
-import { trierMainJoueur } from "./triMainJoueur";
 import type { useAnimations } from "./useAnimations";
 import type { useAnimationsDistribution } from "./useAnimationsDistribution";
 import type { EtatJeu } from "./useControleurJeu";
@@ -69,103 +67,77 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
   // Ref pour appeler lancerDistributionRestanteAnimee depuis les callbacks déclarés avant
   const distribRestanteRef = useRef<(ctx: ContextePartie) => void>(() => {});
 
-  // --- Phase 3 : tri et finalisation après distribution ---
+  // --- Phase 3 : finalisation après distribution ---
   const lancerPhase3 = useCallback(
-    (contexte: ContextePartie) => {
-      const { distribution } = ANIMATIONS;
+    (_contexte: ContextePartie) => {
+      if (estDemonte.current) return;
 
-      const timeout = setTimeout(() => {
+      const acteur = acteurRef.current;
+      if (!acteur) return;
+      const snap = acteur.getSnapshot();
+      const etat = snap.value as string;
+      const ctx = snap.context;
+      const carteRetournee = ctx.carteRetournee;
+      const dimensionsCourantes = dimensionsEcranRef.current;
+
+      const finaliserEntreeEncheres = () => {
         if (estDemonte.current) return;
 
-        const acteur = acteurRef.current;
-        if (!acteur) return;
-        const snap = acteur.getSnapshot();
-        const etat = snap.value as string;
-        const ctx = snap.context;
-        const carteRetournee = ctx.carteRetournee;
-        const mainTriee = trierMainJoueur(ctx.mains[INDEX_HUMAIN], {
-          couleurPrioritaire: ctx.couleurAtout ?? ctx.carteRetournee?.couleur ?? null,
-          couleurAtout: ctx.couleurAtout,
-        });
-        const transitionTriMainInitiale = construireTransitionTriMainInitiale(
-          ctx.mains[INDEX_HUMAIN],
-          mainTriee,
-        );
-        const dimensionsCourantes = dimensionsEcranRef.current;
-
-        animDistribution.animerTriSud({
-          mainDistribuee: ctx.mains[INDEX_HUMAIN],
-          mainTriee,
-          largeurEcran: dimensionsCourantes.largeur,
-          hauteurEcran: dimensionsCourantes.hauteur,
-          onTerminee: () => {
-            if (estDemonte.current) return;
-
-            animationDistribEnCours.current = false;
-
-            setEtatJeu((prev) => ({
-              ...prev,
-              mainJoueur: transitionTriMainInitiale.etatAvantTri.mainJoueur,
-              phaseUI: "distribution",
-              phaseEncheres: null,
-              carteRetournee: null,
-              nbCartesAdversaires: {
-                nord: ctx.mains[2].length,
-                est: ctx.mains[3].length,
-                ouest: ctx.mains[1].length,
-              },
-              cartesRestantesPaquet: 12,
-              nbCartesAnticipeesJoueur: ctx.mains[INDEX_HUMAIN].length,
-              triMainDiffere: transitionTriMainInitiale.etatAvantTri.triMainDiffere,
-            }));
-
-            const timeoutTerminer = setTimeout(() => {
-              animDistribution.terminerDistribution();
-            }, 16);
-            timeoutsControleurRef.current.push(timeoutTerminer);
-
-            if (
-              !carteRetournee ||
-              dimensionsCourantes.largeur <= 0 ||
-              dimensionsCourantes.hauteur <= 0
-            ) {
-              finaliserEntreeEncheres();
-              return;
-            }
-
-            onRevelationTermineeRef.current = finaliserEntreeEncheres;
-            setEtatJeu((prev) => ({
-              ...prev,
-              phaseUI: "revelationCarte",
-              carteRetournee,
-            }));
+        setEtatJeu((prev) => ({
+          ...prev,
+          ...extraireEtatUI(ctx, etat),
+          mainJoueur: [...ctx.mains[INDEX_HUMAIN]],
+          nbCartesAdversaires: {
+            nord: ctx.mains[2].length,
+            est: ctx.mains[3].length,
+            ouest: ctx.mains[1].length,
           },
-        });
-        // Masquer les cartes sud dans l'Atlas avant de démonter le canvas,
-        // pour éviter un flash dû au double rendu (Atlas + MainJoueur).
-        const finaliserEntreeEncheres = () => {
-          if (estDemonte.current) return;
+          cartesRestantesPaquet: 12,
+          nbCartesAnticipeesJoueur: ctx.mains[INDEX_HUMAIN].length,
+        }));
 
-          setEtatJeu((prev) => ({
-            ...prev,
-            ...extraireEtatUI(ctx, etat),
-            mainJoueur: transitionTriMainInitiale.etatApresTri.mainJoueur,
-            triMainDiffere: transitionTriMainInitiale.etatApresTri.triMainDiffere,
-            nbCartesAdversaires: {
-              nord: ctx.mains[2].length,
-              est: ctx.mains[3].length,
-              ouest: ctx.mains[1].length,
-            },
-            cartesRestantesPaquet: 12,
-            nbCartesAnticipeesJoueur: ctx.mains[INDEX_HUMAIN].length,
-          }));
+        const timeoutBot = setTimeout(() => jouerBotSiNecessaire(), 50);
+        timeoutsControleurRef.current.push(timeoutBot);
+      };
 
-          const timeoutBot = setTimeout(() => jouerBotSiNecessaire(), 50);
-          timeoutsControleurRef.current.push(timeoutBot);
-        };
-      }, distribution.pauseAvantTri);
+      animationDistribEnCours.current = false;
 
-      timeoutsControleurRef.current.push(timeout);
+      setEtatJeu((prev) => ({
+        ...prev,
+        mainJoueur: [...ctx.mains[INDEX_HUMAIN]],
+        phaseUI: "distribution",
+        phaseEncheres: null,
+        carteRetournee: null,
+        nbCartesAdversaires: {
+          nord: ctx.mains[2].length,
+          est: ctx.mains[3].length,
+          ouest: ctx.mains[1].length,
+        },
+        cartesRestantesPaquet: 12,
+        nbCartesAnticipeesJoueur: ctx.mains[INDEX_HUMAIN].length,
+      }));
+
+      const timeoutTerminer = setTimeout(() => {
+        animDistribution.terminerDistribution();
+
+        if (
+          !carteRetournee ||
+          dimensionsCourantes.largeur <= 0 ||
+          dimensionsCourantes.hauteur <= 0
+        ) {
+          finaliserEntreeEncheres();
+          return;
+        }
+
+        onRevelationTermineeRef.current = finaliserEntreeEncheres;
+        setEtatJeu((prev) => ({
+          ...prev,
+          phaseUI: "revelationCarte",
+          carteRetournee,
+        }));
+      }, 16);
+
+      timeoutsControleurRef.current.push(timeoutTerminer);
     },
     [
       acteurRef,
@@ -207,7 +179,6 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
         pliEnCours: [],
         cartesRestantesPaquet: NB_CARTES_JEU_BELOTE,
         nbCartesAnticipeesJoueur: 0,
-        triMainDiffere: false,
         dernierPliVisible: null,
         precedentDernierPliVisible: null,
         transitionDernierPliActive: false,
@@ -376,62 +347,39 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
     ],
   );
 
-  // --- Phase 3 restante : tri et finalisation après distribution restante ---
+  // --- Phase 3 restante : finalisation après distribution restante ---
   const lancerPhase3Restante = useCallback(
-    (contexte: ContextePartie) => {
-      const { distribution } = ANIMATIONS;
+    (_contexte: ContextePartie) => {
+      if (estDemonte.current) return;
 
-      const timeout = setTimeout(() => {
-        if (estDemonte.current) return;
+      const acteur = acteurRef.current;
+      if (!acteur) return;
+      const snap = acteur.getSnapshot();
+      const etat = snap.value as string;
+      const ctx = snap.context;
 
-        const acteur = acteurRef.current;
-        if (!acteur) return;
-        const snap = acteur.getSnapshot();
-        const etat = snap.value as string;
-        const ctx = snap.context;
+      animationDistribEnCours.current = false;
 
-        const mainTriee = trierMainJoueur(ctx.mains[INDEX_HUMAIN], {
-          couleurPrioritaire: ctx.couleurAtout ?? ctx.carteRetournee?.couleur ?? null,
-          couleurAtout: ctx.couleurAtout,
-        });
-        const dimensionsCourantes = dimensionsEcranRef.current;
+      setEtatJeu((prev) => ({
+        ...prev,
+        ...extraireEtatUI(ctx, etat),
+        mainJoueur: [...ctx.mains[INDEX_HUMAIN]],
+        nbCartesAdversaires: {
+          nord: ctx.mains[2].length,
+          est: ctx.mains[3].length,
+          ouest: ctx.mains[1].length,
+        },
+        cartesRestantesPaquet: 0,
+        nbCartesAnticipeesJoueur: ctx.mains[INDEX_HUMAIN].length,
+      }));
 
-        animDistribution.animerTriSud({
-          mainDistribuee: ctx.mains[INDEX_HUMAIN],
-          mainTriee,
-          largeurEcran: dimensionsCourantes.largeur,
-          hauteurEcran: dimensionsCourantes.hauteur,
-          onTerminee: () => {
-            if (estDemonte.current) return;
+      const timeoutTerminer = setTimeout(() => {
+        animDistribution.terminerDistribution();
+        const timeoutBot = setTimeout(() => jouerBotSiNecessaire(), 50);
+        timeoutsControleurRef.current.push(timeoutBot);
+      }, 16);
 
-            animationDistribEnCours.current = false;
-
-            setEtatJeu((prev) => ({
-              ...prev,
-              ...extraireEtatUI(ctx, etat),
-              mainJoueur: mainTriee,
-              triMainDiffere: true,
-              nbCartesAdversaires: {
-                nord: ctx.mains[2].length,
-                est: ctx.mains[3].length,
-                ouest: ctx.mains[1].length,
-              },
-              cartesRestantesPaquet: 0,
-              nbCartesAnticipeesJoueur: ctx.mains[INDEX_HUMAIN].length,
-            }));
-
-            const timeoutTerminer = setTimeout(() => {
-              animDistribution.terminerDistribution();
-              setEtatJeu((prev) => ({ ...prev, triMainDiffere: false }));
-              const timeoutBot = setTimeout(() => jouerBotSiNecessaire(), 50);
-              timeoutsControleurRef.current.push(timeoutBot);
-            }, 16);
-            timeoutsControleurRef.current.push(timeoutTerminer);
-          },
-        });
-      }, distribution.pauseAvantTri);
-
-      timeoutsControleurRef.current.push(timeout);
+      timeoutsControleurRef.current.push(timeoutTerminer);
     },
     [
       acteurRef,
@@ -494,7 +442,6 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
         carteRetournee: null,
         cartesRestantesPaquet: totalCartesAttendues,
         nbCartesAnticipeesJoueur: prev.mainJoueur.length,
-        triMainDiffere: false,
       }));
 
       let cartesRecues = 0;

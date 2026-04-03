@@ -2,7 +2,6 @@ import { getCartesJouables } from "@belote/game-logic";
 import type { Carte, PositionJoueur } from "@belote/shared-types";
 import { act, renderHook } from "@testing-library/react-native";
 
-import { trierMainJoueur } from "../hooks/triMainJoueur";
 import { useControleurJeu } from "../hooks/useControleurJeu";
 
 interface VueBotTest {
@@ -24,9 +23,6 @@ const mockDeciderBot = jest.fn<ActionBotTest, [VueBotTest?]>((_vueBot?: VueBotTe
 }));
 const mockLancerDistribution = jest.fn();
 const mockTerminerDistribution = jest.fn();
-const mockAnimerTriSud = jest.fn(({ onTerminee }: { onTerminee: () => void }) =>
-  setTimeout(onTerminee, 0),
-);
 const mockAjouterCartesGelees = jest.fn();
 const mockAnnulerAnimations = jest.fn();
 const mockLancerAnimationJeuCarte = jest.fn();
@@ -79,7 +75,6 @@ jest.mock("../hooks/useAnimations", () => ({
 jest.mock("../hooks/useAnimationsDistribution", () => ({
   useAnimationsDistribution: () => ({
     lancerDistribution: mockLancerDistribution,
-    animerTriSud: mockAnimerTriSud,
     terminerDistribution: mockTerminerDistribution,
     cartesAtlasAdversaires: [],
     cartesAtlasSud: [],
@@ -184,9 +179,6 @@ describe("useControleurJeu - redistribution", () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.clearAllMocks();
-    mockAnimerTriSud.mockImplementation(({ onTerminee }: { onTerminee: () => void }) =>
-      setTimeout(onTerminee, 0),
-    );
     mockProgressionsAdv = creerProgressionsFactices(24);
     mockProgressionsSud = creerProgressionsFactices(8);
     configurerDistributionImmediate();
@@ -272,7 +264,7 @@ describe("useControleurJeu - redistribution", () => {
     expect(result.current.etatJeu.carteRetournee).not.toBeNull();
   });
 
-  it("garde l ordre recu jusqu a la fin du retournement initial puis applique le tri historique", async () => {
+  it("conserve l ordre recu apres la revelation initiale", async () => {
     const { result } = renderHook(() =>
       useControleurJeu({
         difficulte: "facile",
@@ -286,21 +278,16 @@ describe("useControleurJeu - redistribution", () => {
 
     expect(dernierLancementDistribution).toBeDefined();
     const mainRecue = dernierLancementDistribution!.mains.sud;
-    const couleurPrioritaire = result.current.etatJeu.carteRetournee?.couleur ?? null;
-    const mainTriee = trierMainJoueur(mainRecue, {
-      couleurPrioritaire,
-    });
 
     expect(result.current.etatJeu.phaseUI).toBe("revelationCarte");
     expect(result.current.etatJeu.mainJoueur).toEqual(mainRecue);
-    expect(result.current.etatJeu.mainJoueur).not.toEqual(mainTriee);
 
     act(() => {
       result.current.onRevelationTerminee();
     });
 
     expect(result.current.etatJeu.phaseUI).toBe("encheres");
-    expect(result.current.etatJeu.mainJoueur).toEqual(mainTriee);
+    expect(result.current.etatJeu.mainJoueur).toEqual(mainRecue);
   });
 
   it("conserve les 12 cartes restantes dans le paquet a la fin de la donne initiale", async () => {
@@ -486,7 +473,7 @@ describe("useControleurJeu - redistribution", () => {
       surPretAffichage?.("jeu-1");
     });
 
-    expect(result.current.cartesEnPoseMainJoueur).toEqual([]);
+    expect(result.current.cartesEnPoseMainJoueur).toEqual([carteJouee]);
     expect(result.current.cartesMasqueesMainJoueur).toEqual([carteJouee]);
     expect(mockDemarrerAnimationJeuCarte).toHaveBeenCalledWith("jeu-1");
   });

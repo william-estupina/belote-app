@@ -102,8 +102,6 @@ export interface EtatJeu {
   indexDonneur: number;
   /** Nombre de cartes vise pendant la distribution pour la main du joueur */
   nbCartesAnticipeesJoueur: number;
-  /** Conserve temporairement l ordre de reception avant le tri visuel */
-  triMainDiffere: boolean;
   /** Dernier pli actuellement visible dans le widget */
   dernierPliVisible: ContextePartie["historiquePlis"][number] | null;
   /** Ancien pli conserve temporairement pendant la transition */
@@ -183,7 +181,6 @@ export function useControleurJeu({
     cartesRestantesPaquet: 0,
     indexDonneur: 1,
     nbCartesAnticipeesJoueur: 0,
-    triMainDiffere: false,
     dernierPliVisible: null,
     precedentDernierPliVisible: null,
     transitionDernierPliActive: false,
@@ -613,7 +610,6 @@ export function useControleurJeu({
           demarrageDiffere: true,
           surPretAffichage: (idAnimation) => {
             if (estDemonte.current) return;
-            setCartesEnPoseMainJoueur([]);
             setCartesMasqueesMainJoueur([carte]);
             animations.demarrerAnimationJeuCarte(idAnimation);
           },
