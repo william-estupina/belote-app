@@ -36,6 +36,12 @@ const mockAttendreDelaiBot = jest.fn(() => Promise.resolve());
 const mockAnnulerDelai = jest.fn();
 let mockProgressionsAdv = creerProgressionsFactices(24);
 let mockProgressionsSud = creerProgressionsFactices(8);
+const OPTIONS_HOOK_CONTROLEUR = {
+  difficulte: "facile" as const,
+  scoreObjectif: 1000,
+  largeurEcran: 1280,
+  hauteurEcran: 720,
+};
 let dernierLancementDistribution:
   | {
       mains: Record<"sud" | "ouest" | "nord" | "est", Carte[]>;
@@ -175,6 +181,15 @@ async function avancerJusqua(
   }
 }
 
+function creerHookControleur(overrides?: Partial<typeof OPTIONS_HOOK_CONTROLEUR>) {
+  return renderHook(() =>
+    useControleurJeu({
+      ...OPTIONS_HOOK_CONTROLEUR,
+      ...overrides,
+    }),
+  );
+}
+
 describe("useControleurJeu - redistribution", () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -196,14 +211,7 @@ describe("useControleurJeu - redistribution", () => {
   });
 
   it("relance la distribution animee quand tout le monde passe aux deux tours", async () => {
-    const { result } = renderHook(() =>
-      useControleurJeu({
-        difficulte: "facile",
-        scoreObjectif: 1000,
-        largeurEcran: 1280,
-        hauteurEcran: 720,
-      }),
-    );
+    const { result } = creerHookControleur();
 
     await viderFileEvenements();
 
@@ -238,14 +246,7 @@ describe("useControleurJeu - redistribution", () => {
   });
 
   it("passe en phase revelationCarte apres la distribution, puis en encheres quand la revelation est terminee", async () => {
-    const { result } = renderHook(() =>
-      useControleurJeu({
-        difficulte: "facile",
-        scoreObjectif: 1000,
-        largeurEcran: 1280,
-        hauteurEcran: 720,
-      }),
-    );
+    const { result } = creerHookControleur();
 
     await viderFileEvenements();
 
@@ -265,14 +266,7 @@ describe("useControleurJeu - redistribution", () => {
   });
 
   it("conserve l ordre recu apres la revelation initiale", async () => {
-    const { result } = renderHook(() =>
-      useControleurJeu({
-        difficulte: "facile",
-        scoreObjectif: 1000,
-        largeurEcran: 1280,
-        hauteurEcran: 720,
-      }),
-    );
+    const { result } = creerHookControleur();
 
     await viderFileEvenements();
 
@@ -291,14 +285,7 @@ describe("useControleurJeu - redistribution", () => {
   });
 
   it("conserve les 12 cartes restantes dans le paquet a la fin de la donne initiale", async () => {
-    const { result } = renderHook(() =>
-      useControleurJeu({
-        difficulte: "facile",
-        scoreObjectif: 1000,
-        largeurEcran: 1280,
-        hauteurEcran: 720,
-      }),
-    );
+    const { result } = creerHookControleur();
 
     expect(result.current.etatJeu.phaseUI).toBe("distribution");
     expect(result.current.etatJeu.cartesRestantesPaquet).toBe(12);
@@ -317,14 +304,7 @@ describe("useControleurJeu - redistribution", () => {
       },
     );
 
-    const { result } = renderHook(() =>
-      useControleurJeu({
-        difficulte: "facile",
-        scoreObjectif: 1000,
-        largeurEcran: 1280,
-        hauteurEcran: 720,
-      }),
-    );
+    const { result } = creerHookControleur();
 
     await viderFileEvenements();
 
@@ -379,14 +359,7 @@ describe("useControleurJeu - redistribution", () => {
       echelle: 1,
     };
 
-    const { result } = renderHook(() =>
-      useControleurJeu({
-        difficulte: "facile",
-        scoreObjectif: 1000,
-        largeurEcran: 1280,
-        hauteurEcran: 720,
-      }),
-    );
+    const { result } = creerHookControleur();
 
     await viderFileEvenements();
 
@@ -436,14 +409,7 @@ describe("useControleurJeu - redistribution", () => {
       },
     );
 
-    const { result } = renderHook(() =>
-      useControleurJeu({
-        difficulte: "facile",
-        scoreObjectif: 1000,
-        largeurEcran: 1280,
-        hauteurEcran: 720,
-      }),
-    );
+    const { result } = creerHookControleur();
 
     await viderFileEvenements();
 
@@ -479,14 +445,7 @@ describe("useControleurJeu - redistribution", () => {
   });
 
   it("reste en mode cinematique-distribution jusqu'au handoff final", async () => {
-    const { result } = renderHook(() =>
-      useControleurJeu({
-        difficulte: "facile",
-        scoreObjectif: 1000,
-        largeurEcran: 1280,
-        hauteurEcran: 720,
-      }),
-    );
+    const { result } = creerHookControleur();
 
     expect(result.current.etatJeu.phaseUI).toBe("distribution");
     expect(result.current.modeRenduCartes).toBe("cinematique-distribution");
@@ -498,16 +457,7 @@ describe("useControleurJeu - redistribution", () => {
   });
 
   it("appelle directement finaliserEntreeEncheres si les dimensions sont nulles au moment de la transition", async () => {
-    const { result } = renderHook(
-      ({ largeurEcran, hauteurEcran }) =>
-        useControleurJeu({
-          difficulte: "facile",
-          scoreObjectif: 1000,
-          largeurEcran,
-          hauteurEcran,
-        }),
-      { initialProps: { largeurEcran: 0, hauteurEcran: 0 } },
-    );
+    const { result } = creerHookControleur({ largeurEcran: 0, hauteurEcran: 0 });
 
     await viderFileEvenements();
 
@@ -534,14 +484,7 @@ describe("useControleurJeu - redistribution", () => {
       },
     );
 
-    const { result } = renderHook(() =>
-      useControleurJeu({
-        difficulte: "facile",
-        scoreObjectif: 1000,
-        largeurEcran: 1280,
-        hauteurEcran: 720,
-      }),
-    );
+    const { result } = creerHookControleur();
 
     await viderFileEvenements();
 

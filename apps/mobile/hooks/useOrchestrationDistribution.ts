@@ -17,6 +17,12 @@ import type { EtatJeu } from "./useControleurJeu";
 const INDEX_HUMAIN = 0;
 const NB_CARTES_JEU_BELOTE = 32;
 
+function estPositionAdverse(
+  position: PositionJoueur,
+): position is "nord" | "est" | "ouest" {
+  return position !== "sud";
+}
+
 function conserverHistoriqueEncheresAvantRedistribution(etat: EtatJeu) {
   if (etat.phaseEncheres !== "encheres2" || etat.historiqueEncheres.length >= 8) {
     return etat.historiqueEncheres;
@@ -29,6 +35,54 @@ function conserverHistoriqueEncheresAvantRedistribution(etat: EtatJeu) {
       joueur: POSITIONS_JOUEUR[etat.indexDonneur],
     },
   ];
+}
+
+function extraireNbCartesAdversaires(
+  contexte: ContextePartie,
+): EtatJeu["nbCartesAdversaires"] {
+  return {
+    nord: contexte.mains[2].length,
+    est: contexte.mains[3].length,
+    ouest: contexte.mains[1].length,
+  };
+}
+
+function creerMainsRecordDepuisContexte(
+  contexte: ContextePartie,
+): Record<PositionJoueur, Carte[]> {
+  return {
+    sud: contexte.mains[0],
+    ouest: contexte.mains[1],
+    nord: contexte.mains[2],
+    est: contexte.mains[3],
+  };
+}
+
+function calculerTotalCartes(
+  mains: Record<PositionJoueur, Carte[]>,
+  cartesSupplementaires = 0,
+): number {
+  let total = cartesSupplementaires;
+  for (const position of POSITIONS_JOUEUR) {
+    total += mains[position].length;
+  }
+
+  return total;
+}
+
+function ajouterCartesAuxAdversaires(
+  nbCartesAdversaires: EtatJeu["nbCartesAdversaires"],
+  position: PositionJoueur,
+  nombreCartes: number,
+): EtatJeu["nbCartesAdversaires"] {
+  if (!estPositionAdverse(position)) {
+    return nbCartesAdversaires;
+  }
+
+  return {
+    ...nbCartesAdversaires,
+    [position]: nbCartesAdversaires[position] + nombreCartes,
+  };
 }
 
 interface RefsPartagees {
@@ -67,6 +121,37 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
   // Ref pour appeler lancerDistributionRestanteAnimee depuis les callbacks déclarés avant
   const distribRestanteRef = useRef<(ctx: ContextePartie) => void>(() => {});
 
+  const planifierTimeout = useCallback(
+    (callback: () => void, delaiMs: number) => {
+      const timeout = setTimeout(callback, delaiMs);
+      timeoutsControleurRef.current.push(timeout);
+      return timeout;
+    },
+    [timeoutsControleurRef],
+  );
+
+  const construireEtatDepuisContexte = useCallback(
+    (
+      contexte: ContextePartie,
+      etatMachine: string,
+      cartesRestantesPaquet: number,
+    ): Partial<EtatJeu> => ({
+      ...extraireEtatUI(contexte, etatMachine),
+      mainJoueur: [...contexte.mains[INDEX_HUMAIN]],
+      nbCartesAdversaires: extraireNbCartesAdversaires(contexte),
+      cartesRestantesPaquet,
+      nbCartesAnticipeesJoueur: contexte.mains[INDEX_HUMAIN].length,
+    }),
+    [],
+  );
+
+  const programmerRelanceBot = useCallback(() => {
+    planifierTimeout(() => {
+      if (estDemonte.current) return;
+      jouerBotSiNecessaire();
+    }, 50);
+  }, [estDemonte, jouerBotSiNecessaire, planifierTimeout]);
+
   // --- Phase 3 : finalisation après distribution ---
   const lancerPhase3 = useCallback(
     (_contexte: ContextePartie) => {
@@ -85,19 +170,9 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
 
         setEtatJeu((prev) => ({
           ...prev,
-          ...extraireEtatUI(ctx, etat),
-          mainJoueur: [...ctx.mains[INDEX_HUMAIN]],
-          nbCartesAdversaires: {
-            nord: ctx.mains[2].length,
-            est: ctx.mains[3].length,
-            ouest: ctx.mains[1].length,
-          },
-          cartesRestantesPaquet: 12,
-          nbCartesAnticipeesJoueur: ctx.mains[INDEX_HUMAIN].length,
+          ...construireEtatDepuisContexte(ctx, etat, 12),
         }));
-
-        const timeoutBot = setTimeout(() => jouerBotSiNecessaire(), 50);
-        timeoutsControleurRef.current.push(timeoutBot);
+        programmerRelanceBot();
       };
 
       animationDistribEnCours.current = false;
@@ -108,16 +183,12 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
         phaseUI: "distribution",
         phaseEncheres: null,
         carteRetournee: null,
-        nbCartesAdversaires: {
-          nord: ctx.mains[2].length,
-          est: ctx.mains[3].length,
-          ouest: ctx.mains[1].length,
-        },
+        nbCartesAdversaires: extraireNbCartesAdversaires(ctx),
         cartesRestantesPaquet: 12,
         nbCartesAnticipeesJoueur: ctx.mains[INDEX_HUMAIN].length,
       }));
 
-      const timeoutTerminer = setTimeout(() => {
+      planifierTimeout(() => {
         animDistribution.terminerDistribution();
 
         if (
@@ -136,18 +207,17 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
           carteRetournee,
         }));
       }, 16);
-
-      timeoutsControleurRef.current.push(timeoutTerminer);
     },
     [
       acteurRef,
       estDemonte,
       animationDistribEnCours,
       dimensionsEcranRef,
-      timeoutsControleurRef,
-      onRevelationTermineeRef,
-      jouerBotSiNecessaire,
       animDistribution,
+      construireEtatDepuisContexte,
+      onRevelationTermineeRef,
+      planifierTimeout,
+      programmerRelanceBot,
       setEtatJeu,
     ],
   );
@@ -158,18 +228,8 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
       animationDistribEnCours.current = true;
       nbPlisVus.current = 0;
 
-      const mainsRecord: Record<PositionJoueur, Carte[]> = {
-        sud: contexte.mains[0],
-        ouest: contexte.mains[1],
-        nord: contexte.mains[2],
-        est: contexte.mains[3],
-      };
-
-      // Calculer le nombre total de cartes à distribuer (5 par joueur = 20)
-      let totalCartesAttendues = 0;
-      for (const pos of POSITIONS_JOUEUR) {
-        totalCartesAttendues += mainsRecord[pos].length;
-      }
+      const mainsRecord = creerMainsRecordDepuisContexte(contexte);
+      const totalCartesAttendues = calculerTotalCartes(mainsRecord);
 
       setEtatJeu((prev) => ({
         ...prev,
@@ -209,20 +269,15 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
         onPaquetArrive: (position, cartes) => {
           if (estDemonte.current) return;
 
-          if (position !== "sud") {
+          if (estPositionAdverse(position)) {
             setEtatJeu((prev) => ({
               ...prev,
-              nbCartesAdversaires: {
-                ...prev.nbCartesAdversaires,
-                [position]:
-                  prev.nbCartesAdversaires[position as "nord" | "est" | "ouest"] +
-                  cartes.length,
-              },
+              nbCartesAdversaires: ajouterCartesAuxAdversaires(
+                prev.nbCartesAdversaires,
+                position,
+                cartes.length,
+              ),
             }));
-          } else {
-            // Masquer les slots canvas sud arrivés pour éviter le doublon visuel,
-            // puis ajouter immédiatement à la main pour permettre l'animation
-            // de réorganisation quand le paquet suivant partira.
           }
 
           cartesRecues += cartes.length;
@@ -262,7 +317,7 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
         afficherActionsEnchereRedistribution: true,
       }));
 
-      const timeoutAvantRappel = setTimeout(() => {
+      planifierTimeout(() => {
         if (estDemonte.current) return;
 
         const { largeur, hauteur } = dimensionsEcranRef.current;
@@ -292,12 +347,10 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
               indexDonneur: contexte.indexDonneur,
             }));
 
-            const timeoutApresDealer = setTimeout(() => {
+            planifierTimeout(() => {
               if (estDemonte.current) return;
               lancerDistributionAnimee(contexte);
             }, ANIMATIONS.redistribution.dureeGlissementDealer);
-
-            timeoutsControleurRef.current.push(timeoutApresDealer);
           });
         };
 
@@ -330,8 +383,6 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
           lancerPhase2();
         }
       }, ANIMATIONS.redistribution.pauseAvantRappel);
-
-      timeoutsControleurRef.current.push(timeoutAvantRappel);
     },
     [
       animations,
@@ -341,8 +392,8 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
       nbPlisVus,
       dimensionsEcranRef,
       etatJeuRef,
-      timeoutsControleurRef,
       onRetourCarteRetourneeRef,
+      planifierTimeout,
       setEtatJeu,
     ],
   );
@@ -362,32 +413,22 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
 
       setEtatJeu((prev) => ({
         ...prev,
-        ...extraireEtatUI(ctx, etat),
-        mainJoueur: [...ctx.mains[INDEX_HUMAIN]],
-        nbCartesAdversaires: {
-          nord: ctx.mains[2].length,
-          est: ctx.mains[3].length,
-          ouest: ctx.mains[1].length,
-        },
-        cartesRestantesPaquet: 0,
-        nbCartesAnticipeesJoueur: ctx.mains[INDEX_HUMAIN].length,
+        ...construireEtatDepuisContexte(ctx, etat, 0),
       }));
 
-      const timeoutTerminer = setTimeout(() => {
+      planifierTimeout(() => {
         animDistribution.terminerDistribution();
-        const timeoutBot = setTimeout(() => jouerBotSiNecessaire(), 50);
-        timeoutsControleurRef.current.push(timeoutBot);
+        programmerRelanceBot();
       }, 16);
-
-      timeoutsControleurRef.current.push(timeoutTerminer);
     },
     [
       acteurRef,
       estDemonte,
       animationDistribEnCours,
-      timeoutsControleurRef,
-      jouerBotSiNecessaire,
       animDistribution,
+      construireEtatDepuisContexte,
+      planifierTimeout,
+      programmerRelanceBot,
       setEtatJeu,
     ],
   );
@@ -428,13 +469,10 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
           : [...etatJeuRef.current.mainJoueur];
       const nbCartesExistantesSud = cartesExistantesSud.length;
 
-      let totalCartesAttendues = 0;
-      for (const pos of POSITIONS_JOUEUR) {
-        totalCartesAttendues += mainsRecord[pos].length;
-      }
-      if (carteRetournee) {
-        totalCartesAttendues += 1;
-      }
+      const totalCartesAttendues = calculerTotalCartes(
+        mainsRecord,
+        carteRetournee ? 1 : 0,
+      );
 
       setEtatJeu((prev) => ({
         ...prev,
@@ -446,7 +484,6 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
 
       let cartesRecues = 0;
       let cartesSudEnvoyeesRestante = nbCartesExistantesSud;
-      const cartesSudAccumuleesRestante: Carte[] = [];
 
       const gererPaquetDepart = (position: PositionJoueur, cartes: Carte[]) => {
         if (estDemonte.current) return;
@@ -467,18 +504,15 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
       const gererPaquetArrive = (position: PositionJoueur, cartes: Carte[]) => {
         if (estDemonte.current) return;
 
-        if (position !== "sud") {
+        if (estPositionAdverse(position)) {
           setEtatJeu((prev) => ({
             ...prev,
-            nbCartesAdversaires: {
-              ...prev.nbCartesAdversaires,
-              [position]:
-                prev.nbCartesAdversaires[position as "nord" | "est" | "ouest"] +
-                cartes.length,
-            },
+            nbCartesAdversaires: ajouterCartesAuxAdversaires(
+              prev.nbCartesAdversaires,
+              position,
+              cartes.length,
+            ),
           }));
-        } else {
-          cartesSudAccumuleesRestante.push(...cartes);
         }
 
         cartesRecues += cartes.length;

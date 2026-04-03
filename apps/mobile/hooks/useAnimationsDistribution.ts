@@ -57,19 +57,36 @@ export interface CarteAtlas {
  */
 const STRIDE = 10;
 
+type PositionAdverse = "nord" | "est" | "ouest";
+
+interface OptionsLancerDistribution {
+  indexDonneur?: number;
+  cartesExistantesSud?: Carte[];
+  nbCartesExistantesSud?: number;
+  nbCartesExistantesAdversaires?: Partial<Record<PositionAdverse, number>>;
+  onPaquetDepart?: (position: PositionJoueur, cartes: Carte[]) => void;
+  onPaquetArrive?: (position: PositionJoueur, cartes: Carte[]) => void;
+  onTerminee?: () => void;
+  cartesVisibles?: Carte[];
+}
+
+interface DelaiAnimationCarte {
+  delai: number;
+  duree: number;
+}
+
+interface PaquetCallbackDistribution {
+  indexDerniereCartePool: number;
+  estSud: boolean;
+  position: PositionJoueur;
+  cartes: Carte[];
+  delaiDepartMs: number;
+}
+
 export interface ResultatAnimationsDistribution {
   lancerDistribution: (
     mains: Record<PositionJoueur, Carte[]>,
-    options?: {
-      indexDonneur?: number;
-      cartesExistantesSud?: Carte[];
-      nbCartesExistantesSud?: number;
-      nbCartesExistantesAdversaires?: Partial<Record<"nord" | "est" | "ouest", number>>;
-      onPaquetDepart?: (position: PositionJoueur, cartes: Carte[]) => void;
-      onPaquetArrive?: (position: PositionJoueur, cartes: Carte[]) => void;
-      onTerminee?: () => void;
-      cartesVisibles?: Carte[];
-    },
+    options?: OptionsLancerDistribution,
   ) => void;
   /** Signale la fin de la distribution (retire le canvas). */
   terminerDistribution: () => void;
@@ -89,6 +106,48 @@ export interface ResultatAnimationsDistribution {
 const MAX_CARTES_ADV = 24; // 8 cartes × 3 adversaires
 const MAX_CARTES_SUD = 8;
 const EASING_OUT_CUBIC = Easing.out(Easing.cubic);
+
+function creerBufferWorklet(taille: number, donnees: number[]): number[] {
+  const buffer = new Array(taille).fill(0);
+  for (let index = 0; index < donnees.length; index += 1) {
+    buffer[index] = donnees[index];
+  }
+
+  return buffer;
+}
+
+function reinitialiserProgressions(
+  progressions: SharedValue<number>[],
+  valeur: number,
+): void {
+  for (let index = 0; index < progressions.length; index += 1) {
+    progressions[index].value = valeur;
+  }
+}
+
+function extrairePaquetsSud(paquets: PaquetCallbackDistribution[]): {
+  paquetsSud: PaquetCallbackDistribution[];
+  indicesSudParPaquet: Array<{ debut: number; fin: number }>;
+} {
+  const paquetsSud: PaquetCallbackDistribution[] = [];
+  const indicesSudParPaquet: Array<{ debut: number; fin: number }> = [];
+  let indexDebutPaquetSudCourant = 0;
+
+  for (const paquet of paquets) {
+    if (!paquet.estSud) {
+      continue;
+    }
+
+    indicesSudParPaquet.push({
+      debut: indexDebutPaquetSudCourant,
+      fin: paquet.indexDerniereCartePool,
+    });
+    indexDebutPaquetSudCourant = paquet.indexDerniereCartePool + 1;
+    paquetsSud.push(paquet);
+  }
+
+  return { paquetsSud, indicesSudParPaquet };
+}
 
 /**
  * Hook d'orchestration de la distribution via Skia Atlas.
@@ -132,36 +191,19 @@ export function useAnimationsDistribution(
   // Appel en attente si atlas pas encore chargé
   const appelEnAttenteRef = useRef<{
     mains: Record<PositionJoueur, Carte[]>;
-    options?: {
-      indexDonneur?: number;
-      cartesExistantesSud?: Carte[];
-      nbCartesExistantesSud?: number;
-      nbCartesExistantesAdversaires?: Partial<Record<"nord" | "est" | "ouest", number>>;
-      onPaquetDepart?: (position: PositionJoueur, cartes: Carte[]) => void;
-      onPaquetArrive?: (position: PositionJoueur, cartes: Carte[]) => void;
-      onTerminee?: () => void;
-      cartesVisibles?: Carte[];
-    };
+    options?: OptionsLancerDistribution;
   } | null>(null);
 
+  const viderTimeouts = useCallback(() => {
+    for (const timeout of timeoutsCallbacksRef.current) {
+      clearTimeout(timeout);
+    }
+    timeoutsCallbacksRef.current = [];
+  }, []);
+
   const lancerDistribution = useCallback(
-    (
-      mains: Record<PositionJoueur, Carte[]>,
-      options?: {
-        indexDonneur?: number;
-        cartesExistantesSud?: Carte[];
-        nbCartesExistantesSud?: number;
-        nbCartesExistantesAdversaires?: Partial<Record<"nord" | "est" | "ouest", number>>;
-        onPaquetDepart?: (position: PositionJoueur, cartes: Carte[]) => void;
-        onPaquetArrive?: (position: PositionJoueur, cartes: Carte[]) => void;
-        onTerminee?: () => void;
-        cartesVisibles?: Carte[];
-      },
-    ) => {
-      for (const timeout of timeoutsCallbacksRef.current) {
-        clearTimeout(timeout);
-      }
-      timeoutsCallbacksRef.current = [];
+    (mains: Record<PositionJoueur, Carte[]>, options?: OptionsLancerDistribution) => {
+      viderTimeouts();
 
       const { distribution } = ANIMATIONS;
       const { largeurCellule, hauteurCellule } = atlas;
@@ -198,8 +240,8 @@ export function useAnimationsDistribution(
       const cartesSud: CarteAtlas[] = [];
       const donneesPlatAdv: number[] = [];
       const donneesPlatSud: number[] = [];
-      const delaisCartesAdv: { delai: number; duree: number }[] = [];
-      const delaisCartesSud: { delai: number; duree: number }[] = [];
+      const delaisCartesAdv: DelaiAnimationCarte[] = [];
+      const delaisCartesSud: DelaiAnimationCarte[] = [];
 
       let temps = 0;
       let indexCarte = 0;
@@ -407,13 +449,7 @@ export function useAnimationsDistribution(
       }
 
       // Tracker les paquets pour les callbacks onPaquetArrive
-      const paquetsCallback: {
-        indexDerniereCartePool: number;
-        estSud: boolean;
-        position: PositionJoueur;
-        cartes: Carte[];
-        delaiDepartMs: number;
-      }[] = [];
+      const paquetsCallback: PaquetCallbackDistribution[] = [];
 
       for (let p = 0; p < taillesPaquets.length; p++) {
         const taillePaquet = taillesPaquets[p];
@@ -584,29 +620,23 @@ export function useAnimationsDistribution(
       setEnCours(true);
 
       // Mettre à jour les données worklet — pool adversaires
-      const donneesAdvComplet = new Array(MAX_CARTES_ADV * STRIDE).fill(0);
-      for (let i = 0; i < donneesPlatAdv.length; i++) {
-        donneesAdvComplet[i] = donneesPlatAdv[i];
-      }
-      donneesWorkletAdv.value = donneesAdvComplet;
+      donneesWorkletAdv.value = creerBufferWorklet(
+        MAX_CARTES_ADV * STRIDE,
+        donneesPlatAdv,
+      );
       nbCartesActivesAdv.value = cartesAdv.length;
 
       // Mettre à jour les données worklet — pool sud
-      const donneesSudComplet = new Array(MAX_CARTES_SUD * STRIDE).fill(0);
-      for (let i = 0; i < donneesPlatSud.length; i++) {
-        donneesSudComplet[i] = donneesPlatSud[i];
-      }
-      donneesWorkletSud.value = donneesSudComplet;
+      donneesWorkletSud.value = creerBufferWorklet(
+        MAX_CARTES_SUD * STRIDE,
+        donneesPlatSud,
+      );
       nbCartesActivesSud.value = cartesSud.length;
 
       // Réinitialiser les progressions :
       // -1 = en attente, [0..1] = en vol, 1 = arrivée (reste visible)
-      for (let i = 0; i < MAX_CARTES_ADV; i++) {
-        progressionsAdv[i].value = -1;
-      }
-      for (let i = 0; i < MAX_CARTES_SUD; i++) {
-        progressionsSud[i].value = -1;
-      }
+      reinitialiserProgressions(progressionsAdv, -1);
+      reinitialiserProgressions(progressionsSud, -1);
 
       // Les cartes adverses deja visibles doivent rester affichees a leur
       // position de depart jusqu'au declenchement de leur glissement differe.
@@ -623,20 +653,7 @@ export function useAnimationsDistribution(
       let delaiFinDistributionMs = 0;
 
       // Indexer les paquets sud et leurs plages dans le pool
-      const paquetsSud: typeof paquetsCallback = [];
-      let indexDebutPaquetSudCourant = 0;
-      const indicesSudParPaquet: { debut: number; fin: number }[] = [];
-
-      for (const paquet of paquetsCallback) {
-        if (paquet.estSud) {
-          indicesSudParPaquet.push({
-            debut: indexDebutPaquetSudCourant,
-            fin: paquet.indexDerniereCartePool,
-          });
-          indexDebutPaquetSudCourant = paquet.indexDerniereCartePool + 1;
-          paquetsSud.push(paquet);
-        }
-      }
+      const { paquetsSud, indicesSudParPaquet } = extrairePaquetsSud(paquetsCallback);
 
       for (const paquet of paquetsCallback) {
         const delaisPool = paquet.estSud ? delaisCartesSud : delaisCartesAdv;
@@ -786,6 +803,7 @@ export function useAnimationsDistribution(
     [
       atlas,
       dimensionsEcran,
+      viderTimeouts,
       progressionsAdv,
       donneesWorkletAdv,
       nbCartesActivesAdv,
@@ -810,12 +828,9 @@ export function useAnimationsDistribution(
 
   useEffect(() => {
     return () => {
-      for (const timeout of timeoutsCallbacksRef.current) {
-        clearTimeout(timeout);
-      }
-      timeoutsCallbacksRef.current = [];
+      viderTimeouts();
     };
-  }, []);
+  }, [viderTimeouts]);
 
   return {
     lancerDistribution,
