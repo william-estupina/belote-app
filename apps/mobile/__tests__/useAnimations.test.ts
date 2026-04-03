@@ -100,6 +100,50 @@ describe("useAnimations", () => {
     });
   });
 
+  it("peut preparer une carte sud sans lancer encore son mouvement", () => {
+    const { result } = renderHook(() => useAnimations());
+
+    act(() => {
+      result.current.lancerAnimationJeuCarte(CARTE_TEST, "sud", undefined, undefined, {
+        demarrageDiffere: true,
+      });
+    });
+
+    expect(result.current.cartesEnVol[0]).toMatchObject({
+      id: "jeu-1",
+      estEnPause: true,
+      segment: 0,
+    });
+
+    act(() => {
+      result.current.demarrerAnimationJeuCarte("jeu-1");
+    });
+
+    expect(result.current.cartesEnVol[0]).toMatchObject({
+      id: "jeu-1",
+      estEnPause: false,
+      segment: 1,
+    });
+  });
+
+  it("declenche le callback quand l overlay de jeu est pret a prendre le relais", () => {
+    const surPretAffichage = jest.fn();
+    const { result } = renderHook(() => useAnimations());
+
+    act(() => {
+      result.current.lancerAnimationJeuCarte(CARTE_TEST, "sud", undefined, undefined, {
+        demarrageDiffere: true,
+        surPretAffichage,
+      });
+    });
+
+    act(() => {
+      result.current.surCarteJeuPreteAffichage("jeu-1");
+    });
+
+    expect(surPretAffichage).toHaveBeenCalledWith("jeu-1");
+  });
+
   it("cree des cartes retour-* face cachee et appelle le callback de fin", () => {
     const surFin = jest.fn();
     const { result } = renderHook(() => useAnimations());

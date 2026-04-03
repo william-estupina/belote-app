@@ -54,6 +54,7 @@ let mockControleur = {
   etatJeu: etatJeuMock,
   cartesEnVol: [],
   surAnimationTerminee: jest.fn(),
+  surCarteJeuPreteAffichage: jest.fn(),
   atlas: {
     image: {},
     largeurCellule: 1,
@@ -78,6 +79,7 @@ let mockControleur = {
   continuerApresScore: jest.fn(),
   recommencer: jest.fn(),
   onRevelationTerminee: jest.fn(),
+  onRetourCarteRetourneeTerminee: jest.fn(),
 };
 
 jest.mock("../hooks/useControleurJeu", () => ({

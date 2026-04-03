@@ -67,8 +67,10 @@ jest.mock("../hooks/useAnimations", () => ({
   useAnimations: () => ({
     cartesEnVol: [],
     surAnimationTerminee: mockSurAnimationTerminee,
+    surCarteJeuPreteAffichage: jest.fn(),
     glisserCarteRetournee: mockGlisserCarteRetournee,
     lancerAnimationJeuCarte: mockLancerAnimationJeuCarte,
+    demarrerAnimationJeuCarte: jest.fn(),
     lancerAnimationRamassagePli: mockLancerAnimationRamassagePli,
     lancerAnimationRetourPaquet: mockLancerAnimationRetourPaquet,
     ajouterCartesGelees: mockAjouterCartesGelees,

@@ -58,6 +58,45 @@ const ATLAS_TEST = {
 } as unknown as AtlasCartes;
 
 describe("CarteAnimee", () => {
+  it("signale qu elle est prete sans demarrer tant qu elle est en pause", () => {
+    const surPretAffichage = jest.fn();
+    const surFin = jest.fn();
+    const callbacksAnimationFrame: FrameRequestCallback[] = [];
+    const requestAnimationFrameOriginal = global.requestAnimationFrame;
+
+    global.requestAnimationFrame = jest.fn((callback: FrameRequestCallback) => {
+      callbacksAnimationFrame.push(callback);
+      return 1;
+    });
+
+    render(
+      <CarteAnimee
+        carte={CARTE_TEST}
+        depart={{ x: 0.2, y: 0.2, rotation: 0, echelle: 1 }}
+        arrivee={{ x: 0.5, y: 0.5, rotation: 5, echelle: 0.9 }}
+        faceVisible
+        duree={300}
+        largeurEcran={1200}
+        hauteurEcran={800}
+        atlas={ATLAS_TEST}
+        estEnPause
+        onPretAffichage={surPretAffichage}
+        onTerminee={surFin}
+      />,
+    );
+
+    expect(surPretAffichage).not.toHaveBeenCalled();
+    expect(surFin).not.toHaveBeenCalled();
+    expect(callbacksAnimationFrame).toHaveLength(1);
+
+    callbacksAnimationFrame[0](16);
+
+    expect(surPretAffichage).toHaveBeenCalledTimes(1);
+    expect(surFin).not.toHaveBeenCalled();
+
+    global.requestAnimationFrame = requestAnimationFrameOriginal;
+  });
+
   it("differe le callback de fin au frame suivant pour eviter un trou visuel", () => {
     const surFin = jest.fn();
     const callbacksAnimationFrame: FrameRequestCallback[] = [];

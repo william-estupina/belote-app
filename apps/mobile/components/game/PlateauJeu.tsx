@@ -39,6 +39,7 @@ export default function PlateauJeu() {
     cartesMasqueesMainJoueur,
     cartesEnVol,
     surAnimationTerminee,
+    surCarteJeuPreteAffichage,
     atlas,
     cartesAtlasAdversaires,
     progressionsAdv,
@@ -279,6 +280,7 @@ export default function PlateauJeu() {
             largeurEcran={largeur}
             hauteurEcran={hauteur}
             onAnimationTerminee={surAnimationTerminee}
+            onCarteJeuPreteAffichage={surCarteJeuPreteAffichage}
             atlas={atlas}
             nbCartesAdversaires={etatJeu.nbCartesAdversaires}
             cartesAtlasAdversaires={cartesAtlasAdversaires}

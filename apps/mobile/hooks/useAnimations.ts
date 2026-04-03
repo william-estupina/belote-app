@@ -16,6 +16,10 @@ const POSITIONS_JOUEUR: PositionJoueur[] = ["sud", "ouest", "nord", "est"];
 
 export type CarteDuPli = { joueur: PositionJoueur; carte: Carte };
 export type DepartAnimationJeuCarte = CarteEnVol["depart"];
+interface OptionsAnimationJeuCarte {
+  demarrageDiffere?: boolean;
+  surPretAffichage?: (idAnimation: string) => void;
+}
 export interface CarteRetourPaquet {
   carte: Carte;
   depart: CarteEnVol["depart"];
@@ -79,6 +83,9 @@ export function useAnimations() {
   const compteurId = useRef(0);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const callbacksFinJeuRef = useRef(new Map<string, () => void>());
+  const callbacksPretAffichageRef = useRef(
+    new Map<string, (idAnimation: string) => void>(),
+  );
 
   const nettoyerTimeouts = useCallback(() => {
     for (const timeout of timeoutsRef.current) {
@@ -88,6 +95,7 @@ export function useAnimations() {
   }, []);
 
   const surAnimationTerminee = useCallback((id: string) => {
+    callbacksPretAffichageRef.current.delete(id);
     const callbackFin = callbacksFinJeuRef.current.get(id);
 
     if (callbackFin) {
@@ -156,6 +164,7 @@ export function useAnimations() {
       joueur: PositionJoueur,
       onTerminee?: () => void,
       departPersonnalise?: DepartAnimationJeuCarte,
+      options?: OptionsAnimationJeuCarte,
     ) => {
       compteurId.current += 1;
       const id = `jeu-${compteurId.current}`;
@@ -183,6 +192,7 @@ export function useAnimations() {
           echelle: 0.9,
         },
         faceVisible: true,
+        estEnPause: options?.demarrageDiffere ?? false,
         duree: ANIMATIONS.jeuCarte.duree,
         easing: "out-cubic",
         segment: 0,
@@ -193,9 +203,39 @@ export function useAnimations() {
       if (onTerminee) {
         callbacksFinJeuRef.current.set(id, onTerminee);
       }
+
+      if (options?.surPretAffichage) {
+        callbacksPretAffichageRef.current.set(id, options.surPretAffichage);
+      }
+
+      return id;
     },
     [],
   );
+
+  const surCarteJeuPreteAffichage = useCallback((id: string) => {
+    const callbackPretAffichage = callbacksPretAffichageRef.current.get(id);
+    if (!callbackPretAffichage) return;
+
+    callbacksPretAffichageRef.current.delete(id);
+    callbackPretAffichage(id);
+  }, []);
+
+  const demarrerAnimationJeuCarte = useCallback((id: string) => {
+    setCartesEnVol((precedent) =>
+      precedent.map((carteEnVol) => {
+        if (carteEnVol.id !== id) {
+          return carteEnVol;
+        }
+
+        return {
+          ...carteEnVol,
+          estEnPause: false,
+          segment: carteEnVol.segment + 1,
+        };
+      }),
+    );
+  }, []);
 
   const lancerAnimationRamassagePli = useCallback(
     (
@@ -373,14 +413,17 @@ export function useAnimations() {
   const annulerAnimations = useCallback(() => {
     nettoyerTimeouts();
     callbacksFinJeuRef.current.clear();
+    callbacksPretAffichageRef.current.clear();
     setCartesEnVol([]);
   }, [nettoyerTimeouts]);
 
   return {
     cartesEnVol,
     surAnimationTerminee,
+    surCarteJeuPreteAffichage,
     glisserCarteRetournee,
     lancerAnimationJeuCarte,
+    demarrerAnimationJeuCarte,
     lancerAnimationRamassagePli,
     lancerAnimationRetourPaquet,
     ajouterCartesGelees,

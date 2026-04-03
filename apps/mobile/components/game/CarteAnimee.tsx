@@ -33,11 +33,13 @@ interface PropsCarteAnimee {
   depart: PositionCarte;
   arrivee: PositionCarte;
   faceVisible: boolean;
+  estEnPause?: boolean;
   delai?: number;
   duree: number;
   largeurEcran: number;
   hauteurEcran: number;
   atlas: AtlasCartes;
+  onPretAffichage?: () => void;
   onTerminee?: () => void;
   flipDe?: number;
   flipVers?: number;
@@ -56,11 +58,13 @@ export function CarteAnimee({
   depart,
   arrivee,
   faceVisible,
+  estEnPause = false,
   delai = 0,
   duree,
   largeurEcran,
   hauteurEcran,
   atlas,
+  onPretAffichage,
   onTerminee,
   flipDe,
   flipVers,
@@ -70,9 +74,13 @@ export function CarteAnimee({
   const progres = useSharedValue(0);
   const aFlip = flipDe !== undefined && flipVers !== undefined;
   const animationFrameFinRef = useRef<number | null>(null);
+  const animationFramePretRef = useRef<number | null>(null);
   const timeoutFinRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onTermineeRef = useRef(onTerminee);
+  const onPretAffichageRef = useRef(onPretAffichage);
+  const aSignalePretRef = useRef(false);
   onTermineeRef.current = onTerminee;
+  onPretAffichageRef.current = onPretAffichage;
 
   const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
   const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
@@ -91,6 +99,11 @@ export function CarteAnimee({
         animationFrameFinRef.current = null;
       }
 
+      if (animationFramePretRef.current !== null) {
+        globalThis.cancelAnimationFrame?.(animationFramePretRef.current);
+        animationFramePretRef.current = null;
+      }
+
       if (timeoutFinRef.current !== null) {
         clearTimeout(timeoutFinRef.current);
         timeoutFinRef.current = null;
@@ -99,6 +112,11 @@ export function CarteAnimee({
   }, []);
 
   useEffect(() => {
+    if (estEnPause) {
+      progres.value = 0;
+      return;
+    }
+
     const planifierFinAnimation = () => {
       const cb = onTermineeRef.current;
       if (!cb) return;
@@ -127,7 +145,31 @@ export function CarteAnimee({
         }
       }),
     );
-  }, [progres, delai, duree, easing, segment]);
+  }, [progres, delai, duree, easing, estEnPause, segment]);
+
+  useEffect(() => {
+    if (!estEnPause || aSignalePretRef.current) {
+      return;
+    }
+
+    const notifierPret = () => {
+      aSignalePretRef.current = true;
+      onPretAffichageRef.current?.();
+    };
+
+    if (typeof globalThis.requestAnimationFrame === "function") {
+      animationFramePretRef.current = globalThis.requestAnimationFrame(() => {
+        animationFramePretRef.current = null;
+        notifierPret();
+      });
+      return;
+    }
+
+    timeoutFinRef.current = setTimeout(() => {
+      timeoutFinRef.current = null;
+      notifierPret();
+    }, 0);
+  }, [estEnPause]);
 
   const styleConteneur = useAnimatedStyle(() => {
     const t = progres.value;

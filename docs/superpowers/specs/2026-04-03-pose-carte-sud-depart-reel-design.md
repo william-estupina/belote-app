@@ -147,6 +147,8 @@ La correction est reussie si :
 
 - la carte sud semble partir exactement de sa position visible dans l'eventail
 - l'angle et l'echelle de depart ne sont plus reinitialises
+- l'overlay de carte en vol prend le relais sans trou visuel perceptible
+- le masquage de la carte source intervient juste avant le depart effectif du mouvement
 - la courbe actuelle vers le pli est conservee
 - aucun comportement des cartes bots n'est modifie
 - les tests mobiles cibles passent

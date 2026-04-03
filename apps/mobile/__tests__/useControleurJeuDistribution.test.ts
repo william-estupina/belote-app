@@ -30,10 +30,12 @@ const mockAnimerTriSud = jest.fn(({ onTerminee }: { onTerminee: () => void }) =>
 const mockAjouterCartesGelees = jest.fn();
 const mockAnnulerAnimations = jest.fn();
 const mockLancerAnimationJeuCarte = jest.fn();
+const mockDemarrerAnimationJeuCarte = jest.fn();
 const mockLancerAnimationRamassagePli = jest.fn();
 const mockLancerAnimationRetourPaquet = jest.fn();
 const mockGlisserCarteRetournee = jest.fn();
 const mockSurAnimationTerminee = jest.fn();
+const mockSurCarteJeuPreteAffichage = jest.fn();
 const mockAttendreDelaiBot = jest.fn(() => Promise.resolve());
 const mockAnnulerDelai = jest.fn();
 let mockProgressionsAdv = creerProgressionsFactices(24);
@@ -63,8 +65,10 @@ jest.mock("../hooks/useAnimations", () => ({
   useAnimations: () => ({
     cartesEnVol: [],
     surAnimationTerminee: mockSurAnimationTerminee,
+    surCarteJeuPreteAffichage: mockSurCarteJeuPreteAffichage,
     glisserCarteRetournee: mockGlisserCarteRetournee,
     lancerAnimationJeuCarte: mockLancerAnimationJeuCarte,
+    demarrerAnimationJeuCarte: mockDemarrerAnimationJeuCarte,
     lancerAnimationRamassagePli: mockLancerAnimationRamassagePli,
     lancerAnimationRetourPaquet: mockLancerAnimationRetourPaquet,
     ajouterCartesGelees: mockAjouterCartesGelees,
@@ -422,7 +426,73 @@ describe("useControleurJeu - redistribution", () => {
       "sud",
       expect.any(Function),
       departAnimation,
+      expect.objectContaining({
+        demarrageDiffere: true,
+        surPretAffichage: expect.any(Function),
+      }),
     );
+  });
+
+  it("masque la carte sud apres le signal de prise de relais puis demarre l animation", async () => {
+    const departAnimation = {
+      x: 0.37,
+      y: 0.83,
+      rotation: -14,
+      echelle: 1,
+    };
+    let surPretAffichage: ((idAnimation: string) => void) | undefined;
+
+    mockLancerAnimationJeuCarte.mockImplementation(
+      (_carte, _joueur, _onTerminee, _depart, options) => {
+        surPretAffichage = options?.surPretAffichage;
+        return "jeu-1";
+      },
+    );
+
+    const { result } = renderHook(() =>
+      useControleurJeu({
+        difficulte: "facile",
+        scoreObjectif: 1000,
+        largeurEcran: 1280,
+        hauteurEcran: 720,
+      }),
+    );
+
+    await viderFileEvenements();
+
+    act(() => {
+      result.current.onRevelationTerminee();
+    });
+
+    await viderFileEvenements();
+
+    act(() => {
+      result.current.prendre();
+    });
+
+    await viderFileEvenements(30);
+
+    const carteJouee = result.current.etatJeu.cartesJouables[0];
+
+    act(() => {
+      result.current.jouerCarte(carteJouee, departAnimation);
+    });
+
+    expect(result.current.cartesMasqueesMainJoueur).toEqual([]);
+    expect(mockDemarrerAnimationJeuCarte).not.toHaveBeenCalled();
+
+    act(() => {
+      surPretAffichage?.("jeu-1");
+    });
+
+    expect(result.current.cartesMasqueesMainJoueur).toEqual([carteJouee]);
+    expect(mockDemarrerAnimationJeuCarte).not.toHaveBeenCalled();
+
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
+
+    expect(mockDemarrerAnimationJeuCarte).toHaveBeenCalledWith("jeu-1");
   });
 
   it("reste en mode cinematique-distribution jusqu'au handoff final", async () => {

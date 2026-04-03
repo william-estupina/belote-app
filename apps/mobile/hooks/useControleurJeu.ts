@@ -572,16 +572,30 @@ export function useControleurJeu({
       if (snap.value !== "jeu") return;
       if (snap.context.indexJoueurActif !== INDEX_HUMAIN) return;
 
-      // Conserver la disposition de la main jusqu'à la fin de l'animation
-      // pour que la carte semble partir directement de l'éventail.
-      setCartesMasqueesMainJoueur([carte]);
       setEtatJeu((prev) => ({
         ...prev,
         cartesJouables: [],
         estTourHumain: false,
       }));
 
-      // Lancer l'animation depuis la position réelle de la carte dans l'éventail
+      const planifierDemarrageAnimation = (idAnimation: string) => {
+        const lancer = () => {
+          if (estDemonte.current) return;
+          animations.demarrerAnimationJeuCarte(idAnimation);
+        };
+
+        if (typeof globalThis.requestAnimationFrame === "function") {
+          globalThis.requestAnimationFrame(() => {
+            lancer();
+          });
+          return;
+        }
+
+        const timeout = setTimeout(lancer, 0);
+        timeoutsControleurRef.current.push(timeout);
+      };
+
+      // Preparer l'overlay d'animation, puis masquer la source juste avant son depart
       animations.lancerAnimationJeuCarte(
         carte,
         "sud",
@@ -607,6 +621,14 @@ export function useControleurJeu({
           acteur.send({ type: "JOUER_CARTE", carte });
         },
         departAnimation,
+        {
+          demarrageDiffere: true,
+          surPretAffichage: (idAnimation) => {
+            if (estDemonte.current) return;
+            setCartesMasqueesMainJoueur([carte]);
+            planifierDemarrageAnimation(idAnimation);
+          },
+        },
       );
     },
     [animations],
@@ -739,6 +761,7 @@ export function useControleurJeu({
     // Animations
     cartesEnVol: animations.cartesEnVol,
     surAnimationTerminee: animations.surAnimationTerminee,
+    surCarteJeuPreteAffichage: animations.surCarteJeuPreteAffichage,
     // Distribution Atlas
     atlas,
     cartesAtlasAdversaires: animDistribution.cartesAtlasAdversaires,

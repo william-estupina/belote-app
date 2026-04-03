@@ -109,3 +109,11 @@ pnpm --filter @belote/mobile typecheck
 git add docs/superpowers/plans/2026-04-03-pose-carte-sud-depart-reel.md apps/mobile/components/game/MainJoueur.tsx apps/mobile/hooks/useControleurJeu.ts apps/mobile/hooks/useAnimations.ts apps/mobile/__tests__/MainJoueur.test.tsx apps/mobile/__tests__/useControleurJeuDistribution.test.ts apps/mobile/__tests__/useAnimations.test.ts
 git commit -m "fix(mobile): faire partir la carte sud depuis sa pose reelle"
 ```
+
+## Ajustement post-implementation
+
+Le comportement final retenu pour eviter le clignotement est un handoff en trois temps :
+
+- preparer l'overlay de la carte en vol sans encore lancer son mouvement
+- masquer la carte source une fois que l'overlay signale qu'il est pret a prendre le relais
+- demarrer effectivement l'animation au tick suivant pour eviter un trou visuel entre les deux rendus

@@ -15,6 +15,7 @@ export interface CarteEnVol {
   depart: PositionCarte;
   arrivee: PositionCarte;
   faceVisible: boolean;
+  estEnPause?: boolean;
   delai?: number;
   duree: number;
   segment: number;
@@ -28,6 +29,7 @@ interface PropsCoucheAnimation {
   largeurEcran: number;
   hauteurEcran: number;
   onAnimationTerminee: (id: string) => void;
+  onCarteJeuPreteAffichage: (id: string) => void;
   atlas: AtlasCartes;
   nbCartesAdversaires: { nord: number; est: number; ouest: number };
   // Pool adversaires (CanvasAdversaires — permanent)
@@ -49,6 +51,7 @@ export function CoucheAnimation({
   largeurEcran,
   hauteurEcran,
   onAnimationTerminee,
+  onCarteJeuPreteAffichage,
   atlas,
   nbCartesAdversaires,
   cartesAtlasAdversaires,
@@ -123,6 +126,7 @@ export function CoucheAnimation({
           depart={vol.depart}
           arrivee={vol.arrivee}
           faceVisible={vol.faceVisible}
+          estEnPause={vol.estEnPause}
           delai={vol.delai}
           duree={vol.duree}
           segment={vol.segment}
@@ -132,6 +136,7 @@ export function CoucheAnimation({
           easing={vol.easing}
           largeurEcran={largeurEcran}
           hauteurEcran={hauteurEcran}
+          onPretAffichage={() => onCarteJeuPreteAffichage(vol.id)}
           onTerminee={() => onAnimationTerminee(vol.id)}
         />
       ))}
