@@ -282,7 +282,7 @@ describe("PlateauJeu", () => {
     expect(screen.queryByTestId("main-joueur")).toBeNull();
   });
 
-  it("affiche les mains adverses classiques hors distribution meme pendant les encheres", () => {
+  it("n'injecte plus un second renderer MainAdversaire hors distribution", () => {
     mockControleur = {
       ...mockControleur,
       etatJeu: {
@@ -301,8 +301,8 @@ describe("PlateauJeu", () => {
       nativeEvent: { layout: { width: 1280, height: 720 } },
     });
 
-    expect(screen.getByTestId("main-adversaire-nord")).toBeTruthy();
-    expect(screen.getByTestId("main-adversaire-est")).toBeTruthy();
-    expect(screen.getByTestId("main-adversaire-ouest")).toBeTruthy();
+    expect(screen.queryByTestId("main-adversaire-nord")).toBeNull();
+    expect(screen.queryByTestId("main-adversaire-est")).toBeNull();
+    expect(screen.queryByTestId("main-adversaire-ouest")).toBeNull();
   });
 });

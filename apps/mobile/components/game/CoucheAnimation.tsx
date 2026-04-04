@@ -73,7 +73,11 @@ export function CoucheAnimation({
     progressionsSud &&
     donneesWorkletSud &&
     nbCartesActivesSud;
-  const afficherCanvasAdversaires = distributionEnCours ?? false;
+  const afficherCanvasAdversaires =
+    (distributionEnCours ?? false) ||
+    nbCartesAdversaires.nord > 0 ||
+    nbCartesAdversaires.est > 0 ||
+    nbCartesAdversaires.ouest > 0;
 
   return (
     <View

@@ -64,7 +64,9 @@ function creerProps(progression: number): ComponentProps<typeof CanvasAdversaire
         rectSource: { x: 0, y: 972, width: 167, height: 243 },
       },
     ],
-    progressions: [creerSharedValueNombre(progression)],
+    progressions: Array.from({ length: 24 }, (_, index) =>
+      creerSharedValueNombre(index === 0 ? progression : -1),
+    ),
     donneesWorklet: creerSharedValueTableau([0.5, 0.5, 0.5, 0.35, 0.5, 0.2, 0, 0, 1, 1]),
     nbCartesActives: creerSharedValueNombre(1),
     distributionEnCours: true,
@@ -72,10 +74,29 @@ function creerProps(progression: number): ComponentProps<typeof CanvasAdversaire
 }
 
 describe("CanvasAdversaires", () => {
+  it("reste capable d'afficher une main adverse statique sans cartes atlas en vol", () => {
+    render(
+      <CanvasAdversaires
+        {...creerProps(0.5)}
+        cartesAtlasAdversaires={[]}
+        nbCartesAdversaires={{ nord: 1, est: 0, ouest: 0 }}
+        distributionEnCours={false}
+      />,
+    );
+
+    const styleCarte = StyleSheet.flatten(
+      screen.getByTestId("carte-adversaire-0").props.style,
+    );
+
+    expect(styleCarte.opacity).toBe(1);
+  });
+
   it("utilise le meme CarteDos que les mains adverses finales pendant la distribution", () => {
     render(<CanvasAdversaires {...creerProps(0.5)} />);
 
-    expect(screen.getByTestId("carte-dos-distribution-adverse")).toBeTruthy();
+    expect(
+      screen.getAllByTestId("carte-dos-distribution-adverse").length,
+    ).toBeGreaterThan(0);
   });
 
   it("cache une carte adverse qui n'est pas encore visible", () => {

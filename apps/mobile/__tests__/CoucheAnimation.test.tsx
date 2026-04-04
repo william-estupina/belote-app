@@ -66,14 +66,14 @@ describe("CoucheAnimation", () => {
     expect(queryByTestId("canvas-adversaires")).toBeNull();
   });
 
-  it("ne monte pas le canvas adversaires quand la distribution est terminee meme si une main adverse est visible", () => {
+  it("garde le canvas adversaires quand la distribution est terminee mais que la main adverse reste visible", () => {
     const props = creerProps();
     props.nbCartesAdversaires = { nord: 5, est: 0, ouest: 0 };
     props.distributionEnCours = false;
 
-    const { queryByTestId } = render(<CoucheAnimation {...props} />);
+    const { getByTestId } = render(<CoucheAnimation {...props} />);
 
-    expect(queryByTestId("canvas-adversaires")).toBeNull();
+    expect(getByTestId("canvas-adversaires")).toBeTruthy();
   });
 
   it("monte le canvas adversaires pendant la distribution", () => {
