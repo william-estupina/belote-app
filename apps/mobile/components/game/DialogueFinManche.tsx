@@ -479,28 +479,6 @@ export function DialogueFinManche({
                 },
               ]}
             />
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                styles.flashCadran,
-                {
-                  backgroundColor: configurationCadran.couleurFlash,
-                  opacity: animOrnementVerdict.interpolate({
-                    inputRange: [0, 0.52, 0.62, 1],
-                    outputRange: [0, 0, 1, 0],
-                  }),
-                  transform: [
-                    {
-                      scaleX: animOrnementVerdict.interpolate({
-                        inputRange: [0, 0.52, 0.62, 1],
-                        outputRange: [0.1, 0.1, 1.12, 1.12],
-                      }),
-                    },
-                  ],
-                },
-              ]}
-            />
-
             {configurationCadran.afficherCristaux ? (
               <>
                 <Animated.View

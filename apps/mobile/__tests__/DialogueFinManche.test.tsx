@@ -312,4 +312,31 @@ describe("DialogueFinManche", () => {
     expect(rendu).not.toContain('"bottom":14,"left":44');
     expect(rendu).not.toContain('"bottom":18,"right":46');
   });
+
+  it("n'affiche plus la barre lumineuse centrale du cadran", () => {
+    const { toJSON } = render(
+      <DialogueFinManche
+        resumeFinManche={{
+          ...RESUME_DEFAITE_NORMALE,
+          verdict: "dedans-nous",
+          messageVerdict: "Vous êtes dedans",
+          estContratRempli: false,
+          estChute: true,
+          scoreMancheEquipe1: 0,
+          scoreMancheEquipe2: 162,
+          scoreApresEquipe1: 110,
+          scoreApresEquipe2: 252,
+        }}
+        onContinuer={jest.fn()}
+      />,
+    );
+
+    act(() => {
+      jest.advanceTimersByTime(ANIMATION_VERDICT_MS);
+    });
+
+    const rendu = JSON.stringify(toJSON());
+
+    expect(rendu).not.toContain('"left":"-10%","right":"-10%","top":"50%","height":2');
+  });
 });
