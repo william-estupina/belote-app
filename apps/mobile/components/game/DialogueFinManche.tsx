@@ -393,13 +393,13 @@ export function DialogueFinManche({
       Animated.sequence([
         Animated.timing(animOrnementVerdict, {
           toValue: 1,
-          duration: ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeAnimationCapot,
+          duration: ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeBoucleVerdict,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
         Animated.timing(animOrnementVerdict, {
           toValue: 0,
-          duration: ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiDetails,
+          duration: ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeRetourBoucleVerdict,
           easing: Easing.linear,
           useNativeDriver: true,
         }),

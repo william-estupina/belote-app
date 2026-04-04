@@ -10,6 +10,8 @@ const DELAI_BOUTON_MS =
   ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiComptage +
   ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeComptage +
   ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiBoutonApresComptage;
+const DUREE_BOUCLE_VERDICT_ATTENDUE_MS = 750;
+const DUREE_RETOUR_BOUCLE_VERDICT_ATTENDUE_MS = 2625;
 
 const RESUME_CONTRAT_REMPLI = {
   verdict: "contrat-rempli" as const,
@@ -259,5 +261,27 @@ describe("DialogueFinManche", () => {
     unmount();
 
     expect(arreterBoucle).toHaveBeenCalledTimes(1);
+  });
+
+  it("ralentit uniformement la boucle du cadran", () => {
+    const espionTiming = jest.spyOn(Animated, "timing");
+
+    render(
+      <DialogueFinManche
+        resumeFinManche={RESUME_CONTRAT_REMPLI}
+        onContinuer={jest.fn()}
+      />,
+    );
+
+    act(() => {
+      jest.advanceTimersByTime(ANIMATION_VERDICT_MS);
+    });
+
+    const durees = espionTiming.mock.calls.map(
+      ([, configuration]) => configuration.duration,
+    );
+
+    expect(durees).toContain(DUREE_BOUCLE_VERDICT_ATTENDUE_MS);
+    expect(durees).toContain(DUREE_RETOUR_BOUCLE_VERDICT_ATTENDUE_MS);
   });
 });

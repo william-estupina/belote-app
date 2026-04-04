@@ -1,5 +1,6 @@
 export const FACTEUR_ACCELERATION_ANIMATIONS_VISUELLES = 0.5;
 export const FACTEUR_RALENTISSEMENT_ANIMATIONS_MAJEURES = 1.2;
+export const FACTEUR_RALENTISSEMENT_BOUCLE_VERDICT = 2.5;
 
 export function accelererDureeAnimation(dureeMs: number): number {
   return Math.round(dureeMs * FACTEUR_ACCELERATION_ANIMATIONS_VISUELLES);
@@ -62,4 +63,10 @@ export const ANIMATIONS_DIALOGUE_FIN_MANCHE = {
   tensionEntreePanneau: tensionAnimationMajeure(60),
   dureePicEclair: dureeAnimationMajeure(200),
   dureeSortieEclair: dureeAnimationMajeure(300),
+  dureeBoucleVerdict: Math.round(
+    dureeAnimationMajeure(500) * FACTEUR_RALENTISSEMENT_BOUCLE_VERDICT,
+  ),
+  dureeRetourBoucleVerdict: Math.round(
+    delaiPhaseScore(1400) * FACTEUR_RALENTISSEMENT_BOUCLE_VERDICT,
+  ),
 } as const;
