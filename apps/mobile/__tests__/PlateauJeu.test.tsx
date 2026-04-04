@@ -167,6 +167,15 @@ jest.mock("../components/game/MainJoueur", () => ({
   },
 }));
 
+jest.mock("../components/game/MainAdversaire", () => ({
+  MainAdversaire: ({ position }: { position: string }) => {
+    const React = require("react") as typeof import("react");
+    const { View } = require("react-native") as typeof import("react-native");
+
+    return <View testID={`main-adversaire-${position}`} />;
+  },
+}));
+
 jest.mock("../components/game/PanneauEncheres", () => ({
   PanneauEncheres: () => {
     const React = require("react") as typeof import("react");
@@ -271,5 +280,29 @@ describe("PlateauJeu", () => {
 
     expect(screen.getByTestId("couche-animation")).toBeTruthy();
     expect(screen.queryByTestId("main-joueur")).toBeNull();
+  });
+
+  it("affiche les mains adverses classiques hors distribution meme pendant les encheres", () => {
+    mockControleur = {
+      ...mockControleur,
+      etatJeu: {
+        ...etatJeuMock,
+        phaseUI: "revelationCarte",
+        nbCartesAdversaires: { nord: 5, est: 5, ouest: 5 },
+      },
+      distributionEnCours: false,
+      modeRenduCartes: "cinematique-distribution",
+    };
+
+    const { UNSAFE_getAllByType } = render(<PlateauJeu />);
+    const { View } = require("react-native") as typeof import("react-native");
+
+    fireEvent(UNSAFE_getAllByType(View)[0], "layout", {
+      nativeEvent: { layout: { width: 1280, height: 720 } },
+    });
+
+    expect(screen.getByTestId("main-adversaire-nord")).toBeTruthy();
+    expect(screen.getByTestId("main-adversaire-est")).toBeTruthy();
+    expect(screen.getByTestId("main-adversaire-ouest")).toBeTruthy();
   });
 });

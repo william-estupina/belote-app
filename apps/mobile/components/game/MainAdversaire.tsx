@@ -2,15 +2,13 @@ import type { PositionJoueur } from "@belote/shared-types";
 import { View } from "react-native";
 
 import { ADVERSAIRE, RATIO_ASPECT_CARTE } from "../../constants/layout";
-import type { AtlasCartes } from "../../hooks/useAtlasCartes";
-import { CarteDosAtlas } from "./Carte";
+import { CarteDos } from "./Carte";
 
 interface PropsMainAdversaire {
   nbCartes: number;
   position: PositionJoueur;
   largeurEcran: number;
   hauteurEcran: number;
-  atlas: AtlasCartes;
 }
 
 export function MainAdversaire({
@@ -18,7 +16,6 @@ export function MainAdversaire({
   position,
   largeurEcran,
   hauteurEcran,
-  atlas,
 }: PropsMainAdversaire) {
   if (nbCartes === 0) return null;
 
@@ -33,7 +30,6 @@ export function MainAdversaire({
         hauteurCarte={hauteurCarte}
         largeurEcran={largeurEcran}
         hauteurEcran={hauteurEcran}
-        atlas={atlas}
       />
     );
   }
@@ -46,7 +42,6 @@ export function MainAdversaire({
       largeurEcran={largeurEcran}
       hauteurEcran={hauteurEcran}
       cote={position as "est" | "ouest"}
-      atlas={atlas}
     />
   );
 }
@@ -59,14 +54,12 @@ function EventailHorizontal({
   hauteurCarte,
   largeurEcran,
   hauteurEcran,
-  atlas,
 }: {
   nbCartes: number;
   largeurCarte: number;
   hauteurCarte: number;
   largeurEcran: number;
   hauteurEcran: number;
-  atlas: AtlasCartes;
 }) {
   const angleTotal = ADVERSAIRE.angleTotal;
   const arcMax = hauteurEcran * ADVERSAIRE.decalageArc;
@@ -106,7 +99,7 @@ function EventailHorizontal({
               zIndex: index,
             }}
           >
-            <CarteDosAtlas atlas={atlas} largeur={largeurCarte} hauteur={hauteurCarte} />
+            <CarteDos largeur={largeurCarte} hauteur={hauteurCarte} />
           </View>
         );
       })}
@@ -124,7 +117,6 @@ function EventailVertical({
   largeurEcran,
   hauteurEcran,
   cote,
-  atlas,
 }: {
   nbCartes: number;
   largeurCarte: number;
@@ -132,7 +124,6 @@ function EventailVertical({
   largeurEcran: number;
   hauteurEcran: number;
   cote: "est" | "ouest";
-  atlas: AtlasCartes;
 }) {
   const angleTotal = ADVERSAIRE.angleTotal;
   const arcMax = largeurEcran * ADVERSAIRE.decalageArc;
@@ -189,7 +180,7 @@ function EventailVertical({
               zIndex: index,
             }}
           >
-            <CarteDosAtlas atlas={atlas} largeur={largeurCarte} hauteur={hauteurCarte} />
+            <CarteDos largeur={largeurCarte} hauteur={hauteurCarte} />
           </View>
         );
       })}

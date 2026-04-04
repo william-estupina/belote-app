@@ -18,6 +18,7 @@ import { DernierPli } from "./DernierPli";
 import { DialogueFinManche } from "./DialogueFinManche";
 import { DialogueFinPartie } from "./DialogueFinPartie";
 import { JetonDealer } from "./JetonDealer";
+import { MainAdversaire } from "./MainAdversaire";
 import { MainJoueur } from "./MainJoueur";
 import { PanneauEncheres } from "./PanneauEncheres";
 import { PilePlis } from "./PilePlis";
@@ -227,6 +228,17 @@ export default function PlateauJeu() {
               onCarteJouee={jouerCarte}
             />
           )}
+
+          {!distributionEnCours &&
+            (["nord", "ouest", "est"] as const).map((position) => (
+              <MainAdversaire
+                key={position}
+                nbCartes={etatJeu.nbCartesAdversaires[position]}
+                position={position}
+                largeurEcran={largeur}
+                hauteurEcran={hauteur}
+              />
+            ))}
 
           {/* Carte retournée visible pendant les enchères */}
           <ReserveCentrale
