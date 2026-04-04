@@ -13,6 +13,7 @@ import { StyleSheet, Text, View } from "react-native";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
 
 const RAYON_COIN = 6;
+const LARGEUR_REFERENCE_DOS = 167;
 
 // Couleurs des symboles (utilisé par SymboleCouleur)
 const COULEURS_SYMBOLES: Record<Couleur, string> = {
@@ -32,9 +33,27 @@ const SYMBOLES: Record<Couleur, string> = {
 
 // --- Dos de carte ---
 
+function calculerMetriquesDos(largeur: number) {
+  const facteur = largeur / LARGEUR_REFERENCE_DOS;
+
+  return {
+    rayonCoin: RAYON_COIN * facteur,
+    rayonCadreExterieur: 5 * facteur,
+    rayonMotifInterieur: 4 * facteur,
+    bordureCarte: 2.5 * facteur,
+    bordureCadreExterieur: 2 * facteur,
+    bordureMotifInterieur: 1 * facteur,
+    ombreOffsetX: 2 * facteur,
+    ombreOffsetY: 3 * facteur,
+    ombreRayon: 6 * facteur,
+    elevation: 6 * facteur,
+  };
+}
+
 export function CarteDos({ largeur, hauteur }: { largeur: number; hauteur: number }) {
   const marge = largeur * 0.08;
   const tailleMotif = largeur * 0.12;
+  const metriques = calculerMetriquesDos(largeur);
 
   return (
     <View
@@ -43,7 +62,14 @@ export function CarteDos({ largeur, hauteur }: { largeur: number; hauteur: numbe
         {
           width: largeur,
           height: hauteur,
-          borderRadius: RAYON_COIN,
+          borderRadius: metriques.rayonCoin,
+          borderWidth: metriques.bordureCarte,
+          shadowOffset: {
+            width: metriques.ombreOffsetX,
+            height: metriques.ombreOffsetY,
+          },
+          shadowRadius: metriques.ombreRayon,
+          elevation: metriques.elevation,
         },
       ]}
     >
@@ -51,8 +77,9 @@ export function CarteDos({ largeur, hauteur }: { largeur: number; hauteur: numbe
         style={[
           dosStyles.cadreExterieur,
           {
-            borderRadius: RAYON_COIN - 1,
+            borderRadius: metriques.rayonCadreExterieur,
             margin: marge * 0.5,
+            borderWidth: metriques.bordureCadreExterieur,
           },
         ]}
       >
@@ -60,8 +87,9 @@ export function CarteDos({ largeur, hauteur }: { largeur: number; hauteur: numbe
           style={[
             dosStyles.motifInterieur,
             {
-              borderRadius: RAYON_COIN - 2,
+              borderRadius: metriques.rayonMotifInterieur,
               margin: marge * 0.4,
+              borderWidth: metriques.bordureMotifInterieur,
             },
           ]}
         >
@@ -87,24 +115,18 @@ export function CarteDos({ largeur, hauteur }: { largeur: number; hauteur: numbe
 const dosStyles = StyleSheet.create({
   carte: {
     backgroundColor: "#9b2020",
-    borderWidth: 2.5,
     borderColor: "#c8a84e",
     shadowColor: "#000",
-    shadowOffset: { width: 2, height: 3 },
     shadowOpacity: 0.5,
-    shadowRadius: 6,
-    elevation: 6,
     overflow: "hidden",
   },
   cadreExterieur: {
     flex: 1,
-    borderWidth: 2,
     borderColor: "#dbb855",
   },
   motifInterieur: {
     flex: 1,
     backgroundColor: "#6a1010",
-    borderWidth: 1,
     borderColor: "#dbb855",
     overflow: "hidden",
   },
