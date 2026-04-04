@@ -304,7 +304,6 @@ export function MainJoueur({
 }: PropsMainJoueur) {
   const nbCartes = cartes.length;
   const nbCartesPrecedentRef = useRef(nbCartes);
-  if (nbCartes === 0) return null;
   const nbCartesPourDisposition = Math.max(nbCartes, nbCartesDisposition ?? nbCartes);
 
   const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
@@ -326,6 +325,8 @@ export function MainJoueur({
   useEffect(() => {
     nbCartesPrecedentRef.current = nbCartes;
   }, [nbCartes]);
+
+  if (nbCartes === 0) return null;
 
   return (
     <View

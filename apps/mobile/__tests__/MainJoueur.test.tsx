@@ -234,6 +234,35 @@ describe("MainJoueur", () => {
     );
   });
 
+  it("supporte le passage de la derniere carte a une main vide", () => {
+    const { rerender, queryByTestId } = render(
+      <MainJoueur
+        cartes={[CARTES[0]]}
+        largeurEcran={1400}
+        hauteurEcran={1000}
+        cartesJouables={[CARTES[0]]}
+        interactionActive={false}
+        atlas={MOCK_ATLAS}
+        onCarteJouee={() => {}}
+      />,
+    );
+
+    expect(() =>
+      rerender(
+        <MainJoueur
+          cartes={[]}
+          largeurEcran={1400}
+          hauteurEcran={1000}
+          cartesJouables={[]}
+          interactionActive={false}
+          atlas={MOCK_ATLAS}
+          onCarteJouee={() => {}}
+        />,
+      ),
+    ).not.toThrow();
+    expect(queryByTestId("main-joueur")).toBeNull();
+  });
+
   it("masque uniquement la carte en cours de pose tout en conservant son emplacement", () => {
     render(
       <MainJoueur
