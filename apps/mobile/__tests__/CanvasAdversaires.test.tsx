@@ -1,63 +1,27 @@
-import { render } from "@testing-library/react-native";
+import { render, screen } from "@testing-library/react-native";
 import type { ComponentProps } from "react";
+import { StyleSheet } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 
 import { CanvasAdversaires } from "../components/game/CanvasAdversaires";
 
-type TransformationCapturee = [number, number, number, number];
-type OmbreCapturee = {
-  blur: number;
-  color: string;
-  dx: number;
-  dy: number;
-};
-
-const transformationsCapturees: TransformationCapturee[] = [];
-const ombresCapturees: OmbreCapturee[] = [];
-const TRANSFORMATION_HORS_ECRAN: TransformationCapturee = [0, 0, -10000, -10000];
-
-jest.mock("@shopify/react-native-skia", () => {
+jest.mock("../components/game/Carte", () => {
   const React = require("react") as typeof import("react");
   const { View } = require("react-native") as typeof import("react-native");
-  const Passthrough = ({ children }: { children?: React.ReactNode }) =>
-    React.createElement(View, null, children);
 
   return {
-    Canvas: Passthrough,
-    Atlas: () => null,
-    Group: Passthrough,
-    Shadow: (props: OmbreCapturee) => {
-      ombresCapturees.push(props);
-      return null;
-    },
-    rect: (x: number, y: number, width: number, height: number) => ({
-      x,
-      y,
-      width,
-      height,
-    }),
-    useRSXformBuffer: (
-      nbCartes: number,
-      calculerTransformation: (
-        valeur: { set: (...transformation: TransformationCapturee) => void },
-        index: number,
-      ) => void,
-    ) => {
-      transformationsCapturees.length = 0;
+    CarteDos: () => <View testID="carte-dos-distribution-adverse" />,
+  };
+});
 
-      for (let index = 0; index < nbCartes; index += 1) {
-        calculerTransformation(
-          {
-            set: (...transformation: TransformationCapturee) => {
-              transformationsCapturees[index] = transformation;
-            },
-          },
-          index,
-        );
-      }
+jest.mock("react-native-reanimated", () => {
+  const React = require("react") as typeof import("react");
+  const { View } = require("react-native") as typeof import("react-native");
 
-      return transformationsCapturees;
-    },
+  return {
+    __esModule: true,
+    default: { View },
+    useAnimatedStyle: (calculStyle: () => unknown) => calculStyle(),
   };
 });
 
@@ -69,10 +33,7 @@ function creerSharedValueTableau(valeur: number[]): SharedValue<number[]> {
   return { value: valeur } as SharedValue<number[]>;
 }
 
-function creerProps(
-  progression: number,
-  distributionEnCours = true,
-): ComponentProps<typeof CanvasAdversaires> {
+function creerProps(progression: number): ComponentProps<typeof CanvasAdversaires> {
   return {
     atlas: {
       image: {
@@ -106,38 +67,34 @@ function creerProps(
     progressions: [creerSharedValueNombre(progression)],
     donneesWorklet: creerSharedValueTableau([0.5, 0.5, 0.5, 0.35, 0.5, 0.2, 0, 0, 1, 1]),
     nbCartesActives: creerSharedValueNombre(1),
-    distributionEnCours,
+    distributionEnCours: true,
   };
 }
 
 describe("CanvasAdversaires", () => {
-  beforeEach(() => {
-    transformationsCapturees.length = 0;
-    ombresCapturees.length = 0;
+  it("utilise le meme CarteDos que les mains adverses finales pendant la distribution", () => {
+    render(<CanvasAdversaires {...creerProps(0.5)} />);
+
+    expect(screen.getByTestId("carte-dos-distribution-adverse")).toBeTruthy();
   });
 
   it("cache une carte adverse qui n'est pas encore visible", () => {
     render(<CanvasAdversaires {...creerProps(-1)} />);
 
-    expect(transformationsCapturees[0]).toEqual(TRANSFORMATION_HORS_ECRAN);
+    const styleCarte = StyleSheet.flatten(
+      screen.getByTestId("carte-adversaire-0").props.style,
+    );
+
+    expect(styleCarte.opacity).toBe(0);
   });
 
-  it("laisse visible une carte adverse pendant son rendu atlas", () => {
+  it("laisse visible une carte adverse en cours de distribution", () => {
     render(<CanvasAdversaires {...creerProps(0.5)} />);
 
-    expect(transformationsCapturees[0]).not.toEqual(TRANSFORMATION_HORS_ECRAN);
-  });
+    const styleCarte = StyleSheet.flatten(
+      screen.getByTestId("carte-adversaire-0").props.style,
+    );
 
-  it("applique la meme ombre skia que les autres dos de cartes atlas", () => {
-    render(<CanvasAdversaires {...creerProps(0.5)} />);
-
-    expect(ombresCapturees).toEqual([
-      {
-        blur: 4,
-        color: "rgba(0, 0, 0, 0.35)",
-        dx: 1,
-        dy: 2,
-      },
-    ]);
+    expect(styleCarte.opacity).toBe(1);
   });
 });
