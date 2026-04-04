@@ -215,6 +215,74 @@ describe("useAnimationsDistribution", () => {
     }
   });
 
+  it("decale aussi le premier paquet nord de 3 vers 5 cartes quand le second paquet part", () => {
+    const atlas: AtlasCartes = {
+      image: {
+        width: () => 1336,
+        height: () => 1215,
+      } as NonNullable<AtlasCartes["image"]>,
+      largeurCellule: 167,
+      hauteurCellule: 243,
+      rectSource: () => ({ x: 0, y: 0, width: 167, height: 243 }),
+      rectDos: () => ({ x: 0, y: 972, width: 167, height: 243 }),
+    };
+
+    const { result } = renderHook(() =>
+      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }),
+    );
+
+    act(() => {
+      result.current.lancerDistribution({
+        sud: creerMain("sud", 5, 0),
+        ouest: creerMain("ouest", 5, 10),
+        nord: creerMain("nord", 5, 20),
+        est: creerMain("est", 5, 30),
+      });
+    });
+
+    const ciblesNordTrois = calculerCiblesEventailAdversaire("nord", 0, 3, 3, 1280, 720);
+    const ciblesNordCinq = calculerCiblesEventailAdversaire("nord", 0, 3, 5, 1280, 720);
+    const indicesNordPremierPaquet = result.current.cartesAtlasAdversaires
+      .map((carteAtlas, index) => ({ carteAtlas, index }))
+      .filter(({ carteAtlas }) => carteAtlas.joueur === "nord")
+      .slice(0, 3);
+
+    for (let index = 0; index < indicesNordPremierPaquet.length; index += 1) {
+      expect(indicesNordPremierPaquet[index].carteAtlas.arrivee.x).toBeCloseTo(
+        ciblesNordTrois[index].arrivee.x,
+        5,
+      );
+      expect(indicesNordPremierPaquet[index].carteAtlas.arrivee.y).toBeCloseTo(
+        ciblesNordTrois[index].arrivee.y,
+        5,
+      );
+    }
+
+    act(() => {
+      jest.runAllTimers();
+    });
+
+    for (let index = 0; index < indicesNordPremierPaquet.length; index += 1) {
+      const offset = indicesNordPremierPaquet[index].index * 10;
+      expect(result.current.donneesWorkletAdv.value[offset]).toBeCloseTo(
+        ciblesNordTrois[index].arrivee.x,
+        5,
+      );
+      expect(result.current.donneesWorkletAdv.value[offset + 1]).toBeCloseTo(
+        ciblesNordTrois[index].arrivee.y,
+        5,
+      );
+      expect(result.current.donneesWorkletAdv.value[offset + 4]).toBeCloseTo(
+        ciblesNordCinq[index].arrivee.x,
+        5,
+      );
+      expect(result.current.donneesWorkletAdv.value[offset + 5]).toBeCloseTo(
+        ciblesNordCinq[index].arrivee.y,
+        5,
+      );
+    }
+  });
+
   it("decale les cartes adverses deja presentes vers l'eventail final", () => {
     const atlas: AtlasCartes = {
       image: {

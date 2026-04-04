@@ -76,6 +76,7 @@ interface DelaiAnimationCarte {
 }
 
 interface PaquetCallbackDistribution {
+  indexPremiereCartePool: number;
   indexDerniereCartePool: number;
   estSud: boolean;
   position: PositionJoueur;
@@ -467,6 +468,8 @@ export function useAnimationsDistribution(
 
           const delaiPaquet = temps;
           const nbCartesPaquet = cartesDuPaquet.length;
+          const indexPremiereCartePool =
+            position === "sud" ? cartesSud.length : cartesAdv.length;
           const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
           const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
           const dispositionSud =
@@ -488,7 +491,7 @@ export function useAnimationsDistribution(
                   posAdv,
                   existAdv + indexCarte,
                   nbCartesPaquet,
-                  existAdv + mains[position].length,
+                  existAdv + indexCarte + nbCartesPaquet,
                   largeurEcran,
                   hauteurEcran,
                 )
@@ -601,6 +604,7 @@ export function useAnimationsDistribution(
 
           // Tracker la dernière carte du paquet pour le callback
           paquetsCallback.push({
+            indexPremiereCartePool,
             indexDerniereCartePool: estSud ? cartesSud.length - 1 : cartesAdv.length - 1,
             estSud,
             position,
@@ -765,6 +769,104 @@ export function useAnimationsDistribution(
             }
           })();
         }, delaiDecalage);
+        timeoutsCallbacksRef.current.push(timeoutDecalage);
+      }
+
+      for (const position of ["nord", "ouest", "est"] as const) {
+        const nbCartesExistantesPosition = nbCartesExistantesAdv[position] ?? 0;
+        if (nbCartesExistantesPosition !== 0) {
+          continue;
+        }
+
+        const paquetsPosition = paquetsCallback.filter(
+          (paquet) => !paquet.estSud && paquet.position === position,
+        );
+        if (paquetsPosition.length < 2) {
+          continue;
+        }
+
+        const premierPaquet = paquetsPosition[0];
+        const secondPaquet = paquetsPosition[1];
+        const nbCartesPremierPaquet = premierPaquet.cartes.length;
+        const nbCartesTotal = mains[position].length;
+        const ciblesPremierPaquet = calculerCiblesEventailAdversaire(
+          position,
+          0,
+          nbCartesPremierPaquet,
+          nbCartesTotal,
+          largeurEcran,
+          hauteurEcran,
+        );
+
+        const shiftDonnees: number[] = [];
+        for (
+          let i = premierPaquet.indexPremiereCartePool;
+          i <= premierPaquet.indexDerniereCartePool;
+          i++
+        ) {
+          const indexCartePaquet = i - premierPaquet.indexPremiereCartePool;
+          const cible = ciblesPremierPaquet[indexCartePaquet];
+          const offset = i * STRIDE;
+          const departX = donneesPlatAdv[offset + 4];
+          const departY = donneesPlatAdv[offset + 5];
+          const rotationCourante = donneesPlatAdv[offset + 7];
+          const echelleCourante = donneesPlatAdv[offset + 9];
+          const glissement = construireGlissementCarteDepuisEtatCourant({
+            depart: {
+              x: departX,
+              y: departY,
+              rotation: rotationCourante,
+              echelle: echelleCourante,
+            },
+            arrivee: {
+              x: cible.arrivee.x,
+              y: cible.arrivee.y,
+              rotation: cible.rotationArrivee,
+              echelle: echelleCourante,
+            },
+          });
+          shiftDonnees.push(
+            glissement.depart.x,
+            glissement.depart.y,
+            glissement.controle.x,
+            glissement.controle.y,
+            glissement.arrivee.x,
+            glissement.arrivee.y,
+            glissement.depart.rotation,
+            glissement.arrivee.rotation,
+            glissement.depart.echelle,
+            glissement.arrivee.echelle,
+          );
+        }
+
+        const timeoutDecalage = setTimeout(() => {
+          const donneesCourantes = donneesWorkletAdv.value;
+          const nouvellesDonnees = [...donneesCourantes];
+          for (
+            let i = premierPaquet.indexPremiereCartePool;
+            i <= premierPaquet.indexDerniereCartePool;
+            i++
+          ) {
+            const sdOffset = (i - premierPaquet.indexPremiereCartePool) * STRIDE;
+            const poolOffset = i * STRIDE;
+            for (let j = 0; j < STRIDE; j++) {
+              nouvellesDonnees[poolOffset + j] = shiftDonnees[sdOffset + j];
+            }
+          }
+          const debut = premierPaquet.indexPremiereCartePool;
+          const fin = premierPaquet.indexDerniereCartePool;
+          const duree = distribution.dureeCarte;
+          runOnUI(() => {
+            donneesWorkletAdv.value = nouvellesDonnees;
+            for (let i = debut; i <= fin; i++) {
+              progressionsAdv[i].value = 0;
+              progressionsAdv[i].value = withTiming(1, {
+                duration: duree,
+                easing: EASING_OUT_CUBIC,
+              });
+            }
+          })();
+        }, secondPaquet.delaiDepartMs);
         timeoutsCallbacksRef.current.push(timeoutDecalage);
       }
 

@@ -284,4 +284,32 @@ describe("DialogueFinManche", () => {
     expect(durees).toContain(DUREE_BOUCLE_VERDICT_ATTENDUE_MS);
     expect(durees).toContain(DUREE_RETOUR_BOUCLE_VERDICT_ATTENDUE_MS);
   });
+
+  it("n'affiche plus les traits lumineux du cadran", () => {
+    const { toJSON } = render(
+      <DialogueFinManche
+        resumeFinManche={{
+          ...RESUME_CONTRAT_REMPLI,
+          estCapot: true,
+          equipeCapot: "equipe1",
+          scoreMancheEquipe1: 252,
+          scoreMancheEquipe2: 0,
+          scoreApresEquipe1: 342,
+          scoreApresEquipe2: 10,
+        }}
+        onContinuer={jest.fn()}
+      />,
+    );
+
+    act(() => {
+      jest.advanceTimersByTime(ANIMATION_VERDICT_MS);
+    });
+
+    const rendu = JSON.stringify(toJSON());
+
+    expect(rendu).not.toContain('"top":10,"left":18');
+    expect(rendu).not.toContain('"top":12,"right":22');
+    expect(rendu).not.toContain('"bottom":14,"left":44');
+    expect(rendu).not.toContain('"bottom":18,"right":46');
+  });
 });
