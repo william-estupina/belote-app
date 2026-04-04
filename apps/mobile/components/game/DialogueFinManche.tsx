@@ -248,6 +248,7 @@ export function DialogueFinManche({
   const animOverlay = useRef(new Animated.Value(0)).current;
   const animPanneau = useRef(new Animated.Value(0)).current;
   const animVerdict = useRef(new Animated.Value(0)).current;
+  const animOrnementVerdict = useRef(new Animated.Value(0)).current;
   const animDetails = useRef(new Animated.Value(0)).current;
   const animTotal = useRef(new Animated.Value(0)).current;
   const animBouton = useRef(new Animated.Value(0)).current;
@@ -383,6 +384,35 @@ export function DialogueFinManche({
     resumeFinManche.scoreMancheEquipe2,
   ]);
 
+  useEffect(() => {
+    if (!afficherVerdict) return undefined;
+
+    animOrnementVerdict.setValue(0);
+
+    const animationBoucle = Animated.loop(
+      Animated.sequence([
+        Animated.timing(animOrnementVerdict, {
+          toValue: 1,
+          duration: ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeAnimationCapot,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(animOrnementVerdict, {
+          toValue: 0,
+          duration: ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiDetails,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    animationBoucle.start();
+
+    return () => {
+      animationBoucle.stop();
+    };
+  }, [afficherVerdict, animOrnementVerdict]);
+
   return (
     <Animated.View style={[styles.overlay, { opacity: animOverlay }]}>
       <Animated.View
@@ -442,7 +472,7 @@ export function DialogueFinManche({
                 styles.haloCadran,
                 {
                   backgroundColor: configurationCadran.couleurHalo,
-                  opacity: animVerdict.interpolate({
+                  opacity: animOrnementVerdict.interpolate({
                     inputRange: [0, 0.55, 0.7, 1],
                     outputRange: [0, 0, 0.9, 0],
                   }),
@@ -455,13 +485,13 @@ export function DialogueFinManche({
                 styles.flashCadran,
                 {
                   backgroundColor: configurationCadran.couleurFlash,
-                  opacity: animVerdict.interpolate({
+                  opacity: animOrnementVerdict.interpolate({
                     inputRange: [0, 0.52, 0.62, 1],
                     outputRange: [0, 0, 1, 0],
                   }),
                   transform: [
                     {
-                      scaleX: animVerdict.interpolate({
+                      scaleX: animOrnementVerdict.interpolate({
                         inputRange: [0, 0.52, 0.62, 1],
                         outputRange: [0.1, 0.1, 1.12, 1.12],
                       }),
@@ -480,26 +510,26 @@ export function DialogueFinManche({
                     styles.trait1,
                     {
                       backgroundColor: configurationCadran.couleurFlash,
-                      opacity: animVerdict.interpolate({
+                      opacity: animOrnementVerdict.interpolate({
                         inputRange: [0, 0.58, 0.64, 1],
                         outputRange: [0, 0, 1, 0],
                       }),
                       transform: [
                         { rotate: "18deg" },
                         {
-                          translateX: animVerdict.interpolate({
+                          translateX: animOrnementVerdict.interpolate({
                             inputRange: [0, 0.58, 0.64, 1],
                             outputRange: [0, 0, -6, -8],
                           }),
                         },
                         {
-                          translateY: animVerdict.interpolate({
+                          translateY: animOrnementVerdict.interpolate({
                             inputRange: [0, 0.58, 0.64, 1],
                             outputRange: [0, 0, -10, -14],
                           }),
                         },
                         {
-                          scaleY: animVerdict.interpolate({
+                          scaleY: animOrnementVerdict.interpolate({
                             inputRange: [0, 0.58, 0.64, 1],
                             outputRange: [0.2, 0.2, 1, 1.2],
                           }),
@@ -515,26 +545,26 @@ export function DialogueFinManche({
                     styles.trait2,
                     {
                       backgroundColor: configurationCadran.couleurFlash,
-                      opacity: animVerdict.interpolate({
+                      opacity: animOrnementVerdict.interpolate({
                         inputRange: [0, 0.6, 0.66, 1],
                         outputRange: [0, 0, 1, 0],
                       }),
                       transform: [
                         { rotate: "-24deg" },
                         {
-                          translateX: animVerdict.interpolate({
+                          translateX: animOrnementVerdict.interpolate({
                             inputRange: [0, 0.6, 0.66, 1],
                             outputRange: [0, 0, 6, 10],
                           }),
                         },
                         {
-                          translateY: animVerdict.interpolate({
+                          translateY: animOrnementVerdict.interpolate({
                             inputRange: [0, 0.6, 0.66, 1],
                             outputRange: [0, 0, -10, -14],
                           }),
                         },
                         {
-                          scaleY: animVerdict.interpolate({
+                          scaleY: animOrnementVerdict.interpolate({
                             inputRange: [0, 0.6, 0.66, 1],
                             outputRange: [0.2, 0.2, 1, 1.2],
                           }),
@@ -550,26 +580,26 @@ export function DialogueFinManche({
                     styles.trait3,
                     {
                       backgroundColor: configurationCadran.couleurFlash,
-                      opacity: animVerdict.interpolate({
+                      opacity: animOrnementVerdict.interpolate({
                         inputRange: [0, 0.62, 0.68, 1],
                         outputRange: [0, 0, 1, 0],
                       }),
                       transform: [
                         { rotate: "-56deg" },
                         {
-                          translateX: animVerdict.interpolate({
+                          translateX: animOrnementVerdict.interpolate({
                             inputRange: [0, 0.62, 0.68, 1],
                             outputRange: [0, 0, -6, -9],
                           }),
                         },
                         {
-                          translateY: animVerdict.interpolate({
+                          translateY: animOrnementVerdict.interpolate({
                             inputRange: [0, 0.62, 0.68, 1],
                             outputRange: [0, 0, 8, 14],
                           }),
                         },
                         {
-                          scaleY: animVerdict.interpolate({
+                          scaleY: animOrnementVerdict.interpolate({
                             inputRange: [0, 0.62, 0.68, 1],
                             outputRange: [0.2, 0.2, 1, 1.2],
                           }),
@@ -585,26 +615,26 @@ export function DialogueFinManche({
                     styles.trait4,
                     {
                       backgroundColor: configurationCadran.couleurFlash,
-                      opacity: animVerdict.interpolate({
+                      opacity: animOrnementVerdict.interpolate({
                         inputRange: [0, 0.64, 0.7, 1],
                         outputRange: [0, 0, 1, 0],
                       }),
                       transform: [
                         { rotate: "58deg" },
                         {
-                          translateX: animVerdict.interpolate({
+                          translateX: animOrnementVerdict.interpolate({
                             inputRange: [0, 0.64, 0.7, 1],
                             outputRange: [0, 0, 6, 9],
                           }),
                         },
                         {
-                          translateY: animVerdict.interpolate({
+                          translateY: animOrnementVerdict.interpolate({
                             inputRange: [0, 0.64, 0.7, 1],
                             outputRange: [0, 0, 8, 14],
                           }),
                         },
                         {
-                          scaleY: animVerdict.interpolate({
+                          scaleY: animOrnementVerdict.interpolate({
                             inputRange: [0, 0.64, 0.7, 1],
                             outputRange: [0.2, 0.2, 1, 1.2],
                           }),
@@ -625,14 +655,14 @@ export function DialogueFinManche({
                     styles.cristal1,
                     {
                       borderColor: configurationCadran.couleurFlash,
-                      opacity: animVerdict.interpolate({
+                      opacity: animOrnementVerdict.interpolate({
                         inputRange: [0, 0.6, 0.67, 1],
                         outputRange: [0, 0, 1, 0],
                       }),
                       transform: [
                         { rotate: "45deg" },
                         {
-                          scale: animVerdict.interpolate({
+                          scale: animOrnementVerdict.interpolate({
                             inputRange: [0, 0.6, 0.67, 1],
                             outputRange: [0.2, 0.2, 1, 1.24],
                           }),
@@ -648,14 +678,14 @@ export function DialogueFinManche({
                     styles.cristal2,
                     {
                       borderColor: configurationCadran.couleurFlash,
-                      opacity: animVerdict.interpolate({
+                      opacity: animOrnementVerdict.interpolate({
                         inputRange: [0, 0.63, 0.7, 1],
                         outputRange: [0, 0, 1, 0],
                       }),
                       transform: [
                         { rotate: "45deg" },
                         {
-                          scale: animVerdict.interpolate({
+                          scale: animOrnementVerdict.interpolate({
                             inputRange: [0, 0.63, 0.7, 1],
                             outputRange: [0.2, 0.2, 1, 1.24],
                           }),
@@ -671,14 +701,14 @@ export function DialogueFinManche({
                     styles.cristal3,
                     {
                       borderColor: configurationCadran.couleurFlash,
-                      opacity: animVerdict.interpolate({
+                      opacity: animOrnementVerdict.interpolate({
                         inputRange: [0, 0.66, 0.73, 1],
                         outputRange: [0, 0, 1, 0],
                       }),
                       transform: [
                         { rotate: "45deg" },
                         {
-                          scale: animVerdict.interpolate({
+                          scale: animOrnementVerdict.interpolate({
                             inputRange: [0, 0.66, 0.73, 1],
                             outputRange: [0.2, 0.2, 1, 1.24],
                           }),
@@ -693,21 +723,21 @@ export function DialogueFinManche({
             {configurationCadran.afficherEtoiles ? (
               <>
                 <OrnementEtoile
-                  animation={animVerdict}
+                  animation={animOrnementVerdict}
                   couleur={configurationCadran.couleurFlash}
                   style={styles.etoile1}
                   palierDebut={0.6}
                   palierPic={0.67}
                 />
                 <OrnementEtoile
-                  animation={animVerdict}
+                  animation={animOrnementVerdict}
                   couleur={configurationCadran.couleurFlash}
                   style={styles.etoile2}
                   palierDebut={0.63}
                   palierPic={0.7}
                 />
                 <OrnementEtoile
-                  animation={animVerdict}
+                  animation={animOrnementVerdict}
                   couleur={configurationCadran.couleurFlash}
                   style={styles.etoile3}
                   palierDebut={0.66}

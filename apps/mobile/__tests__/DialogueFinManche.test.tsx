@@ -1,7 +1,15 @@
 import { act, render, screen } from "@testing-library/react-native";
-import { StyleSheet } from "react-native";
+import { Animated, StyleSheet } from "react-native";
 
 import { DialogueFinManche } from "../components/game/DialogueFinManche";
+import { ANIMATIONS_DIALOGUE_FIN_MANCHE } from "../constants/animations-visuelles";
+
+const ANIMATION_VERDICT_MS = ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiVerdict;
+const DELAI_BOUTON_MS =
+  ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiSectionTotal +
+  ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiComptage +
+  ANIMATIONS_DIALOGUE_FIN_MANCHE.dureeComptage +
+  ANIMATIONS_DIALOGUE_FIN_MANCHE.delaiBoutonApresComptage;
 
 const RESUME_CONTRAT_REMPLI = {
   verdict: "contrat-rempli" as const,
@@ -43,9 +51,8 @@ describe("DialogueFinManche", () => {
   });
 
   afterEach(() => {
-    act(() => {
-      jest.runOnlyPendingTimers();
-    });
+    jest.clearAllTimers();
+    jest.restoreAllMocks();
     jest.useRealTimers();
   });
 
@@ -105,7 +112,7 @@ describe("DialogueFinManche", () => {
     expect(screen.getByText("Score total")).toBeTruthy();
 
     act(() => {
-      jest.runAllTimers();
+      jest.advanceTimersByTime(DELAI_BOUTON_MS);
     });
 
     expect(screen.getByText("Continuer")).toBeTruthy();
@@ -223,5 +230,34 @@ describe("DialogueFinManche", () => {
     expect(screen.queryByText("petit yahou")).toBeNull();
     expect(screen.queryByText("glace legere")).toBeNull();
     expect(screen.queryByText("chaleur legere")).toBeNull();
+  });
+
+  it("relance en boucle les animations du cadran puis les arrete au demontage", () => {
+    const demarrerBoucle = jest.fn();
+    const arreterBoucle = jest.fn();
+
+    jest.spyOn(Animated, "loop").mockReturnValue({
+      start: demarrerBoucle,
+      stop: arreterBoucle,
+      reset: jest.fn(),
+    } as unknown as Animated.CompositeAnimation);
+
+    const { unmount } = render(
+      <DialogueFinManche
+        resumeFinManche={RESUME_CONTRAT_REMPLI}
+        onContinuer={jest.fn()}
+      />,
+    );
+
+    act(() => {
+      jest.advanceTimersByTime(ANIMATION_VERDICT_MS);
+    });
+
+    expect(Animated.loop).toHaveBeenCalledTimes(1);
+    expect(demarrerBoucle).toHaveBeenCalledTimes(1);
+
+    unmount();
+
+    expect(arreterBoucle).toHaveBeenCalledTimes(1);
   });
 });
