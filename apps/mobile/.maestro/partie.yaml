@@ -6,4 +6,10 @@ appId: com.chiienton.belote
 - assertVisible:
     id: ecran-partie
 - assertVisible:
+    id: panneau-encheres
+    timeout: 15000
+- tapOn:
+    id: enchere-prendre
+- assertVisible:
     id: main-joueur
+    timeout: 10000

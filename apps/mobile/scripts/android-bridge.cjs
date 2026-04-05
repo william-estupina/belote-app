@@ -457,6 +457,36 @@ function lancerProcessusEmulateur(configuration) {
   processus.unref();
 }
 
+function estEmulateurOfflineDansAdb(configuration) {
+  try {
+    const sortie = executerCommandeSync(configuration.adbLinux, ["devices"], {
+      env: process.env,
+    }).stdout;
+    return sortie.split("\n").some(
+      (ligne) => ligne.includes(configuration.serial) && ligne.includes("offline"),
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function tuerEmulateurEtReinitialiserAdb(configuration) {
+  console.log(`Appareil ${configuration.serial} hors ligne, arret de l'emulateur existant...`);
+  try {
+    executerCommandeSync("cmd.exe", ["/d", "/c", "taskkill /F /IM emulator.exe /T"], {
+      stdio: "pipe",
+    });
+  } catch {}
+  try {
+    executerCommandeSync(configuration.adbLinux, ["kill-server"], {
+      env: process.env,
+      stdio: "pipe",
+    });
+  } catch {}
+  // Attendre que les ports soient liberes
+  await pause(2000);
+}
+
 async function demarrerEmulateur(configuration) {
   for (let tentative = 0; tentative < 2; tentative += 1) {
     const etat = obtenirEtatAppareil(configuration);
@@ -464,6 +494,9 @@ async function demarrerEmulateur(configuration) {
     if (etat === "device") {
       console.log(`Emulateur deja disponible: ${configuration.serial}`);
     } else {
+      if (estEmulateurOfflineDansAdb(configuration)) {
+        await tuerEmulateurEtReinitialiserAdb(configuration);
+      }
       lancerProcessusEmulateur(configuration);
     }
 

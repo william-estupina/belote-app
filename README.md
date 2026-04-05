@@ -2,6 +2,21 @@
 
 Application de **Belote française** (jeu de cartes à 4 joueurs, 2 équipes de 2) fonctionnant sur iOS, Android et Web avec un seul codebase.
 
+## Démarrage rapide
+
+```bash
+# Lancer l'app sur l'émulateur Android (WSL → émulateur Windows)
+pnpm mobile:android:start
+```
+
+> Démarre l'émulateur si besoin, installe la dev build si absente, lance Metro, et ouvre l'app.
+> Pour forcer un rebuild natif : `BELOTE_ANDROID_FORCE_INSTALL=1 pnpm mobile:android:start`
+
+```bash
+# Lancer l'app dans le navigateur
+pnpm dev:web
+```
+
 ## Technologies
 
 | Couche                   | Technologie                          | Version  |
