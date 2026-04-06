@@ -1,64 +1,37 @@
 import type { Carte } from "@belote/shared-types";
 import { render } from "@testing-library/react-native";
 import type { ComponentProps } from "react";
+import { StyleSheet } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 
 import { DistributionCanvasSud } from "../components/game/DistributionCanvasSud";
+import { RATIO_ASPECT_CARTE, RATIO_LARGEUR_CARTE } from "../constants/layout";
 
-type TransformationCapturee = [number, number, number, number];
-type OmbreCapturee = {
-  blur: number;
-  color: string;
-  dx: number;
-  dy: number;
-};
+const mockStylesAnimes: unknown[] = [];
 
-const transformationsCapturees: TransformationCapturee[] = [];
-const ombresCapturees: OmbreCapturee[] = [];
-const TRANSFORMATION_HORS_ECRAN: TransformationCapturee = [0, 0, -10000, -10000];
-
-jest.mock("@shopify/react-native-skia", () => {
+jest.mock("react-native-reanimated", () => {
   const React = require("react") as typeof import("react");
   const { View } = require("react-native") as typeof import("react-native");
-  const Passthrough = ({ children }: { children?: React.ReactNode }) =>
-    React.createElement(View, null, children);
 
   return {
-    Canvas: Passthrough,
-    Atlas: () => null,
-    Group: Passthrough,
-    Shadow: (props: OmbreCapturee) => {
-      ombresCapturees.push(props);
-      return null;
+    __esModule: true,
+    default: {
+      View,
     },
-    rect: (x: number, y: number, width: number, height: number) => ({
-      x,
-      y,
-      width,
-      height,
-    }),
-    useRSXformBuffer: (
-      nbCartes: number,
-      calculerTransformation: (
-        valeur: { set: (...transformation: TransformationCapturee) => void },
-        index: number,
-      ) => void,
-    ) => {
-      transformationsCapturees.length = 0;
-
-      for (let index = 0; index < nbCartes; index += 1) {
-        calculerTransformation(
-          {
-            set: (...transformation: TransformationCapturee) => {
-              transformationsCapturees[index] = transformation;
-            },
-          },
-          index,
-        );
-      }
-
-      return transformationsCapturees;
+    useAnimatedStyle: (calculStyle: () => unknown) => {
+      const style = calculStyle();
+      mockStylesAnimes.push(style);
+      return style;
     },
+  };
+});
+
+jest.mock("../components/game/Carte", () => {
+  const React = require("react") as typeof import("react");
+  const { View } = require("react-native") as typeof import("react-native");
+
+  return {
+    CarteFaceAtlas: () => <View testID="carte-face-atlas" />,
   };
 });
 
@@ -110,38 +83,45 @@ function creerCanvasProps(
 
 describe("DistributionCanvasSud", () => {
   beforeEach(() => {
-    transformationsCapturees.length = 0;
-    ombresCapturees.length = 0;
+    mockStylesAnimes.length = 0;
   });
 
   it("cache une carte atlas qui n'a pas encore commence a voler", () => {
     render(<DistributionCanvasSud {...creerCanvasProps(-1)} />);
 
-    expect(transformationsCapturees[0]).toEqual(TRANSFORMATION_HORS_ECRAN);
+    expect(mockStylesAnimes[0]).toMatchObject({
+      left: -10000,
+      opacity: 0,
+      top: -10000,
+    });
   });
 
   it("cache une carte atlas deja arrivee a destination", () => {
     render(<DistributionCanvasSud {...creerCanvasProps(2)} />);
 
-    expect(transformationsCapturees[0]).toEqual(TRANSFORMATION_HORS_ECRAN);
+    expect(mockStylesAnimes[0]).toMatchObject({
+      left: -10000,
+      opacity: 0,
+      top: -10000,
+    });
   });
 
   it("laisse visible une carte atlas en cours de vol", () => {
     render(<DistributionCanvasSud {...creerCanvasProps(0.5)} />);
 
-    expect(transformationsCapturees[0]).not.toEqual(TRANSFORMATION_HORS_ECRAN);
+    expect(mockStylesAnimes[0]).toMatchObject({
+      opacity: 1,
+    });
   });
 
-  it("applique une ombre skia alignee sur les cartes statiques", () => {
-    render(<DistributionCanvasSud {...creerCanvasProps(0.5)} />);
+  it("ancre le bas de la carte sud sur la position d'arrivee pour eviter le rognage", () => {
+    render(<DistributionCanvasSud {...creerCanvasProps(1)} />);
 
-    expect(ombresCapturees).toEqual([
-      {
-        blur: 4,
-        color: "rgba(0, 0, 0, 0.35)",
-        dx: 1,
-        dy: 2,
-      },
-    ]);
+    const largeurCarte = Math.round(1000 * RATIO_LARGEUR_CARTE);
+    const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
+    const styleCarte = StyleSheet.flatten(mockStylesAnimes[0]);
+
+    expect(styleCarte.top).toBe(2000 * 0.8 - hauteurCarte);
+    expect(styleCarte.transformOrigin).toBe(`${largeurCarte / 2}px ${hauteurCarte}px`);
   });
 });

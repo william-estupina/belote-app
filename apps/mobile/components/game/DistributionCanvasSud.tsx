@@ -1,82 +1,67 @@
-import {
-  Atlas,
-  Canvas,
-  Group,
-  rect,
-  Shadow,
-  useRSXformBuffer,
-} from "@shopify/react-native-skia";
-import { useMemo } from "react";
+import { memo } from "react";
 import type { SharedValue } from "react-native-reanimated";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
 
-import { RATIO_LARGEUR_CARTE } from "../../constants/layout";
+import { RATIO_ASPECT_CARTE, RATIO_LARGEUR_CARTE } from "../../constants/layout";
 import { interpolerBezierQuadratique } from "../../hooks/distributionAtlas";
 import type { CarteAtlas } from "../../hooks/useAnimationsDistribution";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
-
-interface PropsDistributionCanvasSud {
-  atlas: AtlasCartes;
-  cartesAtlas: CarteAtlas[];
-  progressions: SharedValue<number>[];
-  donneesWorklet: SharedValue<number[]>;
-  nbCartesActives: SharedValue<number>;
-  largeurEcran: number;
-  hauteurEcran: number;
-}
+import { CarteFaceAtlas } from "./Carte";
 
 const STRIDE = 10;
 
-/**
- * Canvas Skia éphémère qui dessine les cartes sud en vol pendant la distribution.
- * Se démonte quand la distribution est terminée.
- */
-export function DistributionCanvasSud({
-  atlas,
-  cartesAtlas,
-  progressions,
+interface PropsCarteSudAnimee {
+  index: number;
+  carteAtlas: CarteAtlas;
+  progression: SharedValue<number>;
+  donneesWorklet: SharedValue<number[]>;
+  nbCartesActives: SharedValue<number>;
+  largeurCarte: number;
+  hauteurCarte: number;
+  largeurEcran: number;
+  hauteurEcran: number;
+  atlas: AtlasCartes;
+}
+
+function CarteSudAnimee({
+  index,
+  carteAtlas,
+  progression,
   donneesWorklet,
   nbCartesActives,
+  largeurCarte,
+  hauteurCarte,
   largeurEcran,
   hauteurEcran,
-}: PropsDistributionCanvasSud) {
-  const nbCartes = cartesAtlas.length;
-
-  // Rectangles source dans la sprite sheet (un par carte)
-  const sprites = useMemo(
-    () =>
-      cartesAtlas.map((ca) =>
-        rect(ca.rectSource.x, ca.rectSource.y, ca.rectSource.width, ca.rectSource.height),
-      ),
-    [cartesAtlas],
-  );
-
-  // Dimensions de la carte à l'écran
-  const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
-
-  // Facteur d'échelle sprite sheet → écran
-  const scaleBase = atlas.largeurCellule > 0 ? largeurCarte / atlas.largeurCellule : 1;
-  const pivotX = atlas.largeurCellule / 2;
-  // Pivot bas pour les cartes sud (ancrage pied de carte)
-  const pivotY = atlas.hauteurCellule;
-
-  // RSXform buffer — recalculé à chaque frame par Skia worklet
-  const transforms = useRSXformBuffer(nbCartes, (val, i) => {
-    "worklet";
-    const donnees = donneesWorklet.value;
+  atlas,
+}: PropsCarteSudAnimee) {
+  const style = useAnimatedStyle(() => {
     const nbActives = nbCartesActives.value;
-
-    if (i >= nbActives) {
-      val.set(0, 0, -10000, -10000);
-      return;
+    if (index >= nbActives) {
+      return {
+        position: "absolute" as const,
+        left: -10000,
+        top: -10000,
+        width: largeurCarte,
+        height: hauteurCarte,
+        opacity: 0,
+      };
     }
 
-    const t = progressions[i].value;
+    const t = progression.value;
     if (t < 0 || t > 1) {
-      val.set(0, 0, -10000, -10000);
-      return;
+      return {
+        position: "absolute" as const,
+        left: -10000,
+        top: -10000,
+        width: largeurCarte,
+        height: hauteurCarte,
+        opacity: 0,
+      };
     }
 
-    const offset = i * STRIDE;
+    const donnees = donneesWorklet.value;
+    const offset = index * STRIDE;
     const departX = donnees[offset];
     const departY = donnees[offset + 1];
     const controleX = donnees[offset + 2];
@@ -98,39 +83,78 @@ export function DistributionCanvasSud({
     const rotation = rotDepart + (rotArrivee - rotDepart) * t;
     const echelle = echDepart + (echArrivee - echDepart) * t;
 
-    const rotRad = (rotation * Math.PI) / 180;
-    const cos = Math.cos(rotRad) * echelle * scaleBase;
-    const sin = Math.sin(rotRad) * echelle * scaleBase;
-
-    const pixelX = pos.x * largeurEcran;
-    const pixelY = pos.y * hauteurEcran;
-
-    val.set(
-      cos,
-      sin,
-      pixelX - cos * pivotX + sin * pivotY,
-      pixelY - sin * pivotX - cos * pivotY,
-    );
+    return {
+      position: "absolute" as const,
+      left: pos.x * largeurEcran - largeurCarte / 2,
+      top: pos.y * hauteurEcran - hauteurCarte,
+      width: largeurCarte,
+      height: hauteurCarte,
+      opacity: 1,
+      transformOrigin: `${largeurCarte / 2}px ${hauteurCarte}px`,
+      transform: [{ rotate: `${rotation}deg` }, { scale: echelle }],
+      zIndex: 100,
+    };
   });
 
-  if (!atlas.image || nbCartes === 0) return null;
+  return (
+    <Animated.View style={style} pointerEvents="none">
+      <CarteFaceAtlas
+        atlas={atlas}
+        carte={carteAtlas.carte}
+        largeur={largeurCarte}
+        hauteur={hauteurCarte}
+      />
+    </Animated.View>
+  );
+}
+
+const CarteSudAnimeeMemo = memo(CarteSudAnimee);
+
+interface PropsDistributionCanvasSud {
+  atlas: AtlasCartes;
+  cartesAtlas: CarteAtlas[];
+  progressions: SharedValue<number>[];
+  donneesWorklet: SharedValue<number[]>;
+  nbCartesActives: SharedValue<number>;
+  largeurEcran: number;
+  hauteurEcran: number;
+}
+
+/**
+ * Composant éphémère qui dessine les cartes sud en vol pendant la distribution.
+ * Se démonte quand la distribution est terminée.
+ */
+export function DistributionCanvasSud({
+  atlas,
+  cartesAtlas,
+  progressions,
+  donneesWorklet,
+  nbCartesActives,
+  largeurEcran,
+  hauteurEcran,
+}: PropsDistributionCanvasSud) {
+  const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
+  const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
+
+  if (cartesAtlas.length === 0) return null;
 
   return (
-    <Canvas
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: largeurEcran,
-        height: hauteurEcran,
-        zIndex: 100,
-      }}
-      pointerEvents="none"
-    >
-      <Group>
-        <Shadow dx={1} dy={2} blur={4} color="rgba(0, 0, 0, 0.35)" />
-        <Atlas image={atlas.image} sprites={sprites} transforms={transforms} />
-      </Group>
-    </Canvas>
+    <>
+      {cartesAtlas.map((carteAtlas, i) => (
+        <CarteSudAnimeeMemo
+          key={i}
+          index={i}
+          carteAtlas={carteAtlas}
+          progression={progressions[i]}
+          donneesWorklet={donneesWorklet}
+          nbCartesActives={nbCartesActives}
+          largeurCarte={largeurCarte}
+          hauteurCarte={hauteurCarte}
+          largeurEcran={largeurEcran}
+          hauteurEcran={hauteurEcran}
+          atlas={atlas}
+        />
+      ))}
+    </>
   );
 }
