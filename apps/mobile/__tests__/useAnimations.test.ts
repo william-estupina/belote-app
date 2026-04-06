@@ -70,7 +70,7 @@ describe("useAnimations", () => {
 
     expect(result.current.cartesEnVol[0]).toMatchObject({
       id: "jeu-1",
-      duree: 420,
+      duree: 630,
       easing: "out-cubic",
       segment: 0,
     });
