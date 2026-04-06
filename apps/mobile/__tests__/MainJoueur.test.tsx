@@ -189,7 +189,7 @@ describe("MainJoueur", () => {
 
     expect(mockWithTiming).toHaveBeenCalledWith(
       expect.any(Number),
-      expect.objectContaining({ duration: 315 }),
+      expect.objectContaining({ duration: 210 }),
     );
     expect(mockWithTiming).toHaveBeenCalledWith(
       1,
