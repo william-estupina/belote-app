@@ -454,6 +454,8 @@ export function useAnimationsDistribution(
 
       for (let p = 0; p < taillesPaquets.length; p++) {
         const taillePaquet = taillesPaquets[p];
+        const dureeCartePaquet =
+          p === 0 ? distribution.dureeCarte : distribution.dureeCarteSecondTour;
         if (p > 0) temps += distribution.pauseEntreRounds;
 
         for (const position of ordreDistribution) {
@@ -590,14 +592,14 @@ export function useAnimationsDistribution(
               donneesPlatSud.push(...donneesCarteFlat);
               delaisCartesSud.push({
                 delai: delaiPaquet,
-                duree: distribution.dureeCarte,
+                duree: dureeCartePaquet,
               });
             } else {
               cartesAdv.push(carteAtlas);
               donneesPlatAdv.push(...donneesCarteFlat);
               delaisCartesAdv.push({
                 delai: delaiPaquet,
-                duree: distribution.dureeCarte,
+                duree: dureeCartePaquet,
               });
             }
           }

@@ -87,6 +87,9 @@ export const ANIMATIONS = {
   // Distribution : vol centre -> main (par paquets simultanes, 3 puis 2)
   distribution: {
     dureeCarte: ralentirDistributionEtPose(dureeAnimationMajeure(800)), // duree de vol par carte (ms)
+    dureeCarteSecondTour: ralentirDistributionEtPose(
+      ralentirDistributionEtPose(dureeAnimationMajeure(800)),
+    ), // duree de vol du paquet de 2 cartes (ms)
     delaiEntreJoueurs: dureeAnimationMajeure(500), // delai entre les paquets de chaque joueur (ms)
     pauseEntreRounds: 0, // pas de pause entre le paquet de 3 et le paquet de 2
     easingDistribution: "out-cubic" as const, // deceleration naturelle a l'arrivee

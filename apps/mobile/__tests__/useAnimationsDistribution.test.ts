@@ -215,6 +215,43 @@ describe("useAnimationsDistribution", () => {
     }
   });
 
+  it("ralentit le second tour de distribution par rapport au premier", () => {
+    const atlas: AtlasCartes = {
+      image: {
+        width: () => 1336,
+        height: () => 1215,
+      } as NonNullable<AtlasCartes["image"]>,
+      largeurCellule: 167,
+      hauteurCellule: 243,
+      rectSource: () => ({ x: 0, y: 0, width: 167, height: 243 }),
+      rectDos: () => ({ x: 0, y: 972, width: 167, height: 243 }),
+    };
+
+    const { result } = renderHook(() =>
+      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }),
+    );
+
+    act(() => {
+      result.current.lancerDistribution({
+        sud: creerMain("sud", 5, 0),
+        ouest: creerMain("ouest", 5, 10),
+        nord: creerMain("nord", 5, 20),
+        est: creerMain("est", 5, 30),
+      });
+    });
+
+    expect(result.current.progressionsSud[0].value).toMatchObject({
+      valeur: {
+        duration: ANIMATIONS.distribution.dureeCarte,
+      },
+    });
+    expect(result.current.progressionsSud[3].value).toMatchObject({
+      valeur: {
+        duration: ANIMATIONS.distribution.dureeCarteSecondTour,
+      },
+    });
+  });
+
   it("decale aussi le premier paquet nord de 3 vers 5 cartes quand le second paquet part", () => {
     const atlas: AtlasCartes = {
       image: {

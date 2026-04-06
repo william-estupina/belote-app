@@ -3,6 +3,7 @@ import { ANIMATIONS } from "../constants/layout";
 describe("ANIMATIONS.distribution", () => {
   it("ralentit la redistribution speciale et accelere temporairement les bots pour le test", () => {
     expect(ANIMATIONS.distribution.dureeCarte).toBe(720);
+    expect(ANIMATIONS.distribution.dureeCarteSecondTour).toBe(1080);
     expect(ANIMATIONS.distribution.delaiEntreJoueurs).toBe(300);
     expect(ANIMATIONS.distribution.dureeReorganisationMain).toBe(210);
     expect(ANIMATIONS.distribution.dureeSlideRetournee).toBe(360);
