@@ -21,7 +21,7 @@ jest.mock("react-native-reanimated", () => {
     interpolate: jest.fn(
       (_value: number, _input: number[], output: number[]) => output[0],
     ),
-    runOnJS: (fonction: (...args: unknown[]) => unknown) => fonction,
+    runOnJS: jest.fn((fonction: (...args: unknown[]) => unknown) => fonction),
     useSharedValue: (valeur: number) => ({ value: valeur }),
     useAnimatedStyle: (calculStyle: () => unknown) => calculStyle(),
     withTiming: jest.fn(
@@ -90,6 +90,44 @@ describe("CarteRevelation", () => {
     expect(surTerminee).toHaveBeenCalledTimes(1);
 
     global.requestAnimationFrame = requestAnimationFrameOriginal;
+  });
+
+  it("transmet une fonction JS stable a runOnJS depuis le callback worklet", () => {
+    const animated = require("react-native-reanimated") as {
+      runOnJS: jest.Mock;
+      withTiming: jest.Mock;
+    };
+
+    animated.runOnJS.mockClear();
+    animated.withTiming.mockClear();
+
+    render(
+      <CarteRevelation
+        carte={CARTE_TEST}
+        departX={100}
+        departY={200}
+        arriveeX={180}
+        arriveeY={220}
+        largeurCarte={80}
+        hauteurCarte={116}
+        atlas={ATLAS_TEST}
+        onTerminee={() => {}}
+      />,
+    );
+
+    const appelTimingFinal = animated.withTiming.mock.calls.at(-1) as
+      | [number, unknown, ((termine?: boolean) => void) | undefined]
+      | undefined;
+    const notifierFin = appelTimingFinal?.[2];
+
+    expect(notifierFin).toEqual(expect.any(Function));
+
+    animated.runOnJS.mockClear();
+    notifierFin?.(true);
+    notifierFin?.(true);
+
+    expect(animated.runOnJS).toHaveBeenCalledTimes(2);
+    expect(animated.runOnJS.mock.calls[1][0]).toBe(animated.runOnJS.mock.calls[0][0]);
   });
 
   describe("mode inverse", () => {

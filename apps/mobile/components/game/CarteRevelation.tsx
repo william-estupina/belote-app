@@ -1,5 +1,5 @@
 import type { Carte } from "@belote/shared-types";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import Animated, {
   Easing,
   interpolate,
@@ -59,6 +59,13 @@ export function CarteRevelation({
     onTermineeRef.current = onTerminee;
   });
 
+  const planifierFinAnimation = useCallback(() => {
+    animationFrameRef.current = requestAnimationFrame(() => {
+      animationFrameRef.current = null;
+      onTermineeRef.current();
+    });
+  }, []);
+
   // Durées effectives (ms) — en mode inverse avec dureeTotale fourni, on scale proportionnellement
   const dureeDetachement =
     inverse && dureeTotale !== undefined
@@ -89,12 +96,7 @@ export function CarteRevelation({
         (fini) => {
           "worklet";
           if (fini) {
-            runOnJS(() => {
-              animationFrameRef.current = requestAnimationFrame(() => {
-                animationFrameRef.current = null;
-                onTermineeRef.current();
-              });
-            })();
+            runOnJS(planifierFinAnimation)();
           }
         },
       ),
@@ -106,7 +108,7 @@ export function CarteRevelation({
         animationFrameRef.current = null;
       }
     };
-  }, [dureeDetachement, dureeFlip, dureeGlissement, progres]);
+  }, [dureeDetachement, dureeFlip, dureeGlissement, planifierFinAnimation, progres]);
 
   // Position et échelle du conteneur
   const styleConteneur = useAnimatedStyle(() => {
