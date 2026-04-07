@@ -57,6 +57,20 @@ describe("lancer-expo", () => {
     });
   });
 
+  it("ignore le separateur d'arguments pnpm avant les options expo", () => {
+    expect(
+      construireCommandeExpo(
+        ["start", "--", "--go", "--host", "tunnel", "--clear"],
+        "C:\\projets\\belote\\apps\\mobile",
+        "win32",
+      ),
+    ).toEqual({
+      commande: "pnpm",
+      args: ["exec", "expo", "start", "--go", "--host", "tunnel", "--clear"],
+      cwd: "C:\\projets\\belote\\apps\\mobile",
+    });
+  });
+
   it("garde une commande pnpm exec expo hors chemin UNC WSL", () => {
     expect(
       construireCommandeExpo(["start"], "C:\\projets\\belote\\apps\\mobile", "win32"),

@@ -29,7 +29,13 @@ function construireCommandePreparationWsl(cheminLinux) {
   ].join(" && ");
 }
 
+function normaliserArgumentsExpo(argsExpo) {
+  return argsExpo.filter((argument) => argument !== "--");
+}
+
 function construireCommandeExpo(argsExpo, cwd, plateforme = process.platform) {
+  const argsNormalises = normaliserArgumentsExpo(argsExpo);
+
   if (plateforme === "win32") {
     const cheminWsl = convertirCheminWslDepuisWindows(cwd);
 
@@ -43,7 +49,7 @@ function construireCommandeExpo(argsExpo, cwd, plateforme = process.platform) {
           "-lc",
           `${construireCommandePreparationWsl(
             cheminWsl.cheminLinux,
-          )} && pnpm exec expo ${argsExpo.join(" ")}`,
+          )} && pnpm exec expo ${argsNormalises.join(" ")}`,
         ],
       };
     }
@@ -51,7 +57,7 @@ function construireCommandeExpo(argsExpo, cwd, plateforme = process.platform) {
 
   return {
     commande: "pnpm",
-    args: ["exec", "expo", ...argsExpo],
+    args: ["exec", "expo", ...argsNormalises],
     cwd,
   };
 }
