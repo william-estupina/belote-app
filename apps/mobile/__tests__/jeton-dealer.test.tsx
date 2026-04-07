@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react-native";
+import { StyleSheet } from "react-native";
 
 import { JetonDealer } from "../components/game/JetonDealer";
 
@@ -62,5 +63,15 @@ describe("JetonDealer", () => {
 
     expect(screen.getByTestId("jeton-dealer")).toBeTruthy();
     expect(screen.getByText("D")).toBeTruthy();
+  });
+
+  it("reste au-dessus de la couche d'animation du plateau", () => {
+    render(
+      <JetonDealer positionDonneur="ouest" largeurEcran={1000} hauteurEcran={700} />,
+    );
+
+    const style = StyleSheet.flatten(screen.getByTestId("jeton-dealer").props.style);
+
+    expect(style.zIndex).toBeGreaterThan(50);
   });
 });

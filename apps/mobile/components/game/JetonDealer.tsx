@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: TAILLE_CANVAS,
     height: TAILLE_CANVAS,
-    zIndex: 13,
+    zIndex: 55,
   },
   canvas: {
     width: TAILLE_CANVAS,
