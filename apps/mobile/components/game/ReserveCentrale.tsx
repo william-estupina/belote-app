@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 
 import { ANIMATIONS } from "../../constants/layout";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
-import { CarteDos, CarteFaceAtlas } from "./Carte";
+import { CarteDosAtlas, CarteFaceAtlas } from "./Carte";
 import { calculerDispositionReserveCentrale } from "./reserve-centrale-disposition";
 
 interface PropsReserveCentrale {
@@ -107,7 +107,11 @@ export function ReserveCentrale({
                 },
               ]}
             >
-              <CarteDos largeur={largeurCarte} hauteur={hauteurCarte} />
+              <CarteDosAtlas
+                atlas={atlas}
+                largeur={largeurCarte}
+                hauteur={hauteurCarte}
+              />
             </View>
           ))}
         </View>

@@ -83,4 +83,13 @@ describe("Carte atlas sur le web", () => {
     expect(screen.getByTestId("canvas-skia")).toBeTruthy();
     expect(screen.getByTestId("atlas-skia")).toBeTruthy();
   });
+
+  it("ne retombe pas sur un dos react quand l'atlas n'est pas pret", () => {
+    const atlasSansImage = { ...ATLAS_MOCK, image: null };
+    const { toJSON } = render(
+      <CarteDosAtlas atlas={atlasSansImage} largeur={180} hauteur={261} />,
+    );
+
+    expect(toJSON()).toBeNull();
+  });
 });

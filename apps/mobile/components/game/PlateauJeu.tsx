@@ -182,12 +182,14 @@ export default function PlateauJeu() {
                 nbPlis={etatJeu.plisEquipe1}
                 largeurEcran={largeur}
                 hauteurEcran={hauteur}
+                atlas={atlas}
               />
               <PilePlis
                 equipe="equipe2"
                 nbPlis={etatJeu.plisEquipe2}
                 largeurEcran={largeur}
                 hauteurEcran={hauteur}
+                atlas={atlas}
               />
             </>
           )}

@@ -6,15 +6,6 @@ import { CanvasAdversaires } from "../components/game/CanvasAdversaires";
 
 const mockBuffersRsxform = jest.fn();
 
-jest.mock("../components/game/Carte", () => {
-  const React = require("react") as typeof import("react");
-  const { View } = require("react-native") as typeof import("react-native");
-
-  return {
-    CarteDos: () => <View testID="carte-dos-distribution-adverse" />,
-  };
-});
-
 jest.mock("@shopify/react-native-skia", () => {
   const React = require("react") as typeof import("react");
   const { View } = require("react-native") as typeof import("react-native");

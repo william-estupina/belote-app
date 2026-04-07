@@ -3,7 +3,8 @@ import type { IdEquipe } from "@belote/shared-types";
 import { memo } from "react";
 import { View } from "react-native";
 
-import { CarteDos } from "./Carte";
+import type { AtlasCartes } from "../../hooks/useAtlasCartes";
+import { CarteDosAtlas } from "./Carte";
 import { calculerGeometriePilePlis } from "./pile-plis-geometrie";
 
 interface PropsPilePlis {
@@ -11,6 +12,7 @@ interface PropsPilePlis {
   nbPlis: number;
   largeurEcran: number;
   hauteurEcran: number;
+  atlas: AtlasCartes;
 }
 
 export const PilePlis = memo(function PilePlis({
@@ -18,6 +20,7 @@ export const PilePlis = memo(function PilePlis({
   nbPlis,
   largeurEcran,
   hauteurEcran,
+  atlas,
 }: PropsPilePlis) {
   const {
     estTourne,
@@ -81,7 +84,7 @@ export const PilePlis = memo(function PilePlis({
             transform: estTourne ? [{ rotate: "90deg" }] : [],
           }}
         >
-          <CarteDos largeur={largeurCarte} hauteur={hauteurCarte} />
+          <CarteDosAtlas atlas={atlas} largeur={largeurCarte} hauteur={hauteurCarte} />
         </View>
       ))}
     </View>

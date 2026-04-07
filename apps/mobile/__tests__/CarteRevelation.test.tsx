@@ -39,7 +39,7 @@ jest.mock("../components/game/Carte", () => {
   const { View } = require("react-native") as typeof import("react-native");
 
   return {
-    CarteDos: () => <View testID="carte-dos" />,
+    CarteDosAtlas: () => <View testID="carte-dos-atlas" />,
     CarteFaceAtlas: () => <View testID="carte-face-atlas" />,
   };
 });
@@ -58,6 +58,24 @@ const ATLAS_TEST = {
 } as unknown as AtlasCartes;
 
 describe("CarteRevelation", () => {
+  it("utilise l'atlas pour le dos pendant le retournement", () => {
+    const { getByTestId } = render(
+      <CarteRevelation
+        carte={CARTE_TEST}
+        departX={100}
+        departY={200}
+        arriveeX={180}
+        arriveeY={220}
+        largeurCarte={80}
+        hauteurCarte={116}
+        atlas={ATLAS_TEST}
+        onTerminee={() => {}}
+      />,
+    );
+
+    expect(getByTestId("carte-dos-atlas")).toBeTruthy();
+  });
+
   it("differe le callback de fin au frame suivant pour eviter un clignotement", () => {
     const surTerminee = jest.fn();
     const callbacksAnimationFrame: FrameRequestCallback[] = [];

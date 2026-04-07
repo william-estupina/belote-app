@@ -19,7 +19,7 @@ import {
   interpolerBezierQuadratique,
 } from "../../hooks/distributionAtlas";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
-import { CarteDos, CarteFaceAtlas } from "./Carte";
+import { CarteDosAtlas, CarteFaceAtlas } from "./Carte";
 
 export interface PositionCarte {
   x: number;
@@ -234,7 +234,7 @@ export function CarteAnimee({
             hauteur={hauteurCarte}
           />
         ) : (
-          <CarteDos largeur={largeurCarte} hauteur={hauteurCarte} />
+          <CarteDosAtlas atlas={atlas} largeur={largeurCarte} hauteur={hauteurCarte} />
         )}
       </Animated.View>
     );
@@ -243,7 +243,7 @@ export function CarteAnimee({
   return (
     <Animated.View style={styleConteneur}>
       <Animated.View style={styleDos}>
-        <CarteDos largeur={largeurCarte} hauteur={hauteurCarte} />
+        <CarteDosAtlas atlas={atlas} largeur={largeurCarte} hauteur={hauteurCarte} />
       </Animated.View>
       <Animated.View style={styleFace}>
         <CarteFaceAtlas

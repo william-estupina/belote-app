@@ -11,7 +11,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
-import { CarteDos, CarteFaceAtlas } from "./Carte";
+import { CarteDosAtlas, CarteFaceAtlas } from "./Carte";
 
 interface PropsCarteRevelation {
   carte: Carte;
@@ -185,7 +185,7 @@ export function CarteRevelation({
   return (
     <Animated.View style={styleConteneur}>
       <Animated.View style={styleDos}>
-        <CarteDos largeur={largeurCarte} hauteur={hauteurCarte} />
+        <CarteDosAtlas atlas={atlas} largeur={largeurCarte} hauteur={hauteurCarte} />
       </Animated.View>
       <Animated.View style={styleFace}>
         <CarteFaceAtlas

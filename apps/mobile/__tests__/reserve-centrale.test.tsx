@@ -9,7 +9,7 @@ jest.mock("../components/game/Carte", () => {
   const { View } = require("react-native") as typeof import("react-native");
 
   return {
-    CarteDos: () => <View testID="carte-dos" />,
+    CarteDosAtlas: () => <View testID="carte-dos-atlas" />,
     CarteFaceAtlas: () => <View testID="carte-face" />,
   };
 });
@@ -88,7 +88,7 @@ describe("ReserveCentrale", () => {
       />,
     );
 
-    const couchesPleines = screen.getAllByTestId("carte-dos");
+    const couchesPleines = screen.getAllByTestId("carte-dos-atlas");
     const styleDerniereCouchePleine = StyleSheet.flatten(
       screen.getByTestId("reserve-paquet-couche-7").props.style,
     );
@@ -104,7 +104,7 @@ describe("ReserveCentrale", () => {
       />,
     );
 
-    const couchesVides = screen.getAllByTestId("carte-dos");
+    const couchesVides = screen.getAllByTestId("carte-dos-atlas");
 
     expect(couchesPleines).toHaveLength(8);
     expect(couchesVides).toHaveLength(1);
@@ -170,7 +170,7 @@ describe("ReserveCentrale", () => {
     );
 
     expect(queryByTestId("reserve-paquet")).toBeNull();
-    expect(queryByTestId("carte-dos")).toBeNull();
+    expect(queryByTestId("carte-dos-atlas")).toBeNull();
   });
 
   it("garde le paquet exactement au meme endroit avec ou sans carte retournee", () => {

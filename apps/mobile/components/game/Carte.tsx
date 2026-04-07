@@ -13,7 +13,6 @@ import { StyleSheet, Text, View } from "react-native";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
 
 const RAYON_COIN = 6;
-const LARGEUR_REFERENCE_DOS = 167;
 
 // Couleurs des symboles (utilisé par SymboleCouleur)
 const COULEURS_SYMBOLES: Record<Couleur, string> = {
@@ -30,121 +29,6 @@ const SYMBOLES: Record<Couleur, string> = {
   pique: "\u2660",
   trefle: "\u2663",
 };
-
-// --- Dos de carte ---
-
-function calculerMetriquesDos(largeur: number) {
-  const facteur = largeur / LARGEUR_REFERENCE_DOS;
-
-  return {
-    rayonCoin: RAYON_COIN * facteur,
-    rayonCadreExterieur: 5 * facteur,
-    rayonMotifInterieur: 4 * facteur,
-    bordureCarte: 2.5 * facteur,
-    bordureCadreExterieur: 2 * facteur,
-    bordureMotifInterieur: 1 * facteur,
-    ombreOffsetX: 2 * facteur,
-    ombreOffsetY: 3 * facteur,
-    ombreRayon: 6 * facteur,
-    elevation: 6 * facteur,
-  };
-}
-
-export function CarteDos({ largeur, hauteur }: { largeur: number; hauteur: number }) {
-  const marge = largeur * 0.08;
-  const tailleMotif = largeur * 0.12;
-  const metriques = calculerMetriquesDos(largeur);
-
-  return (
-    <View
-      style={[
-        dosStyles.carte,
-        {
-          width: largeur,
-          height: hauteur,
-          borderRadius: metriques.rayonCoin,
-          borderWidth: metriques.bordureCarte,
-          shadowOffset: {
-            width: metriques.ombreOffsetX,
-            height: metriques.ombreOffsetY,
-          },
-          shadowRadius: metriques.ombreRayon,
-          elevation: metriques.elevation,
-        },
-      ]}
-    >
-      <View
-        style={[
-          dosStyles.cadreExterieur,
-          {
-            borderRadius: metriques.rayonCadreExterieur,
-            margin: marge * 0.5,
-            borderWidth: metriques.bordureCadreExterieur,
-          },
-        ]}
-      >
-        <View
-          style={[
-            dosStyles.motifInterieur,
-            {
-              borderRadius: metriques.rayonMotifInterieur,
-              margin: marge * 0.4,
-              borderWidth: metriques.bordureMotifInterieur,
-            },
-          ]}
-        >
-          <View style={dosStyles.grilleMotif}>
-            {Array.from({ length: 12 }).map((_, i) => (
-              <Text
-                key={i}
-                style={[
-                  dosStyles.motifLosange,
-                  { fontSize: tailleMotif, lineHeight: tailleMotif * 1.2 },
-                ]}
-              >
-                {"\u2666"}
-              </Text>
-            ))}
-          </View>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-const dosStyles = StyleSheet.create({
-  carte: {
-    backgroundColor: "#9b2020",
-    borderColor: "#c8a84e",
-    shadowColor: "#000",
-    shadowOpacity: 0.5,
-    overflow: "hidden",
-  },
-  cadreExterieur: {
-    flex: 1,
-    borderColor: "#dbb855",
-  },
-  motifInterieur: {
-    flex: 1,
-    backgroundColor: "#6a1010",
-    borderColor: "#dbb855",
-    overflow: "hidden",
-  },
-  grilleMotif: {
-    flex: 1,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    alignItems: "center",
-    alignContent: "center",
-    padding: "4%",
-  },
-  motifLosange: {
-    color: "#c04040",
-    textAlign: "center",
-    width: "33%",
-  },
-});
 
 export function CarteDosAtlas({
   atlas,
@@ -171,7 +55,7 @@ export function CarteDosAtlas({
   });
 
   if (!image || largeurCellule === 0 || hauteurCellule === 0) {
-    return <CarteDos largeur={largeur} hauteur={hauteur} />;
+    return null;
   }
 
   return (

@@ -14,7 +14,6 @@ const LIGNES = 5;
 const LARGEUR_CELLULE = 167;
 const HAUTEUR_CELLULE = 243;
 const RAYON_COIN = 12;
-const RAYON_COIN_DOS = 6;
 const MARGE_FACE = Math.round(LARGEUR_CELLULE * 0.03);
 
 function creerSvgFondRecto(): Buffer {
@@ -32,70 +31,6 @@ function creerSvgFondRecto(): Buffer {
           stroke="#b8a88a"
           stroke-width="1.5"
         />
-      </svg>
-    `,
-  );
-}
-
-function creerSvgDos(): Buffer {
-  const margeExterieure = Math.round(LARGEUR_CELLULE * 0.08);
-  const margeCadre = Math.round(margeExterieure * 0.5);
-  const margeInterieure = Math.round(margeExterieure * 0.9);
-  const largeurInterieure = LARGEUR_CELLULE - margeInterieure * 2;
-  const hauteurInterieure = HAUTEUR_CELLULE - margeInterieure * 2;
-  const tailleLosange = Math.round(LARGEUR_CELLULE * 0.12);
-  const pasX = largeurInterieure / 3;
-  const pasY = hauteurInterieure / 4;
-  const losanges: string[] = [];
-
-  for (let ligne = 0; ligne < 4; ligne += 1) {
-    for (let colonne = 0; colonne < 3; colonne += 1) {
-      const centreX = margeInterieure + pasX * (colonne + 0.5);
-      const centreY = margeInterieure + pasY * (ligne + 0.5);
-
-      losanges.push(
-        `<text x="${centreX}" y="${centreY}" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="${tailleLosange}" fill="#c04040">&#9830;</text>`,
-      );
-    }
-  }
-
-  return Buffer.from(
-    `
-      <svg width="${LARGEUR_CELLULE}" height="${HAUTEUR_CELLULE}" viewBox="0 0 ${LARGEUR_CELLULE} ${HAUTEUR_CELLULE}" xmlns="http://www.w3.org/2000/svg">
-        <rect
-          x="0"
-          y="0"
-          width="${LARGEUR_CELLULE}"
-          height="${HAUTEUR_CELLULE}"
-          rx="${RAYON_COIN_DOS}"
-          ry="${RAYON_COIN_DOS}"
-          fill="#9b2020"
-          stroke="#c8a84e"
-          stroke-width="2.5"
-        />
-        <rect
-          x="${margeCadre}"
-          y="${margeCadre}"
-          width="${LARGEUR_CELLULE - margeCadre * 2}"
-          height="${HAUTEUR_CELLULE - margeCadre * 2}"
-          rx="${RAYON_COIN_DOS - 1}"
-          ry="${RAYON_COIN_DOS - 1}"
-          fill="none"
-          stroke="#dbb855"
-          stroke-width="2"
-        />
-        <rect
-          x="${margeInterieure}"
-          y="${margeInterieure}"
-          width="${LARGEUR_CELLULE - margeInterieure * 2}"
-          height="${HAUTEUR_CELLULE - margeInterieure * 2}"
-          rx="${RAYON_COIN_DOS - 2}"
-          ry="${RAYON_COIN_DOS - 2}"
-          fill="#6a1010"
-          stroke="#dbb855"
-          stroke-width="1"
-        />
-        ${losanges.join("\n")}
       </svg>
     `,
   );
@@ -126,16 +61,10 @@ async function creerTuileRecto(cheminFichier: string): Promise<Buffer> {
     .toBuffer();
 }
 
-async function creerTuileDos(): Promise<Buffer> {
-  return sharp({
-    create: {
-      width: LARGEUR_CELLULE,
-      height: HAUTEUR_CELLULE,
-      channels: 4,
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
-    },
-  })
-    .composite([{ input: creerSvgDos() }])
+async function creerTuileDos(cheminDosCarte: string): Promise<Buffer> {
+  return sharp(cheminDosCarte)
+    .resize(LARGEUR_CELLULE, HAUTEUR_CELLULE, { fit: "fill" })
+    .ensureAlpha()
     .png()
     .toBuffer();
 }
@@ -143,6 +72,11 @@ async function creerTuileDos(): Promise<Buffer> {
 async function generer() {
   const dossierCartes = path.resolve(__dirname, "../assets/cartes");
   const dossierSprites = path.resolve(__dirname, "../assets/sprites");
+  const cheminDosCarte = path.resolve(__dirname, "../assets/dos-carte.png");
+
+  if (!fs.existsSync(cheminDosCarte)) {
+    throw new Error(`Fichier manquant: ${cheminDosCarte}`);
+  }
 
   if (!fs.existsSync(dossierSprites)) {
     fs.mkdirSync(dossierSprites, { recursive: true });
@@ -172,7 +106,7 @@ async function generer() {
     }
   }
 
-  const dosBuffer = await creerTuileDos();
+  const dosBuffer = await creerTuileDos(cheminDosCarte);
 
   composites.push({
     input: dosBuffer,

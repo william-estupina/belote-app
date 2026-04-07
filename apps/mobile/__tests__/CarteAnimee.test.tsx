@@ -39,7 +39,7 @@ jest.mock("../components/game/Carte", () => {
   const { View } = require("react-native") as typeof import("react-native");
 
   return {
-    CarteDos: () => <View testID="carte-dos" />,
+    CarteDosAtlas: () => <View testID="carte-dos-atlas" />,
     CarteFaceAtlas: () => <View testID="carte-face-atlas" />,
   };
 });
@@ -220,5 +220,22 @@ describe("CarteAnimee", () => {
     );
 
     expect(getByTestId("carte-face-atlas")).toBeTruthy();
+  });
+
+  it("utilise l'atlas pour un dos de carte en vol", () => {
+    const { getByTestId } = render(
+      <CarteAnimee
+        carte={CARTE_TEST}
+        depart={{ x: 0.2, y: 0.2, rotation: 0, echelle: 1 }}
+        arrivee={{ x: 0.5, y: 0.5, rotation: 5, echelle: 0.9 }}
+        faceVisible={false}
+        duree={300}
+        largeurEcran={1200}
+        hauteurEcran={800}
+        atlas={ATLAS_TEST}
+      />,
+    );
+
+    expect(getByTestId("carte-dos-atlas")).toBeTruthy();
   });
 });

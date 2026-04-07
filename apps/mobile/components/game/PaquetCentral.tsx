@@ -6,12 +6,14 @@ import {
   RATIO_ASPECT_CARTE,
   RATIO_LARGEUR_CARTE,
 } from "../../constants/layout";
-import { CarteDos } from "./Carte";
+import type { AtlasCartes } from "../../hooks/useAtlasCartes";
+import { CarteDosAtlas } from "./Carte";
 
 interface PropsPaquetCentral {
   cartesRestantes: number;
   largeurEcran: number;
   hauteurEcran: number;
+  atlas: AtlasCartes;
 }
 
 /**
@@ -23,6 +25,7 @@ export const PaquetCentral = memo(function PaquetCentral({
   cartesRestantes,
   largeurEcran,
   hauteurEcran,
+  atlas,
 }: PropsPaquetCentral) {
   if (cartesRestantes <= 0) return null;
 
@@ -55,7 +58,7 @@ export const PaquetCentral = memo(function PaquetCentral({
             },
           ]}
         >
-          <CarteDos largeur={largeurCarte} hauteur={hauteurCarte} />
+          <CarteDosAtlas atlas={atlas} largeur={largeurCarte} hauteur={hauteurCarte} />
         </View>
       ))}
     </View>
