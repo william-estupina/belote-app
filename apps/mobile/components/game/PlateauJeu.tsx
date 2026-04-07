@@ -18,6 +18,7 @@ import { DernierPli } from "./DernierPli";
 import { DialogueFinManche } from "./DialogueFinManche";
 import { DialogueFinPartie } from "./DialogueFinPartie";
 import { JetonDealer } from "./JetonDealer";
+import { MainAdversaire } from "./MainAdversaire";
 import { MainJoueur } from "./MainJoueur";
 import { PanneauEncheres } from "./PanneauEncheres";
 import { PilePlis } from "./PilePlis";
@@ -229,6 +230,30 @@ export default function PlateauJeu() {
             />
           )}
 
+          {/* Mains adverses statiques — handoff React après la distribution atlas */}
+          {!distributionEnCours && (
+            <>
+              <MainAdversaire
+                nbCartes={etatJeu.nbCartesAdversaires.nord}
+                position="nord"
+                largeurEcran={largeur}
+                hauteurEcran={hauteur}
+              />
+              <MainAdversaire
+                nbCartes={etatJeu.nbCartesAdversaires.ouest}
+                position="ouest"
+                largeurEcran={largeur}
+                hauteurEcran={hauteur}
+              />
+              <MainAdversaire
+                nbCartes={etatJeu.nbCartesAdversaires.est}
+                position="est"
+                largeurEcran={largeur}
+                hauteurEcran={hauteur}
+              />
+            </>
+          )}
+
           {/* Carte retournée visible pendant les enchères */}
           <ReserveCentrale
             afficherPaquet={afficherReserveCentrale}
@@ -283,7 +308,6 @@ export default function PlateauJeu() {
             onAnimationTerminee={surAnimationTerminee}
             onCarteJeuPreteAffichage={surCarteJeuPreteAffichage}
             atlas={atlas}
-            nbCartesAdversaires={etatJeu.nbCartesAdversaires}
             cartesAtlasAdversaires={cartesAtlasAdversaires}
             progressionsAdv={progressionsAdv}
             donneesWorkletAdv={donneesWorkletAdv}

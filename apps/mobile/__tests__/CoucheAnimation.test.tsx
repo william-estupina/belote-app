@@ -47,7 +47,6 @@ describe("CoucheAnimation", () => {
       largeurEcran: 1200,
       hauteurEcran: 800,
       onAnimationTerminee: () => {},
-      nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
       cartesAtlasAdversaires: [],
       progressionsAdv: [],
       donneesWorkletAdv: { value: [] },
@@ -66,19 +65,17 @@ describe("CoucheAnimation", () => {
     expect(queryByTestId("canvas-adversaires")).toBeNull();
   });
 
-  it("garde le canvas adversaires quand la distribution est terminee mais que la main adverse reste visible", () => {
+  it("demonte le canvas adversaires quand la distribution est terminee", () => {
     const props = creerProps();
-    props.nbCartesAdversaires = { nord: 5, est: 0, ouest: 0 };
     props.distributionEnCours = false;
 
-    const { getByTestId } = render(<CoucheAnimation {...props} />);
+    const { queryByTestId } = render(<CoucheAnimation {...props} />);
 
-    expect(getByTestId("canvas-adversaires")).toBeTruthy();
+    expect(queryByTestId("canvas-adversaires")).toBeNull();
   });
 
   it("monte le canvas adversaires pendant la distribution", () => {
     const props = creerProps();
-    props.nbCartesAdversaires = { nord: 5, est: 0, ouest: 0 };
     props.distributionEnCours = true;
 
     const { getByTestId } = render(<CoucheAnimation {...props} />);

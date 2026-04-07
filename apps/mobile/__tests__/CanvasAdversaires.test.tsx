@@ -75,7 +75,6 @@ function creerProps(progression: number): ComponentProps<typeof CanvasAdversaire
     },
     largeurEcran: 1000,
     hauteurEcran: 2000,
-    nbCartesAdversaires: { nord: 1, est: 0, ouest: 0 },
     cartesAtlasAdversaires: [
       {
         carte: { couleur: "pique", rang: "as" },
@@ -104,18 +103,17 @@ describe("CanvasAdversaires", () => {
     mockBuffersRsxform.mockClear();
   });
 
-  it("reste capable d'afficher une main adverse statique sans cartes atlas en vol", () => {
+  it("ne rend pas de canvas adversaires hors distribution", () => {
     render(
       <CanvasAdversaires
         {...creerProps(0.5)}
         cartesAtlasAdversaires={[]}
-        nbCartesAdversaires={{ nord: 1, est: 0, ouest: 0 }}
         distributionEnCours={false}
       />,
     );
 
-    expect(screen.getByTestId("canvas-adversaires-skia")).toBeTruthy();
-    expect(screen.getByTestId("atlas-adversaires-skia")).toBeTruthy();
+    expect(screen.queryByTestId("canvas-adversaires-skia")).toBeNull();
+    expect(screen.queryByTestId("atlas-adversaires-skia")).toBeNull();
   });
 
   it("rend les adversaires en atlas Skia pendant la distribution", () => {
