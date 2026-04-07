@@ -33,6 +33,7 @@ interface PropsCoucheAnimation {
   onCarteJeuPreteAffichage: (id: string) => void;
   atlas: AtlasCartes;
   // Pool adversaires (CanvasAdversaires — permanent)
+  nbCartesAdversaires: { nord: number; est: number; ouest: number };
   cartesAtlasAdversaires: CarteAtlas[];
   progressionsAdv: SharedValue<number>[];
   donneesWorkletAdv: SharedValue<number[]>;
@@ -54,6 +55,7 @@ export function CoucheAnimation({
   onAnimationTerminee,
   onCarteJeuPreteAffichage,
   atlas,
+  nbCartesAdversaires,
   cartesAtlasAdversaires,
   progressionsAdv,
   donneesWorkletAdv,
@@ -74,7 +76,11 @@ export function CoucheAnimation({
     donneesWorkletSud &&
     nbCartesActivesSud &&
     zIndexesSud;
-  const afficherCanvasAdversaires = distributionEnCours ?? false;
+  const afficherCanvasAdversaires =
+    (distributionEnCours ?? false) ||
+    nbCartesAdversaires.nord > 0 ||
+    nbCartesAdversaires.est > 0 ||
+    nbCartesAdversaires.ouest > 0;
 
   return (
     <View
@@ -95,6 +101,7 @@ export function CoucheAnimation({
           atlas={atlas}
           largeurEcran={largeurEcran}
           hauteurEcran={hauteurEcran}
+          nbCartesAdversaires={nbCartesAdversaires}
           cartesAtlasAdversaires={cartesAtlasAdversaires}
           progressions={progressionsAdv}
           donneesWorklet={donneesWorkletAdv}

@@ -7,11 +7,15 @@ import {
   type SkRect,
   useRSXformBuffer,
 } from "@shopify/react-native-skia";
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo } from "react";
 import type { SharedValue } from "react-native-reanimated";
 
 import { RATIO_LARGEUR_CARTE } from "../../constants/layout";
 import { interpolerBezierQuadratique } from "../../hooks/distributionAtlas";
+import {
+  calculerCiblesEventailAdversaire,
+  ECHELLE_MAIN_ADVERSE,
+} from "../../hooks/distributionLayoutAtlas";
 import type { CarteAtlas } from "../../hooks/useAnimationsDistribution";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
 
@@ -19,6 +23,7 @@ interface PropsCanvasAdversaires {
   atlas: AtlasCartes;
   largeurEcran: number;
   hauteurEcran: number;
+  nbCartesAdversaires: { nord: number; est: number; ouest: number };
   cartesAtlasAdversaires: CarteAtlas[];
   progressions: SharedValue<number>[];
   donneesWorklet: SharedValue<number[]>;
@@ -38,6 +43,7 @@ export const CanvasAdversaires = memo(
     atlas,
     largeurEcran,
     hauteurEcran,
+    nbCartesAdversaires,
     cartesAtlasAdversaires,
     progressions,
     donneesWorklet,
@@ -49,6 +55,8 @@ export const CanvasAdversaires = memo(
       atlas.largeurCellule > 0 ? largeurCarteBase / atlas.largeurCellule : 1;
     const pivotX = atlas.largeurCellule / 2;
     const pivotY = atlas.hauteurCellule / 2;
+    const totalCartesVisibles =
+      nbCartesAdversaires.nord + nbCartesAdversaires.est + nbCartesAdversaires.ouest;
     const sprites = useMemo(() => {
       const dos = atlas.rectDos();
 
@@ -107,9 +115,71 @@ export const CanvasAdversaires = memo(
       );
     });
 
-    if (!distributionEnCours) {
-      return null;
-    }
+    useEffect(() => {
+      if (distributionEnCours) {
+        return;
+      }
+
+      if (totalCartesVisibles === 0) {
+        nbCartesActives.value = 0;
+        return;
+      }
+
+      const donnees = new Array(MAX_ADVERSAIRES * STRIDE).fill(0);
+      let index = 0;
+      const positions: Array<{ position: "nord" | "ouest" | "est"; nb: number }> = [
+        { position: "nord", nb: nbCartesAdversaires.nord },
+        { position: "ouest", nb: nbCartesAdversaires.ouest },
+        { position: "est", nb: nbCartesAdversaires.est },
+      ];
+
+      for (const { position, nb } of positions) {
+        if (nb === 0) {
+          continue;
+        }
+
+        const cibles = calculerCiblesEventailAdversaire(
+          position,
+          0,
+          nb,
+          nb,
+          largeurEcran,
+          hauteurEcran,
+        );
+
+        for (const cible of cibles) {
+          const offset = index * STRIDE;
+          donnees[offset] = cible.arrivee.x;
+          donnees[offset + 1] = cible.arrivee.y;
+          donnees[offset + 2] = cible.arrivee.x;
+          donnees[offset + 3] = cible.arrivee.y;
+          donnees[offset + 4] = cible.arrivee.x;
+          donnees[offset + 5] = cible.arrivee.y;
+          donnees[offset + 6] = cible.rotationArrivee;
+          donnees[offset + 7] = cible.rotationArrivee;
+          donnees[offset + 8] = ECHELLE_MAIN_ADVERSE;
+          donnees[offset + 9] = ECHELLE_MAIN_ADVERSE;
+          progressions[index].value = 1;
+          index += 1;
+        }
+      }
+
+      for (let i = index; i < MAX_ADVERSAIRES; i += 1) {
+        progressions[i].value = -1;
+      }
+
+      donneesWorklet.value = donnees;
+      nbCartesActives.value = index;
+    }, [
+      distributionEnCours,
+      totalCartesVisibles,
+      nbCartesAdversaires,
+      largeurEcran,
+      hauteurEcran,
+      progressions,
+      donneesWorklet,
+      nbCartesActives,
+    ]);
 
     return (
       <Canvas
@@ -136,6 +206,9 @@ export const CanvasAdversaires = memo(
     prev.largeurEcran === next.largeurEcran &&
     prev.hauteurEcran === next.hauteurEcran &&
     prev.distributionEnCours === next.distributionEnCours &&
+    prev.nbCartesAdversaires.nord === next.nbCartesAdversaires.nord &&
+    prev.nbCartesAdversaires.est === next.nbCartesAdversaires.est &&
+    prev.nbCartesAdversaires.ouest === next.nbCartesAdversaires.ouest &&
     prev.cartesAtlasAdversaires === next.cartesAtlasAdversaires &&
     prev.progressions === next.progressions &&
     prev.donneesWorklet === next.donneesWorklet &&

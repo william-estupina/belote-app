@@ -282,7 +282,7 @@ describe("PlateauJeu", () => {
     expect(screen.queryByTestId("main-joueur")).toBeNull();
   });
 
-  it("rend les mains adverses React apres la distribution", () => {
+  it("ne rend pas de mains adverses React apres la distribution", () => {
     mockControleur = {
       ...mockControleur,
       etatJeu: {
@@ -301,8 +301,8 @@ describe("PlateauJeu", () => {
       nativeEvent: { layout: { width: 1280, height: 720 } },
     });
 
-    expect(screen.getByTestId("main-adversaire-nord")).toBeTruthy();
-    expect(screen.getByTestId("main-adversaire-est")).toBeTruthy();
-    expect(screen.getByTestId("main-adversaire-ouest")).toBeTruthy();
+    expect(screen.queryByTestId("main-adversaire-nord")).toBeNull();
+    expect(screen.queryByTestId("main-adversaire-est")).toBeNull();
+    expect(screen.queryByTestId("main-adversaire-ouest")).toBeNull();
   });
 });

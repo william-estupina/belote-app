@@ -94,6 +94,7 @@ function creerProps(progression: number): ComponentProps<typeof CanvasAdversaire
     ),
     donneesWorklet: creerSharedValueTableau([0.5, 0.5, 0.5, 0.35, 0.5, 0.2, 0, 0, 1, 1]),
     nbCartesActives: creerSharedValueNombre(1),
+    nbCartesAdversaires: { nord: 1, est: 0, ouest: 0 },
     distributionEnCours: true,
   };
 }
@@ -103,17 +104,18 @@ describe("CanvasAdversaires", () => {
     mockBuffersRsxform.mockClear();
   });
 
-  it("ne rend pas de canvas adversaires hors distribution", () => {
+  it("reste monte hors distribution pour afficher les adversaires statiques", () => {
     render(
       <CanvasAdversaires
         {...creerProps(0.5)}
         cartesAtlasAdversaires={[]}
         distributionEnCours={false}
+        nbCartesAdversaires={{ nord: 1, est: 0, ouest: 0 }}
       />,
     );
 
-    expect(screen.queryByTestId("canvas-adversaires-skia")).toBeNull();
-    expect(screen.queryByTestId("atlas-adversaires-skia")).toBeNull();
+    expect(screen.getByTestId("canvas-adversaires-skia")).toBeTruthy();
+    expect(screen.getByTestId("atlas-adversaires-skia")).toBeTruthy();
   });
 
   it("rend les adversaires en atlas Skia pendant la distribution", () => {
