@@ -440,6 +440,7 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
       const ctx = snap.context;
 
       animationDistribEnCours.current = false;
+      animDistribution.terminerDistribution();
 
       const mainTriee = trierMainParCouleur(ctx.mains[INDEX_HUMAIN]);
 
@@ -450,7 +451,6 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
       }));
 
       planifierTimeout(() => {
-        animDistribution.terminerDistribution();
         programmerRelanceBot();
       }, 16);
     },

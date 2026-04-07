@@ -419,6 +419,27 @@ describe("useControleurJeu - redistribution", () => {
     );
   });
 
+  it("termine la distribution restante avant de rendre le jeu interactif", async () => {
+    const { result } = creerHookControleur();
+
+    await viderFileEvenements();
+
+    act(() => {
+      result.current.onRevelationTerminee();
+    });
+
+    await viderFileEvenements();
+    mockTerminerDistribution.mockClear();
+
+    act(() => {
+      result.current.prendre();
+    });
+
+    expect(result.current.etatJeu.phaseUI).toBe("jeu");
+    expect(result.current.modeRenduCartes).toBe("jeu-interactif");
+    expect(mockTerminerDistribution).toHaveBeenCalledTimes(1);
+  });
+
   it("masque la carte sud apres le signal de prise de relais puis demarre l animation", async () => {
     const departAnimation = {
       x: 0.37,
