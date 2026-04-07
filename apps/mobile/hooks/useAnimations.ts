@@ -330,7 +330,6 @@ export function useAnimations(dimensionsEcran?: DimensionsAnimations) {
 
             callbacksFinJeuRef.current.set(idRamassage, () => {
               setCartesEnVol((prec) => prec.filter((c) => c.id !== idRamassage));
-              onTerminee?.();
             });
 
             return [
@@ -360,6 +359,12 @@ export function useAnimations(dimensionsEcran?: DimensionsAnimations) {
         }, delaiPhase2);
 
         timeoutsRef.current.push(timeoutPhase2);
+
+        // Callback onTerminee global après toutes les phases 2
+        if (onTerminee) {
+          const timeoutFin = setTimeout(onTerminee, delaiPhase2 + dureeGlissement);
+          timeoutsRef.current.push(timeoutFin);
+        }
       }, ANIMATIONS.ramassagePli.delaiAvant);
 
       timeoutsRef.current.push(timeout);
