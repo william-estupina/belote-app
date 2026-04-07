@@ -278,7 +278,7 @@ describe("useAnimations", () => {
 
     it("fusionne les cartes du pli en une seule carte de collecte avant le depart vers la pile", () => {
       const onTerminee = jest.fn();
-      const { delaiPhase2, dureeGlissement } = planifierRamassagePli();
+      const { delaiPhase2 } = planifierRamassagePli();
       const { result } = renderHook(() => useAnimations());
 
       act(() => {
@@ -319,13 +319,49 @@ describe("useAnimations", () => {
       });
 
       expect(result.current.cartesEnVol).toHaveLength(0);
-      expect(onTerminee).not.toHaveBeenCalled();
+      expect(onTerminee).toHaveBeenCalledTimes(1);
+    });
+
+    it("attend la fin reelle de la carte de collecte avant de mettre a jour la pile", () => {
+      const onTerminee = jest.fn();
+      const { delaiPhase2, dureeGlissement } = planifierRamassagePli();
+      const { result } = renderHook(() =>
+        useAnimations({ largeurEcran: 1200, hauteurEcran: 800 }),
+      );
 
       act(() => {
-        jest.advanceTimersByTime(dureeGlissement);
+        result.current.ajouterCartesGelees([
+          {
+            id: "pli-est-pique-as",
+            carte: CARTE_TEST,
+            depart: { x: 0.58, y: 0.47, rotation: 8, echelle: 0.9 },
+            arrivee: { x: 0.58, y: 0.47, rotation: 8, echelle: 0.9 },
+            faceVisible: true,
+            duree: 0,
+            segment: 0,
+          },
+        ]);
+        result.current.lancerAnimationRamassagePli(
+          [{ joueur: "est", carte: CARTE_TEST }],
+          "est",
+          onTerminee,
+          undefined,
+          1,
+        );
+        jest.advanceTimersByTime(
+          ANIMATIONS.ramassagePli.delaiAvant + delaiPhase2 + dureeGlissement,
+        );
+      });
+
+      expect(onTerminee).not.toHaveBeenCalled();
+      expect(result.current.cartesEnVol[0].id).toMatch(/^ramassage-/);
+
+      act(() => {
+        result.current.surAnimationTerminee(result.current.cartesEnVol[0].id);
       });
 
       expect(onTerminee).toHaveBeenCalledTimes(1);
+      expect(result.current.cartesEnVol).toHaveLength(0);
     });
 
     it("anime aussi les cartes gelees rehydratees du pli", () => {
