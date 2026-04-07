@@ -16,6 +16,7 @@ Plan d'implementation dans `PROMPT.md`, progression dans `AVANCEMENT.md`.
 - Variables/fonctions : `camelCase` (en francais) — Types/Interfaces : `PascalCase` (en francais)
 - Commits : Conventional Commits (`feat:`, `fix:`, `test:`, `chore:`) — scopes : `game-logic`, `bot-engine`, `mobile`, `server`, `shared`, `ci`, `deps`
 - Correction minimale, sure et testable
+- Ne pas contourner un blocage que l'utilisateur peut resoudre lui-meme : demander l'action ou la commande a executer, attendre son retour, puis reprendre le chemin officiel
 - Apres chaque correction de bug ou implementation de feature, faire le commit directement sans attendre une demande explicite
 - Quand une tache a des fichiers associes dans `docs/superpowers/specs/` ou `docs/superpowers/plans/`, les commiter en meme temps que le code correspondant
 - Si l'utilisateur fait ensuite des retours, ajuster avec un nouveau commit ou remplacer le commit precedent selon le besoin
