@@ -73,7 +73,7 @@ describe("lancer-expo", () => {
     });
   });
 
-  it("lance pnpm dev en mode Expo Go LAN sans tunnel", () => {
+  it("lance les scripts de developpement via Expo directement", () => {
     const packageJson = JSON.parse(
       readFileSync(`${__dirname}/../package.json`, "utf8"),
     ) as {
@@ -81,9 +81,10 @@ describe("lancer-expo", () => {
       scripts: Record<string, string>;
     };
 
-    expect(packageJson.scripts.dev).toBe(
-      "node ./scripts/lancer-expo.cjs start --go --lan",
-    );
+    expect(packageJson.scripts.dev).toBe("expo start --go --lan");
+    expect(packageJson.scripts["dev:web"]).toBe("expo start --web --host lan");
+    expect(packageJson.scripts["dev:android"]).toBe("expo start --android");
+    expect(packageJson.scripts["dev:ios"]).toBe("expo start --ios");
     expect(packageJson.devDependencies).not.toHaveProperty("@expo/ngrok");
   });
 
