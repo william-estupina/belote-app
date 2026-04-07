@@ -22,6 +22,8 @@ const {
   convertirCheminWslDepuisWindows,
 } = require("../scripts/lancer-expo.cjs") as ModuleLancerExpo;
 
+const { readFileSync } = require("node:fs") as typeof import("node:fs");
+
 describe("lancer-expo", () => {
   afterEach(() => {
     delete process.env.npm_package_json;
@@ -69,6 +71,20 @@ describe("lancer-expo", () => {
       args: ["exec", "expo", "start", "--go", "--host", "tunnel", "--clear"],
       cwd: "C:\\projets\\belote\\apps\\mobile",
     });
+  });
+
+  it("lance pnpm dev en mode Expo Go LAN sans tunnel", () => {
+    const packageJson = JSON.parse(
+      readFileSync(`${__dirname}/../package.json`, "utf8"),
+    ) as {
+      devDependencies?: Record<string, string>;
+      scripts: Record<string, string>;
+    };
+
+    expect(packageJson.scripts.dev).toBe(
+      "node ./scripts/lancer-expo.cjs start --go --lan",
+    );
+    expect(packageJson.devDependencies).not.toHaveProperty("@expo/ngrok");
   });
 
   it("garde une commande pnpm exec expo hors chemin UNC WSL", () => {

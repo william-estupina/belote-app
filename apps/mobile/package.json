@@ -4,7 +4,7 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "dev": "node ./scripts/lancer-expo.cjs start",
+    "dev": "node ./scripts/lancer-expo.cjs start --go --lan",
     "dev:web": "node ./scripts/lancer-expo.cjs start --web --host lan",
     "dev:android": "node ./scripts/lancer-expo.cjs start --android",
     "dev:ios": "node ./scripts/lancer-expo.cjs start --ios",
@@ -43,7 +43,6 @@
     "zustand": "^4"
   },
   "devDependencies": {
-    "@expo/ngrok": "^4.1.3",
     "@playwright/test": "^1.58.2",
     "@testing-library/react-native": "^12",
     "@types/jest": "^29.5.14",
