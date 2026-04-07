@@ -1,8 +1,16 @@
-import { memo, useEffect } from "react";
+import {
+  Atlas,
+  Canvas,
+  Group,
+  rect,
+  Shadow,
+  type SkRect,
+  useRSXformBuffer,
+} from "@shopify/react-native-skia";
+import { memo, useEffect, useMemo } from "react";
 import type { SharedValue } from "react-native-reanimated";
-import Animated, { useAnimatedStyle } from "react-native-reanimated";
 
-import { ADVERSAIRE, RATIO_ASPECT_CARTE } from "../../constants/layout";
+import { RATIO_LARGEUR_CARTE } from "../../constants/layout";
 import { interpolerBezierQuadratique } from "../../hooks/distributionAtlas";
 import {
   calculerCiblesEventailAdversaire,
@@ -10,7 +18,6 @@ import {
 } from "../../hooks/distributionLayoutAtlas";
 import type { CarteAtlas } from "../../hooks/useAnimationsDistribution";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
-import { CarteDos } from "./Carte";
 
 interface PropsCanvasAdversaires {
   atlas: AtlasCartes;
@@ -24,106 +31,16 @@ interface PropsCanvasAdversaires {
   distributionEnCours: boolean;
 }
 
-interface PropsCarteAdverseAnimee {
-  index: number;
-  largeurCarte: number;
-  hauteurCarte: number;
-  largeurEcran: number;
-  hauteurEcran: number;
-  progressions: SharedValue<number>[];
-  donneesWorklet: SharedValue<number[]>;
-  nbCartesActives: SharedValue<number>;
-}
-
 const STRIDE = 10;
 const MAX_ADVERSAIRES = 24;
 
-function CarteAdverseAnimee({
-  index,
-  largeurCarte,
-  hauteurCarte,
-  largeurEcran,
-  hauteurEcran,
-  progressions,
-  donneesWorklet,
-  nbCartesActives,
-}: PropsCarteAdverseAnimee) {
-  const styleCarte = useAnimatedStyle(() => {
-    const donnees = donneesWorklet.value;
-    const nbActives = nbCartesActives.value;
-
-    if (index >= nbActives) {
-      return {
-        position: "absolute" as const,
-        left: -10000,
-        top: -10000,
-        width: largeurCarte,
-        height: hauteurCarte,
-        opacity: 0,
-      };
-    }
-
-    const t = progressions[index].value;
-    if (t < 0 || t > 1) {
-      return {
-        position: "absolute" as const,
-        left: -10000,
-        top: -10000,
-        width: largeurCarte,
-        height: hauteurCarte,
-        opacity: 0,
-      };
-    }
-
-    const offset = index * STRIDE;
-    const departX = donnees[offset];
-    const departY = donnees[offset + 1];
-    const controleX = donnees[offset + 2];
-    const controleY = donnees[offset + 3];
-    const arriveeX = donnees[offset + 4];
-    const arriveeY = donnees[offset + 5];
-    const rotDepart = donnees[offset + 6];
-    const rotArrivee = donnees[offset + 7];
-    const echDepart = donnees[offset + 8];
-    const echArrivee = donnees[offset + 9];
-
-    const position = interpolerBezierQuadratique(
-      { x: departX, y: departY },
-      { x: controleX, y: controleY },
-      { x: arriveeX, y: arriveeY },
-      t,
-    );
-    const rotation = rotDepart + (rotArrivee - rotDepart) * t;
-    const echelleBrute = echDepart + (echArrivee - echDepart) * t;
-    const echelle =
-      ECHELLE_MAIN_ADVERSE > 0 ? echelleBrute / ECHELLE_MAIN_ADVERSE : echelleBrute;
-
-    return {
-      position: "absolute" as const,
-      left: position.x * largeurEcran - largeurCarte / 2,
-      top: position.y * hauteurEcran - hauteurCarte / 2,
-      width: largeurCarte,
-      height: hauteurCarte,
-      opacity: 1,
-      transform: [{ rotate: `${rotation}deg` }, { scale: echelle }],
-      zIndex: index + 1,
-    };
-  });
-
-  return (
-    <Animated.View
-      testID={`carte-adversaire-${index}`}
-      style={styleCarte}
-      pointerEvents="none"
-    >
-      <CarteDos largeur={largeurCarte} hauteur={hauteurCarte} />
-    </Animated.View>
-  );
+function convertirRectSource(source: CarteAtlas["rectSource"]): SkRect {
+  return rect(source.x, source.y, source.width, source.height);
 }
 
 export const CanvasAdversaires = memo(
   function CanvasAdversaires({
-    atlas: _atlas,
+    atlas,
     largeurEcran,
     hauteurEcran,
     nbCartesAdversaires,
@@ -133,10 +50,70 @@ export const CanvasAdversaires = memo(
     nbCartesActives,
     distributionEnCours,
   }: PropsCanvasAdversaires) {
-    const largeurCarte = Math.round(largeurEcran * ADVERSAIRE.ratioLargeurCarte);
-    const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
+    const largeurCarteBase = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
+    const echelleBase =
+      atlas.largeurCellule > 0 ? largeurCarteBase / atlas.largeurCellule : 1;
+    const pivotX = atlas.largeurCellule / 2;
+    const pivotY = atlas.hauteurCellule / 2;
     const totalCartesVisibles =
       nbCartesAdversaires.nord + nbCartesAdversaires.est + nbCartesAdversaires.ouest;
+    const sprites = useMemo(() => {
+      const dos = atlas.rectDos();
+
+      return Array.from({ length: MAX_ADVERSAIRES }, (_, index) =>
+        convertirRectSource(cartesAtlasAdversaires[index]?.rectSource ?? dos),
+      );
+    }, [atlas, cartesAtlasAdversaires]);
+
+    const transformations = useRSXformBuffer(MAX_ADVERSAIRES, (valeur, index) => {
+      "worklet";
+      const donnees = donneesWorklet.value;
+      const nbActives = nbCartesActives.value;
+
+      if (index >= nbActives) {
+        valeur.set(0, 0, -10000, -10000);
+        return;
+      }
+
+      const t = progressions[index].value;
+      if (t < 0 || t > 1) {
+        valeur.set(0, 0, -10000, -10000);
+        return;
+      }
+
+      const offset = index * STRIDE;
+      const departX = donnees[offset];
+      const departY = donnees[offset + 1];
+      const controleX = donnees[offset + 2];
+      const controleY = donnees[offset + 3];
+      const arriveeX = donnees[offset + 4];
+      const arriveeY = donnees[offset + 5];
+      const rotDepart = donnees[offset + 6];
+      const rotArrivee = donnees[offset + 7];
+      const echDepart = donnees[offset + 8];
+      const echArrivee = donnees[offset + 9];
+
+      const position = interpolerBezierQuadratique(
+        { x: departX, y: departY },
+        { x: controleX, y: controleY },
+        { x: arriveeX, y: arriveeY },
+        t,
+      );
+      const rotation = rotDepart + (rotArrivee - rotDepart) * t;
+      const echelle = echDepart + (echArrivee - echDepart) * t;
+      const radians = (rotation * Math.PI) / 180;
+      const cos = Math.cos(radians) * echelle * echelleBase;
+      const sin = Math.sin(radians) * echelle * echelleBase;
+      const pixelX = position.x * largeurEcran;
+      const pixelY = position.y * hauteurEcran;
+
+      valeur.set(
+        cos,
+        sin,
+        pixelX - cos * pivotX + sin * pivotY,
+        pixelY - sin * pivotX - cos * pivotY,
+      );
+    });
 
     useEffect(() => {
       if (distributionEnCours) {
@@ -213,21 +190,24 @@ export const CanvasAdversaires = memo(
     }
 
     return (
-      <>
-        {Array.from({ length: MAX_ADVERSAIRES }, (_, index) => (
-          <CarteAdverseAnimee
-            key={index}
-            index={index}
-            largeurCarte={largeurCarte}
-            hauteurCarte={hauteurCarte}
-            largeurEcran={largeurEcran}
-            hauteurEcran={hauteurEcran}
-            progressions={progressions}
-            donneesWorklet={donneesWorklet}
-            nbCartesActives={nbCartesActives}
-          />
-        ))}
-      </>
+      <Canvas
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: largeurEcran,
+          height: hauteurEcran,
+          zIndex: 10,
+        }}
+        pointerEvents="none"
+      >
+        <Group>
+          <Shadow dx={1} dy={2} blur={4} color="rgba(0, 0, 0, 0.35)" />
+          {atlas.image && (
+            <Atlas image={atlas.image} sprites={sprites} transforms={transformations} />
+          )}
+        </Group>
+      </Canvas>
     );
   },
   (prev, next) =>

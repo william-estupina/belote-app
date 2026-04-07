@@ -16,6 +16,7 @@ interface PropsCarteSudAnimee {
   progression: SharedValue<number>;
   donneesWorklet: SharedValue<number[]>;
   nbCartesActives: SharedValue<number>;
+  zIndexSv: SharedValue<number>;
   largeurCarte: number;
   hauteurCarte: number;
   largeurEcran: number;
@@ -29,6 +30,7 @@ function CarteSudAnimee({
   progression,
   donneesWorklet,
   nbCartesActives,
+  zIndexSv,
   largeurCarte,
   hauteurCarte,
   largeurEcran,
@@ -92,7 +94,7 @@ function CarteSudAnimee({
       opacity: 1,
       transformOrigin: `${largeurCarte / 2}px ${hauteurCarte}px`,
       transform: [{ rotate: `${rotation}deg` }, { scale: echelle }],
-      zIndex: 100,
+      zIndex: 100 + zIndexSv.value,
     };
   });
 
@@ -116,6 +118,7 @@ interface PropsDistributionCanvasSud {
   progressions: SharedValue<number>[];
   donneesWorklet: SharedValue<number[]>;
   nbCartesActives: SharedValue<number>;
+  zIndexes: SharedValue<number>[];
   largeurEcran: number;
   hauteurEcran: number;
 }
@@ -130,6 +133,7 @@ export function DistributionCanvasSud({
   progressions,
   donneesWorklet,
   nbCartesActives,
+  zIndexes,
   largeurEcran,
   hauteurEcran,
 }: PropsDistributionCanvasSud) {
@@ -148,6 +152,7 @@ export function DistributionCanvasSud({
           progression={progressions[i]}
           donneesWorklet={donneesWorklet}
           nbCartesActives={nbCartesActives}
+          zIndexSv={zIndexes[i]}
           largeurCarte={largeurCarte}
           hauteurCarte={hauteurCarte}
           largeurEcran={largeurEcran}

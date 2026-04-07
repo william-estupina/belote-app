@@ -50,6 +50,7 @@ export default function PlateauJeu() {
     progressionsSud,
     donneesWorkletSud,
     nbCartesActivesSud,
+    zIndexesSud,
     distributionEnCours,
     jouerCarte,
     prendre,
@@ -291,6 +292,7 @@ export default function PlateauJeu() {
             progressionsSud={progressionsSud}
             donneesWorkletSud={donneesWorkletSud}
             nbCartesActivesSud={nbCartesActivesSud}
+            zIndexesSud={zIndexesSud}
             distributionEnCours={distributionEnCours}
             modeRenduCartes={modeRenduCartes}
           />

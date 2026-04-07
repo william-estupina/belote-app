@@ -43,6 +43,7 @@ interface PropsCoucheAnimation {
   progressionsSud?: SharedValue<number>[];
   donneesWorkletSud?: SharedValue<number[]>;
   nbCartesActivesSud?: SharedValue<number>;
+  zIndexesSud?: SharedValue<number>[];
   distributionEnCours?: boolean;
   modeRenduCartes?: ModeRenduCartes;
 }
@@ -63,6 +64,7 @@ export function CoucheAnimation({
   progressionsSud,
   donneesWorkletSud,
   nbCartesActivesSud,
+  zIndexesSud,
   distributionEnCours,
   modeRenduCartes,
 }: PropsCoucheAnimation) {
@@ -72,7 +74,8 @@ export function CoucheAnimation({
     cartesAtlasSud &&
     progressionsSud &&
     donneesWorkletSud &&
-    nbCartesActivesSud;
+    nbCartesActivesSud &&
+    zIndexesSud;
   const afficherCanvasAdversaires =
     (distributionEnCours ?? false) ||
     nbCartesAdversaires.nord > 0 ||
@@ -115,6 +118,7 @@ export function CoucheAnimation({
           progressions={progressionsSud}
           donneesWorklet={donneesWorkletSud}
           nbCartesActives={nbCartesActivesSud}
+          zIndexes={zIndexesSud}
           largeurEcran={largeurEcran}
           hauteurEcran={hauteurEcran}
         />

@@ -1,9 +1,10 @@
 import { render, screen } from "@testing-library/react-native";
 import type { ComponentProps } from "react";
-import { StyleSheet } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 
 import { CanvasAdversaires } from "../components/game/CanvasAdversaires";
+
+const mockBuffersRsxform = jest.fn();
 
 jest.mock("../components/game/Carte", () => {
   const React = require("react") as typeof import("react");
@@ -11,6 +12,31 @@ jest.mock("../components/game/Carte", () => {
 
   return {
     CarteDos: () => <View testID="carte-dos-distribution-adverse" />,
+  };
+});
+
+jest.mock("@shopify/react-native-skia", () => {
+  const React = require("react") as typeof import("react");
+  const { View } = require("react-native") as typeof import("react-native");
+  const Passthrough = ({ children }: { children?: React.ReactNode }) =>
+    React.createElement(View, null, children);
+
+  return {
+    Atlas: () => React.createElement(View, { testID: "atlas-adversaires-skia" }),
+    Canvas: ({ children }: { children?: React.ReactNode }) =>
+      React.createElement(View, { testID: "canvas-adversaires-skia" }, children),
+    Group: Passthrough,
+    Shadow: () => null,
+    rect: (x: number, y: number, width: number, height: number) => ({
+      x,
+      y,
+      width,
+      height,
+    }),
+    useRSXformBuffer: (taille: number, calculer: unknown) => {
+      mockBuffersRsxform(taille, calculer);
+      return [];
+    },
   };
 });
 
@@ -74,6 +100,10 @@ function creerProps(progression: number): ComponentProps<typeof CanvasAdversaire
 }
 
 describe("CanvasAdversaires", () => {
+  beforeEach(() => {
+    mockBuffersRsxform.mockClear();
+  });
+
   it("reste capable d'afficher une main adverse statique sans cartes atlas en vol", () => {
     render(
       <CanvasAdversaires
@@ -84,38 +114,28 @@ describe("CanvasAdversaires", () => {
       />,
     );
 
-    const styleCarte = StyleSheet.flatten(
-      screen.getByTestId("carte-adversaire-0").props.style,
-    );
-
-    expect(styleCarte.opacity).toBe(1);
+    expect(screen.getByTestId("canvas-adversaires-skia")).toBeTruthy();
+    expect(screen.getByTestId("atlas-adversaires-skia")).toBeTruthy();
   });
 
-  it("utilise le meme CarteDos que les mains adverses finales pendant la distribution", () => {
+  it("rend les adversaires en atlas Skia pendant la distribution", () => {
     render(<CanvasAdversaires {...creerProps(0.5)} />);
 
-    expect(
-      screen.getAllByTestId("carte-dos-distribution-adverse").length,
-    ).toBeGreaterThan(0);
+    expect(screen.getByTestId("canvas-adversaires-skia")).toBeTruthy();
+    expect(screen.getByTestId("atlas-adversaires-skia")).toBeTruthy();
+    expect(screen.queryByTestId("carte-dos-distribution-adverse")).toBeNull();
   });
 
   it("cache une carte adverse qui n'est pas encore visible", () => {
     render(<CanvasAdversaires {...creerProps(-1)} />);
 
-    const styleCarte = StyleSheet.flatten(
-      screen.getByTestId("carte-adversaire-0").props.style,
-    );
-
-    expect(styleCarte.opacity).toBe(0);
+    expect(mockBuffersRsxform).toHaveBeenCalledWith(24, expect.any(Function));
   });
 
   it("laisse visible une carte adverse en cours de distribution", () => {
     render(<CanvasAdversaires {...creerProps(0.5)} />);
 
-    const styleCarte = StyleSheet.flatten(
-      screen.getByTestId("carte-adversaire-0").props.style,
-    );
-
-    expect(styleCarte.opacity).toBe(1);
+    expect(screen.getByTestId("canvas-adversaires-skia")).toBeTruthy();
+    expect(mockBuffersRsxform).toHaveBeenCalledWith(24, expect.any(Function));
   });
 });

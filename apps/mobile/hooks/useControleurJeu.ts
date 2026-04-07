@@ -777,6 +777,7 @@ export function useControleurJeu({
     progressionsSud: animDistribution.progressionsSud,
     donneesWorkletSud: animDistribution.donneesWorkletSud,
     nbCartesActivesSud: animDistribution.nbCartesActivesSud,
+    zIndexesSud: animDistribution.zIndexesSud,
     distributionEnCours: animDistribution.enCours,
     // Actions
     jouerCarte,

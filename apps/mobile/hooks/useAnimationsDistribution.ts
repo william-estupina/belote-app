@@ -1,4 +1,4 @@
-import type { Carte, PositionJoueur } from "@belote/shared-types";
+import type { Carte, Couleur, PositionJoueur } from "@belote/shared-types";
 import { POSITIONS_JOUEUR } from "@belote/shared-types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -67,6 +67,8 @@ interface OptionsLancerDistribution {
   onPaquetDepart?: (position: PositionJoueur, cartes: Carte[]) => void;
   onPaquetArrive?: (position: PositionJoueur, cartes: Carte[]) => void;
   onTerminee?: () => void;
+  /** Appelé après l'animation de tri par couleur (ou immédiatement si pas de tri) */
+  onTriSudTermine?: () => void;
   cartesVisibles?: Carte[];
 }
 
@@ -101,6 +103,8 @@ export interface ResultatAnimationsDistribution {
   progressionsSud: SharedValue<number>[];
   donneesWorkletSud: SharedValue<number[]>;
   nbCartesActivesSud: SharedValue<number>;
+  /** Z-indices du pool sud — mis à jour au lancement du tri pour préserver l'ordre de rendu */
+  zIndexesSud: SharedValue<number>[];
   enCours: boolean;
 }
 
@@ -180,6 +184,10 @@ export function useAnimationsDistribution(
     Array.from({ length: MAX_CARTES_SUD }, () => makeMutable(0)),
   );
   const progressionsSud = progressionsSudRef.current;
+  const zIndexesSudRef = useRef<SharedValue<number>[]>(
+    Array.from({ length: MAX_CARTES_SUD }, (_, i) => makeMutable(i)),
+  );
+  const zIndexesSud = zIndexesSudRef.current;
   const donneesWorkletSudRef = useRef<SharedValue<number[]>>(
     makeMutable(new Array(MAX_CARTES_SUD * STRIDE).fill(0)),
   );
@@ -885,6 +893,124 @@ export function useAnimationsDistribution(
         timeoutsCallbacksRef.current.push(timeoutFin);
       }
 
+      // Animation de tri par couleur : après les 5 premières cartes, et après les 8 cartes
+      const ORDRE_COULEURS_TRI: Couleur[] = ["pique", "coeur", "carreau", "trefle"];
+      const doitTrier =
+        (cartesExistantesSud.length === 0 && cartesSud.length === 5) ||
+        cartesSud.length === 8;
+      let dureeTri = 0;
+
+      if (doitTrier) {
+        const nbCartesTri = cartesSud.length;
+
+        // Déterminer le slot trié pour chaque pool index.
+        // Après distribution, pool index i est au slot i dans le layout N cartes.
+        const sortedBySlot = cartesSud
+          .map((ca, poolIndex) => ({ poolIndex, couleur: ca.carte.couleur }))
+          .sort(
+            (a, b) =>
+              ORDRE_COULEURS_TRI.indexOf(a.couleur) -
+              ORDRE_COULEURS_TRI.indexOf(b.couleur),
+          );
+
+        const newSlotForPoolIndex: number[] = new Array(nbCartesTri);
+        for (let newSlot = 0; newSlot < nbCartesTri; newSlot++) {
+          newSlotForPoolIndex[sortedBySlot[newSlot].poolIndex] = newSlot;
+        }
+
+        const dejaTriee = newSlotForPoolIndex.every(
+          (slot, poolIndex) => slot === poolIndex,
+        );
+
+        if (!dejaTriee) {
+          dureeTri = distribution.dureeTri;
+          const largeurCarteTri = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
+          const hauteurCarteTri = Math.round(largeurCarteTri * RATIO_ASPECT_CARTE);
+          const dispositionTri = calculerDispositionMainJoueur({
+            mode: "eventail",
+            nbCartes: nbCartesTri,
+            largeurEcran,
+            hauteurEcran,
+            largeurCarte: largeurCarteTri,
+            hauteurCarte: hauteurCarteTri,
+          });
+
+          // Géométrie pour chaque pool index : depart = slot courant, arrivee = slot trié
+          const triDonnees: number[][] = new Array(nbCartesTri);
+          for (let i = 0; i < nbCartesTri; i++) {
+            const newSlot = newSlotForPoolIndex[i];
+            const carteDispDepart = dispositionTri.cartes[i];
+            const posDepart = calculerPointAncrageCarteMainJoueurNormalisee({
+              x: carteDispDepart.x,
+              decalageY: carteDispDepart.decalageY,
+              largeurEcran,
+              hauteurEcran,
+              largeurCarte: largeurCarteTri,
+              hauteurCarte: hauteurCarteTri,
+            });
+            const carteDispArrivee = dispositionTri.cartes[newSlot];
+            const posArrivee = calculerPointAncrageCarteMainJoueurNormalisee({
+              x: carteDispArrivee.x,
+              decalageY: carteDispArrivee.decalageY,
+              largeurEcran,
+              hauteurEcran,
+              largeurCarte: largeurCarteTri,
+              hauteurCarte: hauteurCarteTri,
+            });
+            triDonnees[i] = [
+              posDepart.x,
+              posDepart.y,
+              (posDepart.x + posArrivee.x) / 2,
+              (posDepart.y + posArrivee.y) / 2,
+              posArrivee.x,
+              posArrivee.y,
+              carteDispDepart.angle,
+              carteDispArrivee.angle,
+              1,
+              1,
+            ];
+          }
+
+          const timeoutTri = setTimeout(() => {
+            // Mettre à jour les z-indices avant l'animation : la carte qui va au slot j
+            // doit être rendue au-dessus de celle qui va au slot j-1.
+            for (let i = 0; i < nbCartesTri; i++) {
+              zIndexesSud[i].value = newSlotForPoolIndex[i];
+            }
+
+            const nouvellesDonnees = new Array(MAX_CARTES_SUD * STRIDE).fill(0);
+            for (let i = 0; i < nbCartesTri; i++) {
+              const poolOffset = i * STRIDE;
+              const td = triDonnees[i];
+              for (let j = 0; j < STRIDE; j++) {
+                nouvellesDonnees[poolOffset + j] = td[j];
+              }
+            }
+            const duree = dureeTri;
+            runOnUI(() => {
+              donneesWorkletSud.value = nouvellesDonnees;
+              for (let i = 0; i < nbCartesTri; i++) {
+                progressionsSud[i].value = 0;
+                progressionsSud[i].value = withTiming(1, {
+                  duration: duree,
+                  easing: EASING_OUT_CUBIC,
+                });
+              }
+            })();
+          }, delaiFinDistributionMs);
+          timeoutsCallbacksRef.current.push(timeoutTri);
+        }
+      }
+
+      if (options?.onTriSudTermine) {
+        const DELAI_SECURITE_TRI = 50;
+        const delaiTriTermine = delaiFinDistributionMs + dureeTri + DELAI_SECURITE_TRI;
+        const timeoutTriTermine = setTimeout(() => {
+          options?.onTriSudTermine?.();
+        }, delaiTriTermine);
+        timeoutsCallbacksRef.current.push(timeoutTriTermine);
+      }
+
       // Lancer les animations withDelay + withTiming — pool adversaires
       for (let i = 0; i < cartesAdv.length; i++) {
         const delaiCarte = delaisCartesAdv[i];
@@ -947,6 +1073,7 @@ export function useAnimationsDistribution(
     progressionsSud,
     donneesWorkletSud,
     nbCartesActivesSud,
+    zIndexesSud,
     enCours,
   };
 }

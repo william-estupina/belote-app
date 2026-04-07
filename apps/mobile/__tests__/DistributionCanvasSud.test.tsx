@@ -76,6 +76,7 @@ function creerCanvasProps(
       value: [0.5, 0.5, 0.65, 0.45, 0.8, 0.8, 0, 0, 0.5, 1],
     } as SharedValue<number[]>,
     nbCartesActives: creerSharedValue(1),
+    zIndexes: [creerSharedValue(0)],
     largeurEcran: 1000,
     hauteurEcran: 2000,
   };
@@ -119,7 +120,10 @@ describe("DistributionCanvasSud", () => {
 
     const largeurCarte = Math.round(1000 * RATIO_LARGEUR_CARTE);
     const hauteurCarte = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
-    const styleCarte = StyleSheet.flatten(mockStylesAnimes[0]);
+    const styleCarte = StyleSheet.flatten(mockStylesAnimes[0]) as {
+      top?: number;
+      transformOrigin?: string;
+    };
 
     expect(styleCarte.top).toBe(2000 * 0.8 - hauteurCarte);
     expect(styleCarte.transformOrigin).toBe(`${largeurCarte / 2}px ${hauteurCarte}px`);

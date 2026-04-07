@@ -1,7 +1,7 @@
 // Orchestration des animations de distribution (initiale, restante, redistribution)
 import type { ContextePartie } from "@belote/game-logic";
 import type { machineBelote } from "@belote/game-logic";
-import type { Carte, PositionJoueur } from "@belote/shared-types";
+import type { Carte, Couleur, PositionJoueur } from "@belote/shared-types";
 import { POSITIONS_JOUEUR } from "@belote/shared-types";
 import { useCallback, useRef } from "react";
 import type { Actor } from "xstate";
@@ -16,6 +16,12 @@ import type { EtatJeu } from "./useControleurJeu";
 
 const INDEX_HUMAIN = 0;
 const NB_CARTES_JEU_BELOTE = 32;
+const ORDRE_COULEURS_TRI_DISTRIBUTION: Couleur[] = [
+  "pique",
+  "coeur",
+  "carreau",
+  "trefle",
+];
 
 function estPositionAdverse(
   position: PositionJoueur,
@@ -56,6 +62,14 @@ function creerMainsRecordDepuisContexte(
     nord: contexte.mains[2],
     est: contexte.mains[3],
   };
+}
+
+function trierMainParCouleur(main: ReadonlyArray<Carte>): Carte[] {
+  return [...main].sort(
+    (a, b) =>
+      ORDRE_COULEURS_TRI_DISTRIBUTION.indexOf(a.couleur) -
+      ORDRE_COULEURS_TRI_DISTRIBUTION.indexOf(b.couleur),
+  );
 }
 
 function calculerTotalCartes(
@@ -164,6 +178,7 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
       const ctx = snap.context;
       const carteRetournee = ctx.carteRetournee;
       const dimensionsCourantes = dimensionsEcranRef.current;
+      const mainTriee = trierMainParCouleur(ctx.mains[INDEX_HUMAIN]);
 
       const finaliserEntreeEncheres = () => {
         if (estDemonte.current) return;
@@ -171,6 +186,7 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
         setEtatJeu((prev) => ({
           ...prev,
           ...construireEtatDepuisContexte(ctx, etat, 12),
+          mainJoueur: mainTriee,
         }));
         programmerRelanceBot();
       };
@@ -179,7 +195,7 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
 
       setEtatJeu((prev) => ({
         ...prev,
-        mainJoueur: [...ctx.mains[INDEX_HUMAIN]],
+        mainJoueur: mainTriee,
         phaseUI: "distribution",
         phaseEncheres: null,
         carteRetournee: null,
@@ -249,6 +265,14 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
 
       let cartesRecues = 0;
       let cartesSudEnvoyees = 0;
+      let tousCartesRecues = false;
+      let triSudTermine = false;
+
+      const verifierEtLancerPhase3 = () => {
+        if (tousCartesRecues && triSudTermine) {
+          lancerPhase3(contexte);
+        }
+      };
 
       animDistribution.lancerDistribution(mainsRecord, {
         indexDonneur: contexte.indexDonneur,
@@ -282,8 +306,14 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
 
           cartesRecues += cartes.length;
           if (cartesRecues >= totalCartesAttendues) {
-            lancerPhase3(contexte);
+            tousCartesRecues = true;
+            verifierEtLancerPhase3();
           }
+        },
+        onTriSudTermine: () => {
+          if (estDemonte.current) return;
+          triSudTermine = true;
+          verifierEtLancerPhase3();
         },
       });
     },
@@ -411,9 +441,12 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
 
       animationDistribEnCours.current = false;
 
+      const mainTriee = trierMainParCouleur(ctx.mains[INDEX_HUMAIN]);
+
       setEtatJeu((prev) => ({
         ...prev,
         ...construireEtatDepuisContexte(ctx, etat, 0),
+        mainJoueur: mainTriee,
       }));
 
       planifierTimeout(() => {
@@ -484,6 +517,14 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
 
       let cartesRecues = 0;
       let cartesSudEnvoyeesRestante = nbCartesExistantesSud;
+      let tousCartesRecues = false;
+      let triSudTermine = false;
+
+      const verifierEtLancerPhase3Restante = () => {
+        if (tousCartesRecues && triSudTermine) {
+          lancerPhase3Restante(contexte);
+        }
+      };
 
       const gererPaquetDepart = (position: PositionJoueur, cartes: Carte[]) => {
         if (estDemonte.current) return;
@@ -517,7 +558,8 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
 
         cartesRecues += cartes.length;
         if (cartesRecues >= totalCartesAttendues) {
-          lancerPhase3Restante(contexte);
+          tousCartesRecues = true;
+          verifierEtLancerPhase3Restante();
         }
       };
 
@@ -556,6 +598,11 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
             gererPaquetDepart(position, cartes);
           },
           onPaquetArrive: gererPaquetArrive,
+          onTriSudTermine: () => {
+            if (estDemonte.current) return;
+            triSudTermine = true;
+            verifierEtLancerPhase3Restante();
+          },
         });
       };
 

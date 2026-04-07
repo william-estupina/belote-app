@@ -36,6 +36,7 @@ const mockAttendreDelaiBot = jest.fn(() => Promise.resolve());
 const mockAnnulerDelai = jest.fn();
 let mockProgressionsAdv = creerProgressionsFactices(24);
 let mockProgressionsSud = creerProgressionsFactices(8);
+let mockZIndexesSud = creerProgressionsFactices(8);
 const OPTIONS_HOOK_CONTROLEUR = {
   difficulte: "facile" as const,
   scoreObjectif: 1000,
@@ -54,6 +55,7 @@ let dernierLancementDistribution:
           position: "sud" | "ouest" | "nord" | "est",
           cartes: Carte[],
         ) => void;
+        onTriSudTermine?: () => void;
       };
     }
   | undefined;
@@ -90,6 +92,7 @@ jest.mock("../hooks/useAnimationsDistribution", () => ({
     progressionsSud: mockProgressionsSud,
     donneesWorkletSud: { value: [] },
     nbCartesActivesSud: { value: 0 },
+    zIndexesSud: mockZIndexesSud,
     enCours: false,
   }),
 }));
@@ -123,6 +126,7 @@ function configurerDistributionImmediate(): void {
           position: "sud" | "ouest" | "nord" | "est",
           cartes: Carte[],
         ) => void;
+        onTriSudTermine?: () => void;
       },
     ) => {
       dernierLancementDistribution = { mains, options };
@@ -131,6 +135,7 @@ function configurerDistributionImmediate(): void {
         options?.onPaquetDepart?.(position, cartes);
         options?.onPaquetArrive?.(position, cartes);
       }
+      options?.onTriSudTermine?.();
     },
   );
 }
@@ -149,6 +154,7 @@ function configurerDistributionControlee(): void {
           position: "sud" | "ouest" | "nord" | "est",
           cartes: Carte[],
         ) => void;
+        onTriSudTermine?: () => void;
       },
     ) => {
       dernierLancementDistribution = { mains, options };
@@ -265,23 +271,27 @@ describe("useControleurJeu - redistribution", () => {
     expect(result.current.etatJeu.carteRetournee).not.toBeNull();
   });
 
-  it("conserve l ordre recu apres la revelation initiale", async () => {
+  it("expose la main triee apres la revelation initiale", async () => {
     const { result } = creerHookControleur();
 
     await viderFileEvenements();
 
     expect(dernierLancementDistribution).toBeDefined();
     const mainRecue = dernierLancementDistribution!.mains.sud;
+    const ordreCouleurs = ["pique", "coeur", "carreau", "trefle"] as const;
+    const mainTriee = [...mainRecue].sort(
+      (a, b) => ordreCouleurs.indexOf(a.couleur) - ordreCouleurs.indexOf(b.couleur),
+    );
 
     expect(result.current.etatJeu.phaseUI).toBe("revelationCarte");
-    expect(result.current.etatJeu.mainJoueur).toEqual(mainRecue);
+    expect(result.current.etatJeu.mainJoueur).toEqual(mainTriee);
 
     act(() => {
       result.current.onRevelationTerminee();
     });
 
     expect(result.current.etatJeu.phaseUI).toBe("encheres");
-    expect(result.current.etatJeu.mainJoueur).toEqual(mainRecue);
+    expect(result.current.etatJeu.mainJoueur).toEqual(mainTriee);
   });
 
   it("conserve les 12 cartes restantes dans le paquet a la fin de la donne initiale", async () => {
@@ -300,7 +310,13 @@ describe("useControleurJeu - redistribution", () => {
     let terminerAnimationJeu: (() => void) | undefined;
     let surPretAffichage: ((idAnimation: string) => void) | undefined;
     mockLancerAnimationJeuCarte.mockImplementation(
-      (_carte, _joueur, onTerminee?: () => void, _depart, options) => {
+      (
+        _carte: Carte,
+        _joueur: PositionJoueur,
+        onTerminee?: () => void,
+        _depart?: unknown,
+        options?: { surPretAffichage?: (idAnimation: string) => void },
+      ) => {
         terminerAnimationJeu = onTerminee;
         surPretAffichage = options?.surPretAffichage;
       },

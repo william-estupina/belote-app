@@ -43,6 +43,8 @@ describe("animations visuelles", () => {
       dureeApparitionDetails: 180,
       delaiCapot: 1650,
       dureeAnimationCapot: 300,
+      dureeBoucleVerdict: 750,
+      dureeRetourBoucleVerdict: 2625,
       delaiSectionTotal: 1650,
       dureeApparitionTotal: 180,
       delaiComptage: 150,

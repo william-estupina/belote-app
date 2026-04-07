@@ -54,6 +54,7 @@ function creerProgressionsFactices(taille: number): Array<{ value: number }> {
 }
 let mockProgressionsAdv = creerProgressionsFactices(24);
 let mockProgressionsSud = creerProgressionsFactices(8);
+let mockZIndexesSud = creerProgressionsFactices(8);
 
 jest.mock("@belote/bot-engine", () => ({
   deciderBot: (...args: Parameters<typeof mockDeciderBot>) => mockDeciderBot(...args),
@@ -87,6 +88,7 @@ jest.mock("../hooks/useAnimationsDistribution", () => ({
     progressionsSud: mockProgressionsSud,
     donneesWorkletSud: { value: [] },
     nbCartesActivesSud: { value: 0 },
+    zIndexesSud: mockZIndexesSud,
     enCours: false,
   }),
 }));
@@ -122,6 +124,7 @@ function configurerAnimationsImmediat(): void {
           position: "sud" | "ouest" | "nord" | "est",
           cartes: Carte[],
         ) => void;
+        onTriSudTermine?: () => void;
       },
     ) => {
       for (const position of ["sud", "ouest", "nord", "est"] as const) {
@@ -129,6 +132,7 @@ function configurerAnimationsImmediat(): void {
         options?.onPaquetDepart?.(position, cartes);
         options?.onPaquetArrive?.(position, cartes);
       }
+      options?.onTriSudTermine?.();
     },
   );
 
