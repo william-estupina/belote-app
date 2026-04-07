@@ -37,4 +37,18 @@ describe("spriteSheet atlas", () => {
     expect(rouge).toBeGreaterThan(bleu);
     expect(rouge).toBeGreaterThan(vert);
   });
+
+  it("reprend le rouge vif des losanges du dos React", async () => {
+    const [rouge, vert, bleu, alpha] = await lirePixel(
+      Math.round(LARGEUR_CELLULE * 0.21),
+      4 * HAUTEUR_CELLULE + Math.round(HAUTEUR_CELLULE * 0.16),
+    );
+
+    expect(alpha).toBeGreaterThan(240);
+    expect(rouge).toBeGreaterThan(180);
+    expect(vert).toBeGreaterThan(40);
+    expect(vert).toBeLessThan(80);
+    expect(bleu).toBeGreaterThan(40);
+    expect(bleu).toBeLessThan(80);
+  });
 });

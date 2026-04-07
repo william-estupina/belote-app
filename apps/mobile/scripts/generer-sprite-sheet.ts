@@ -14,6 +14,7 @@ const LIGNES = 5;
 const LARGEUR_CELLULE = 167;
 const HAUTEUR_CELLULE = 243;
 const RAYON_COIN = 12;
+const RAYON_COIN_DOS = 6;
 const MARGE_FACE = Math.round(LARGEUR_CELLULE * 0.03);
 
 function creerSvgFondRecto(): Buffer {
@@ -42,8 +43,7 @@ function creerSvgDos(): Buffer {
   const margeInterieure = Math.round(margeExterieure * 0.9);
   const largeurInterieure = LARGEUR_CELLULE - margeInterieure * 2;
   const hauteurInterieure = HAUTEUR_CELLULE - margeInterieure * 2;
-  const largeurLosange = Math.round(LARGEUR_CELLULE * 0.12);
-  const hauteurLosange = Math.round(largeurLosange * 1.2);
+  const tailleLosange = Math.round(LARGEUR_CELLULE * 0.12);
   const pasX = largeurInterieure / 3;
   const pasY = hauteurInterieure / 4;
   const losanges: string[] = [];
@@ -54,7 +54,7 @@ function creerSvgDos(): Buffer {
       const centreY = margeInterieure + pasY * (ligne + 0.5);
 
       losanges.push(
-        `<polygon points="${centreX},${centreY - hauteurLosange / 2} ${centreX + largeurLosange / 2},${centreY} ${centreX},${centreY + hauteurLosange / 2} ${centreX - largeurLosange / 2},${centreY}" fill="#c04040" opacity="0.75" />`,
+        `<text x="${centreX}" y="${centreY}" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="${tailleLosange}" fill="#c04040">&#9830;</text>`,
       );
     }
   }
@@ -67,8 +67,8 @@ function creerSvgDos(): Buffer {
           y="0"
           width="${LARGEUR_CELLULE}"
           height="${HAUTEUR_CELLULE}"
-          rx="${RAYON_COIN}"
-          ry="${RAYON_COIN}"
+          rx="${RAYON_COIN_DOS}"
+          ry="${RAYON_COIN_DOS}"
           fill="#9b2020"
           stroke="#c8a84e"
           stroke-width="2.5"
@@ -78,8 +78,8 @@ function creerSvgDos(): Buffer {
           y="${margeCadre}"
           width="${LARGEUR_CELLULE - margeCadre * 2}"
           height="${HAUTEUR_CELLULE - margeCadre * 2}"
-          rx="${RAYON_COIN - 1}"
-          ry="${RAYON_COIN - 1}"
+          rx="${RAYON_COIN_DOS - 1}"
+          ry="${RAYON_COIN_DOS - 1}"
           fill="none"
           stroke="#dbb855"
           stroke-width="2"
@@ -89,8 +89,8 @@ function creerSvgDos(): Buffer {
           y="${margeInterieure}"
           width="${LARGEUR_CELLULE - margeInterieure * 2}"
           height="${HAUTEUR_CELLULE - margeInterieure * 2}"
-          rx="${RAYON_COIN - 2}"
-          ry="${RAYON_COIN - 2}"
+          rx="${RAYON_COIN_DOS - 2}"
+          ry="${RAYON_COIN_DOS - 2}"
           fill="#6a1010"
           stroke="#dbb855"
           stroke-width="1"
