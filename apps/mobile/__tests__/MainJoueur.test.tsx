@@ -70,6 +70,16 @@ const MOCK_ATLAS = {
   rectSource: () => ({ x: 0, y: 0, width: 0, height: 0 }),
 } as unknown as import("../hooks/useAtlasCartes").AtlasCartes;
 
+const creerMockValeursAnimation = () =>
+  ({
+    x: Array.from({ length: 8 }, () => ({ value: 0 })),
+    decalageY: Array.from({ length: 8 }, () => ({ value: 0 })),
+    angle: Array.from({ length: 8 }, () => ({ value: 0 })),
+    echelle: Array.from({ length: 8 }, () => ({ value: 1 })),
+  }) as unknown as import("../hooks/useBufferCanvasUnifie").ValeursAnimationMainJoueur;
+
+const MOCK_VALEURS_ANIMATION = creerMockValeursAnimation();
+
 describe("MainJoueur", () => {
   beforeEach(() => {
     mockPropsCanvasMain.length = 0;
@@ -85,6 +95,7 @@ describe("MainJoueur", () => {
         cartesJouables={CARTES}
         interactionActive
         atlas={MOCK_ATLAS}
+        valeursAnimation={MOCK_VALEURS_ANIMATION}
         onCarteJouee={() => {}}
       />,
     );
@@ -102,6 +113,7 @@ describe("MainJoueur", () => {
         cartesJouables={CARTES}
         interactionActive
         atlas={MOCK_ATLAS}
+        valeursAnimation={MOCK_VALEURS_ANIMATION}
         onCarteJouee={() => {}}
       />,
     );
@@ -116,6 +128,7 @@ describe("MainJoueur", () => {
         cartesJouables={[]}
         interactionActive={false}
         atlas={MOCK_ATLAS}
+        valeursAnimation={MOCK_VALEURS_ANIMATION}
         onCarteJouee={() => {}}
       />,
     );
@@ -132,6 +145,7 @@ describe("MainJoueur", () => {
       cartesJouables: CARTES,
       interactionActive: false,
       atlas: MOCK_ATLAS,
+      valeursAnimation: MOCK_VALEURS_ANIMATION,
       onCarteJouee: () => {},
     };
 
@@ -159,6 +173,7 @@ describe("MainJoueur", () => {
         cartesJouables={[CARTES[0]]}
         interactionActive
         atlas={MOCK_ATLAS}
+        valeursAnimation={MOCK_VALEURS_ANIMATION}
         onCarteJouee={() => {}}
       />,
     );
@@ -181,6 +196,7 @@ describe("MainJoueur", () => {
         cartesJouables={CARTES}
         interactionActive
         atlas={MOCK_ATLAS}
+        valeursAnimation={MOCK_VALEURS_ANIMATION}
         onCarteJouee={() => {}}
       />,
     );
@@ -200,6 +216,7 @@ describe("MainJoueur", () => {
         cartesJouables={CARTES}
         interactionActive={false}
         atlas={MOCK_ATLAS}
+        valeursAnimation={MOCK_VALEURS_ANIMATION}
         onCarteJouee={() => {}}
       />,
     );
@@ -223,6 +240,7 @@ describe("MainJoueur", () => {
         cartesJouables={CARTES}
         interactionActive={false}
         atlas={MOCK_ATLAS}
+        valeursAnimation={MOCK_VALEURS_ANIMATION}
         onCarteJouee={() => {}}
       />,
     );
@@ -237,6 +255,7 @@ describe("MainJoueur", () => {
         cartesJouables={CARTES.slice(0, 2)}
         interactionActive={false}
         atlas={MOCK_ATLAS}
+        valeursAnimation={MOCK_VALEURS_ANIMATION}
         onCarteJouee={() => {}}
       />,
     );
@@ -260,6 +279,7 @@ describe("MainJoueur", () => {
         cartesJouables={[CARTES[0]]}
         interactionActive={false}
         atlas={MOCK_ATLAS}
+        valeursAnimation={MOCK_VALEURS_ANIMATION}
         onCarteJouee={() => {}}
       />,
     );
@@ -273,6 +293,7 @@ describe("MainJoueur", () => {
           cartesJouables={[]}
           interactionActive={false}
           atlas={MOCK_ATLAS}
+          valeursAnimation={MOCK_VALEURS_ANIMATION}
           onCarteJouee={() => {}}
         />,
       ),
@@ -290,6 +311,7 @@ describe("MainJoueur", () => {
         cartesJouables={CARTES}
         interactionActive={false}
         atlas={MOCK_ATLAS}
+        valeursAnimation={MOCK_VALEURS_ANIMATION}
         onCarteJouee={() => {}}
       />,
     );
@@ -338,6 +360,7 @@ describe("MainJoueur", () => {
         cartesJouables={CARTES}
         interactionActive
         atlas={MOCK_ATLAS}
+        valeursAnimation={MOCK_VALEURS_ANIMATION}
         onCarteJouee={surCarteJouee}
       />,
     );
@@ -365,6 +388,7 @@ describe("MainJoueur", () => {
         cartesJouables={CARTES}
         interactionActive={false}
         atlas={MOCK_ATLAS}
+        valeursAnimation={MOCK_VALEURS_ANIMATION}
         onCarteJouee={() => {}}
       />,
     );

@@ -1,17 +1,23 @@
 import { POSITIONS_JOUEUR } from "@belote/shared-types";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { LayoutChangeEvent } from "react-native";
 import { Platform, StyleSheet, View } from "react-native";
 
-import { ANIMATIONS } from "../../constants/layout";
+import {
+  ANIMATIONS,
+  RATIO_ASPECT_CARTE,
+  RATIO_LARGEUR_CARTE,
+} from "../../constants/layout";
 import { COULEURS } from "../../constants/theme";
 import { construireDerniereActionParJoueur } from "../../hooks/derniere-action-enchere";
+import { useBufferCanvasUnifie } from "../../hooks/useBufferCanvasUnifie";
 import { useControleurJeu } from "../../hooks/useControleurJeu";
 import { doitAfficherDernierPli } from "../../hooks/visibiliteDernierPli";
 import { doitAfficherUIEncheres } from "../../hooks/visibiliteEncheres";
 import { useAppStore } from "../../stores/app-store";
 import { AvatarJoueur } from "./AvatarJoueur";
 import { BulleBelote } from "./BulleBelote";
+import { CanvasCartesUnifie } from "./CanvasCartesUnifie";
 import { CarteRevelation } from "./CarteRevelation";
 import { CoucheAnimation } from "./CoucheAnimation";
 import { DernierPli } from "./DernierPli";
@@ -66,6 +72,29 @@ export default function PlateauJeu() {
     largeurEcran: largeur,
     hauteurEcran: hauteur,
   });
+
+  // Buffer du canvas unifié
+  const bufferUnifie = useBufferCanvasUnifie(atlas);
+
+  const largeurCarte = Math.round(largeur * RATIO_LARGEUR_CARTE);
+  const hauteurCarteVal = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
+
+  // Mise à jour des sprites de la main joueur dans le canvas unifié
+  useEffect(() => {
+    if (largeur === 0) return;
+    const cartesJouables =
+      etatJeu.phaseUI === "jeu" && etatJeu.estTourHumain
+        ? etatJeu.cartesJouables
+        : undefined;
+    bufferUnifie.mettreAJourMainJoueurSprites(etatJeu.mainJoueur, cartesJouables);
+  }, [
+    etatJeu.mainJoueur,
+    etatJeu.cartesJouables,
+    etatJeu.phaseUI,
+    etatJeu.estTourHumain,
+    bufferUnifie,
+    largeur,
+  ]);
 
   const surLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -205,7 +234,22 @@ export default function PlateauJeu() {
             />
           )}
 
-          {/* Main du joueur (sud) en éventail — interactive */}
+          {/* Canvas Skia unifié — rendu de toutes les cartes */}
+          <CanvasCartesUnifie
+            atlas={atlas}
+            progressions={bufferUnifie.progressions}
+            donneesWorklet={bufferUnifie.donneesWorklet}
+            sprites={bufferUnifie.sprites}
+            colors={bufferUnifie.colors}
+            largeurEcran={largeur}
+            hauteurEcran={hauteur}
+            valeursMain={bufferUnifie.valeursMain}
+            nbCartesMain={etatJeu.mainJoueur.length}
+            largeurCarte={largeurCarte}
+            hauteurCarte={hauteurCarteVal}
+          />
+
+          {/* Main du joueur (sud) en éventail — interactive (hitboxes uniquement) */}
           {modeRenduCartes === "jeu-interactif" && (
             <MainJoueur
               cartes={etatJeu.mainJoueur}
@@ -221,6 +265,7 @@ export default function PlateauJeu() {
               cartesMasquees={cartesMasqueesMainJoueur}
               cartesEnPose={cartesEnPoseMainJoueur}
               atlas={atlas}
+              valeursAnimation={bufferUnifie.valeursMain}
               cartesJouables={
                 etatJeu.phaseUI === "jeu" && etatJeu.estTourHumain
                   ? etatJeu.cartesJouables

@@ -1,12 +1,7 @@
 import type { Carte } from "@belote/shared-types";
 import { useEffect, useRef } from "react";
 import { Pressable, View } from "react-native";
-import {
-  Easing,
-  makeMutable,
-  type SharedValue,
-  withTiming,
-} from "react-native-reanimated";
+import { Easing, type SharedValue, withTiming } from "react-native-reanimated";
 
 import { DUREE_FONDU_ENTREE_MAIN } from "../../constants/animations-visuelles";
 import {
@@ -17,12 +12,9 @@ import {
 } from "../../constants/layout";
 import type { DepartAnimationJeuCarte } from "../../hooks/useAnimations";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
+import type { ValeursAnimationMainJoueur } from "../../hooks/useBufferCanvasUnifie";
 import { estMemeCarte } from "../../hooks/utils-cartes";
-import {
-  CanvasMainJoueurAtlas,
-  type CarteMainJoueurAtlas,
-  type ValeursAnimationMainJoueur,
-} from "./CanvasMainJoueurAtlas";
+import type { CarteMainJoueurAtlas } from "./CanvasMainJoueurAtlas";
 import {
   calculerDispositionMainJoueur,
   type ModeDispositionMainJoueur,
@@ -40,12 +32,19 @@ interface PropsMainJoueur {
   cartesMasquees?: Carte[];
   cartesEnPose?: Carte[];
   atlas: AtlasCartes;
+  /** SharedValues d'animation fournies par le buffer unifié */
+  valeursAnimation: ValeursAnimationMainJoueur;
   onCarteJouee?: (carte: Carte, departAnimation: DepartAnimationJeuCarte) => void;
 }
 
 const EASING_REORG = Easing.inOut(Easing.cubic);
 const MAX_CARTES_MAIN = 8;
 const DECALAGE_SOULEVEMENT_CARTE = 8;
+
+/** Identifiant unique d'une carte */
+function idCarte(carte: Carte): string {
+  return `${carte.couleur}-${carte.rang}`;
+}
 
 /** Vérifie si une carte est dans la liste des cartes jouables */
 function estJouable(carte: Carte, cartesJouables?: Carte[]): boolean {
@@ -63,19 +62,6 @@ function estEnPose(carte: Carte, cartesEnPose?: Carte[]): boolean {
   return cartesEnPose.some((carteEnPoseCourante) =>
     estMemeCarte(carteEnPoseCourante, carte),
   );
-}
-
-function idCarte(carte: Carte): string {
-  return `${carte.couleur}-${carte.rang}`;
-}
-
-function creerValeursAnimationMain(): ValeursAnimationMainJoueur {
-  return {
-    x: Array.from({ length: MAX_CARTES_MAIN }, () => makeMutable(0)),
-    decalageY: Array.from({ length: MAX_CARTES_MAIN }, () => makeMutable(0)),
-    angle: Array.from({ length: MAX_CARTES_MAIN }, () => makeMutable(0)),
-    echelle: Array.from({ length: MAX_CARTES_MAIN }, () => makeMutable(1)),
-  };
 }
 
 function definirOuAnimer(
@@ -222,14 +208,12 @@ export function MainJoueur({
   cartesMasquees,
   cartesEnPose,
   atlas,
+  valeursAnimation,
   onCarteJouee,
 }: PropsMainJoueur) {
   const nbCartes = cartes.length;
   const nbCartesPrecedentRef = useRef(nbCartes);
   const idsCartesPrecedentesRef = useRef<string[]>([]);
-  const valeursAnimationRef = useRef<ValeursAnimationMainJoueur | null>(null);
-  valeursAnimationRef.current ??= creerValeursAnimationMain();
-  const valeursAnimation = valeursAnimationRef.current;
   const nbCartesPourDisposition = Math.max(nbCartes, nbCartesDisposition ?? nbCartes);
 
   const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
@@ -329,15 +313,7 @@ export function MainJoueur({
 
   return (
     <>
-      <CanvasMainJoueurAtlas
-        atlas={atlas}
-        cartes={cartesCanvas}
-        valeursAnimation={valeursAnimation}
-        largeurCarte={largeurCarte}
-        hauteurCarte={hauteurCarte}
-        largeurEcran={largeurEcran}
-        hauteurEcran={hauteurEcran}
-      />
+      {/* Le rendu visuel est délégué au canvas unifié via valeursAnimation */}
       <View
         testID="main-joueur"
         style={{
