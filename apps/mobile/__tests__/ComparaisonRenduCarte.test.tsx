@@ -3,11 +3,20 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import { EcranDebugCartes } from "../components/debug/DebugCartesContenu";
 
-jest.mock("../components/game/Carte", () => ({
-  CarteFaceAtlas: ({ carte }: { carte: Carte }) => {
+jest.mock("../components/game/CanvasCartesAtlas", () => ({
+  CanvasCartesAtlas: ({
+    cartes,
+    testID,
+  }: {
+    cartes: Array<{ carte?: Carte }>;
+    testID?: string;
+  }) => {
     const React = require("react") as typeof import("react");
     const { Text } = require("react-native") as typeof import("react-native");
-    return <Text testID="debug-carte-main">{`${carte.rang}-${carte.couleur}`}</Text>;
+    const carte = cartes[0].carte;
+    return (
+      <Text testID={testID}>{carte ? `${carte.rang}-${carte.couleur}` : "dos"}</Text>
+    );
   },
 }));
 
@@ -41,6 +50,7 @@ jest.mock("@shopify/react-native-skia", () => {
     Canvas: ({ children, testID }: { children?: React.ReactNode; testID?: string }) =>
       React.createElement(View, { testID }, children),
     Group: Passthrough,
+    RoundedRect: () => null,
     Shadow: () => null,
     rect: (x: number, y: number, width: number, height: number) => ({
       x,
@@ -57,7 +67,7 @@ describe("ComparaisonRenduCarte", () => {
     render(<EcranDebugCartes />);
 
     expect(screen.getByText("Comparaison des rendus")).toBeTruthy();
-    expect(screen.getByText("Main joueur (CarteFaceAtlas)")).toBeTruthy();
+    expect(screen.getByText("Main joueur (CanvasCartesAtlas)")).toBeTruthy();
     expect(screen.getByText("Atlas distribution (Skia Canvas)")).toBeTruthy();
     expect(screen.getByText("Superposition")).toBeTruthy();
     expect(screen.getByText("Rendu affiche : gauche")).toBeTruthy();

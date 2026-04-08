@@ -4,13 +4,14 @@ import { StyleSheet } from "react-native";
 import { ReserveCentrale } from "../components/game/ReserveCentrale";
 import { RATIO_LARGEUR_CARTE } from "../constants/layout";
 
-jest.mock("../components/game/Carte", () => {
+jest.mock("../components/game/CanvasCartesAtlas", () => {
   const React = require("react") as typeof import("react");
   const { View } = require("react-native") as typeof import("react-native");
 
   return {
-    CarteDosAtlas: () => <View testID="carte-dos-atlas" />,
-    CarteFaceAtlas: () => <View testID="carte-face" />,
+    CanvasCartesAtlas: ({ testID }: { testID?: string }) => (
+      <View testID={testID ?? "canvas-cartes-atlas"} />
+    ),
   };
 });
 

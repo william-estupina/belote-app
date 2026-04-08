@@ -4,7 +4,7 @@ import { memo } from "react";
 import { View } from "react-native";
 
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
-import { CarteDosAtlas } from "./Carte";
+import { CanvasCartesAtlas } from "./CanvasCartesAtlas";
 import { calculerGeometriePilePlis } from "./pile-plis-geometrie";
 
 interface PropsPilePlis {
@@ -84,7 +84,21 @@ export const PilePlis = memo(function PilePlis({
             transform: estTourne ? [{ rotate: "90deg" }] : [],
           }}
         >
-          <CarteDosAtlas atlas={atlas} largeur={largeurCarte} hauteur={hauteurCarte} />
+          <CanvasCartesAtlas
+            atlas={atlas}
+            largeur={largeurCarte}
+            hauteur={hauteurCarte}
+            cartes={[
+              {
+                id: `dos-pli-${equipe}-${i}`,
+                type: "dos",
+                x: 0,
+                y: 0,
+                largeur: largeurCarte,
+                hauteur: hauteurCarte,
+              },
+            ]}
+          />
         </View>
       ))}
     </View>

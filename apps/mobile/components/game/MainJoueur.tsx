@@ -1,10 +1,10 @@
 import type { Carte } from "@belote/shared-types";
 import { useEffect, useRef } from "react";
 import { Pressable, View } from "react-native";
-import Animated, {
+import {
   Easing,
-  useAnimatedStyle,
-  useSharedValue,
+  makeMutable,
+  type SharedValue,
   withTiming,
 } from "react-native-reanimated";
 
@@ -15,11 +15,14 @@ import {
   RATIO_ASPECT_CARTE,
   RATIO_LARGEUR_CARTE,
 } from "../../constants/layout";
-import { construireGlissementCarteDepuisEtatCourant } from "../../hooks/glissementCartes";
 import type { DepartAnimationJeuCarte } from "../../hooks/useAnimations";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
 import { estMemeCarte } from "../../hooks/utils-cartes";
-import { CarteFaceAtlas } from "./Carte";
+import {
+  CanvasMainJoueurAtlas,
+  type CarteMainJoueurAtlas,
+  type ValeursAnimationMainJoueur,
+} from "./CanvasMainJoueurAtlas";
 import {
   calculerDispositionMainJoueur,
   type ModeDispositionMainJoueur,
@@ -40,6 +43,10 @@ interface PropsMainJoueur {
   onCarteJouee?: (carte: Carte, departAnimation: DepartAnimationJeuCarte) => void;
 }
 
+const EASING_REORG = Easing.inOut(Easing.cubic);
+const MAX_CARTES_MAIN = 8;
+const DECALAGE_SOULEVEMENT_CARTE = 8;
+
 /** Vérifie si une carte est dans la liste des cartes jouables */
 function estJouable(carte: Carte, cartesJouables?: Carte[]): boolean {
   if (!cartesJouables) return true;
@@ -58,7 +65,32 @@ function estEnPose(carte: Carte, cartesEnPose?: Carte[]): boolean {
   );
 }
 
-const EASING_REORG = Easing.inOut(Easing.cubic);
+function idCarte(carte: Carte): string {
+  return `${carte.couleur}-${carte.rang}`;
+}
+
+function creerValeursAnimationMain(): ValeursAnimationMainJoueur {
+  return {
+    x: Array.from({ length: MAX_CARTES_MAIN }, () => makeMutable(0)),
+    decalageY: Array.from({ length: MAX_CARTES_MAIN }, () => makeMutable(0)),
+    angle: Array.from({ length: MAX_CARTES_MAIN }, () => makeMutable(0)),
+    echelle: Array.from({ length: MAX_CARTES_MAIN }, () => makeMutable(1)),
+  };
+}
+
+function definirOuAnimer(
+  valeur: SharedValue<number>,
+  cible: number,
+  animer: boolean,
+  duree: number,
+) {
+  if (!animer) {
+    valeur.value = cible;
+    return;
+  }
+
+  valeur.value = withTiming(cible, { duration: duree, easing: EASING_REORG });
+}
 
 function calculerDepartAnimationCarteEventail(params: {
   xProp: number;
@@ -94,9 +126,7 @@ function calculerDepartAnimationCarteEventail(params: {
   };
 }
 
-// --- Sous-composant animé pour une carte dans l'éventail ---
-
-interface PropsCarteEventail {
+interface PropsZoneCarteEventail {
   carte: Carte;
   x: number;
   decalageY: number;
@@ -105,23 +135,17 @@ interface PropsCarteEventail {
   hauteurCarte: number;
   largeurEcran: number;
   hauteurEcran: number;
-  hauteurConteneur: number;
   jouable: boolean;
-  grisee: boolean;
   estMasquee: boolean;
   estEnPose: boolean;
   interactionActive: boolean;
-  animerEntree: boolean;
-  atlas: AtlasCartes;
   xProp: number;
   yProp: number;
-  echelle: number;
   zIndex: number;
-  dureeReorganisation: number;
   onCarteJouee?: (carte: Carte, departAnimation: DepartAnimationJeuCarte) => void;
 }
 
-function CarteEventailAnimee({
+function ZoneCarteEventail({
   carte,
   x,
   decalageY,
@@ -130,124 +154,30 @@ function CarteEventailAnimee({
   hauteurCarte,
   largeurEcran,
   hauteurEcran,
-  hauteurConteneur,
   jouable,
-  grisee,
   estMasquee,
   estEnPose,
   interactionActive,
-  animerEntree,
-  atlas,
   xProp,
   yProp,
-  echelle,
   zIndex,
-  dureeReorganisation,
   onCarteJouee,
-}: PropsCarteEventail) {
-  const DECALAGE_SOULEVEMENT_CARTE = 8;
-  const estPremierRendu = useRef(true);
+}: PropsZoneCarteEventail) {
   const estInteractive = interactionActive && jouable && !estMasquee && !!onCarteJouee;
 
-  // Position d'entrée : centre de la main (là où les cartes animées atterrissent)
-  const centreMainX = largeurEcran * POSITIONS_MAINS.sud.x - largeurCarte / 2;
-  const centreMainBottom = 0;
-
-  const animX = useSharedValue(x);
-  const animBottom = useSharedValue(decalageY);
-  const animAngle = useSharedValue(angle);
-  const animOpacite = useSharedValue(1);
-
-  useEffect(() => {
-    if (estPremierRendu.current) {
-      estPremierRendu.current = false;
-      if (!animerEntree) {
-        animX.value = x;
-        animBottom.value = decalageY;
-        animAngle.value = angle;
-        animOpacite.value = 1;
-        return;
-      }
-
-      // Animer l'entrée depuis le centre de la main vers la position en éventail
-      animX.value = centreMainX;
-      animBottom.value = centreMainBottom;
-      animAngle.value = 0;
-      animOpacite.value = 0;
-      const glissementEntree = construireGlissementCarteDepuisEtatCourant({
-        depart: {
-          x: centreMainX,
-          y: centreMainBottom,
-          rotation: 0,
-          echelle: 1,
-        },
-        arrivee: {
-          x,
-          y: decalageY,
-          rotation: angle,
-          echelle: 1,
-        },
-      });
-
-      const config = {
-        duration: dureeReorganisation,
-        easing: EASING_REORG,
-      };
-      animX.value = withTiming(glissementEntree.arrivee.x, config);
-      animBottom.value = withTiming(glissementEntree.arrivee.y, config);
-      animAngle.value = withTiming(glissementEntree.arrivee.rotation, config);
-      animOpacite.value = withTiming(1, { duration: DUREE_FONDU_ENTREE_MAIN });
-      return;
-    }
-    const glissementReorganisation = construireGlissementCarteDepuisEtatCourant({
-      depart: {
-        x: animX.value,
-        y: animBottom.value,
-        rotation: animAngle.value,
-        echelle: 1,
-      },
-      arrivee: {
-        x,
-        y: decalageY,
-        rotation: angle,
-        echelle: 1,
-      },
-    });
-    const config = {
-      duration: dureeReorganisation,
-      easing: EASING_REORG,
-    };
-    animX.value = glissementReorganisation.depart.x;
-    animBottom.value = glissementReorganisation.depart.y;
-    animAngle.value = glissementReorganisation.depart.rotation;
-    animX.value = withTiming(glissementReorganisation.arrivee.x, config);
-    animBottom.value = withTiming(glissementReorganisation.arrivee.y, config);
-    animAngle.value = withTiming(glissementReorganisation.arrivee.rotation, config);
-  }, [
-    x,
-    decalageY,
-    angle,
-    animerEntree,
-    animX,
-    animBottom,
-    animAngle,
-    animOpacite,
-    centreMainX,
-    dureeReorganisation,
-  ]);
-
-  const styleAnime = useAnimatedStyle(() => ({
-    position: "absolute" as const,
-    left: animX.value,
-    bottom: animBottom.value,
-    opacity: animOpacite.value,
-    transformOrigin: `${largeurCarte / 2}px ${hauteurCarte}px`,
-    transform: [{ rotate: `${animAngle.value}deg` }],
-    zIndex,
-  }));
-
   return (
-    <Animated.View style={styleAnime}>
+    <View
+      style={{
+        position: "absolute",
+        left: x,
+        bottom: decalageY,
+        width: largeurCarte,
+        height: hauteurCarte,
+        transformOrigin: `${largeurCarte / 2}px ${hauteurCarte}px`,
+        transform: [{ rotate: `${angle}deg` }],
+        zIndex,
+      }}
+    >
       <Pressable
         disabled={!estInteractive}
         accessibilityState={{ disabled: !estInteractive }}
@@ -267,26 +197,18 @@ function CarteEventailAnimee({
         }
         testID={`carte-main-${carte.couleur}-${carte.rang}`}
         style={({ pressed }) => ({
+          width: largeurCarte,
+          height: hauteurCarte,
           opacity: estMasquee ? 0 : 1,
           transform:
             estEnPose || (pressed && estInteractive)
               ? [{ translateY: -DECALAGE_SOULEVEMENT_CARTE }]
               : [],
         })}
-      >
-        <CarteFaceAtlas
-          atlas={atlas}
-          carte={carte}
-          largeur={largeurCarte}
-          hauteur={hauteurCarte}
-          grisee={grisee}
-        />
-      </Pressable>
-    </Animated.View>
+      />
+    </View>
   );
 }
-
-// --- Composant principal ---
 
 export function MainJoueur({
   cartes,
@@ -304,6 +226,10 @@ export function MainJoueur({
 }: PropsMainJoueur) {
   const nbCartes = cartes.length;
   const nbCartesPrecedentRef = useRef(nbCartes);
+  const idsCartesPrecedentesRef = useRef<string[]>([]);
+  const valeursAnimationRef = useRef<ValeursAnimationMainJoueur | null>(null);
+  valeursAnimationRef.current ??= creerValeursAnimationMain();
+  const valeursAnimation = valeursAnimationRef.current;
   const nbCartesPourDisposition = Math.max(nbCartes, nbCartesDisposition ?? nbCartes);
 
   const largeurCarte = Math.round(largeurEcran * RATIO_LARGEUR_CARTE);
@@ -326,66 +252,143 @@ export function MainJoueur({
     nbCartesPrecedentRef.current = nbCartes;
   }, [nbCartes]);
 
+  const cartesCanvas: CarteMainJoueurAtlas[] = cartes.map((carte, index) => {
+    const carteDisposition = disposition.cartes[index];
+    const jouable = estJouable(carte, cartesJouables);
+    return {
+      carte,
+      x: carteDisposition.x,
+      decalageY:
+        carteDisposition.decalageY +
+        (estEnPose(carte, cartesEnPose) ? DECALAGE_SOULEVEMENT_CARTE : 0),
+      angle: carteDisposition.angle,
+      grisee: interactionActive && !jouable,
+      visible: !estMasquee(carte, cartesMasquees),
+    };
+  });
+
+  useEffect(() => {
+    const idsPrecedents = idsCartesPrecedentesRef.current;
+    const estPremierRendu = idsPrecedents.length === 0;
+    const centreMainX = largeurEcran * POSITIONS_MAINS.sud.x - largeurCarte / 2;
+
+    cartesCanvas.forEach((carteCanvas, index) => {
+      const nouvelleCarte = !idsPrecedents.includes(idCarte(carteCanvas.carte));
+      const doitAnimer =
+        (!nouvelleCarte || animerNouvellesCartes) &&
+        (!estPremierRendu || animerNouvellesCartes);
+
+      if (estPremierRendu && animerNouvellesCartes) {
+        valeursAnimation.x[index].value = centreMainX;
+        valeursAnimation.decalageY[index].value = 0;
+        valeursAnimation.angle[index].value = 0;
+        valeursAnimation.echelle[index].value = 1;
+        valeursAnimation.echelle[index].value = withTiming(1, {
+          duration: DUREE_FONDU_ENTREE_MAIN,
+        });
+      }
+
+      definirOuAnimer(
+        valeursAnimation.x[index],
+        carteCanvas.x,
+        doitAnimer,
+        dureeReorganisation,
+      );
+      definirOuAnimer(
+        valeursAnimation.decalageY[index],
+        carteCanvas.decalageY,
+        doitAnimer,
+        dureeReorganisation,
+      );
+      definirOuAnimer(
+        valeursAnimation.angle[index],
+        carteCanvas.angle,
+        doitAnimer,
+        dureeReorganisation,
+      );
+    });
+
+    for (let index = cartesCanvas.length; index < MAX_CARTES_MAIN; index += 1) {
+      valeursAnimation.x[index].value = -10000;
+      valeursAnimation.decalageY[index].value = 0;
+      valeursAnimation.angle[index].value = 0;
+      valeursAnimation.echelle[index].value = 1;
+    }
+
+    idsCartesPrecedentesRef.current = cartesCanvas.map(({ carte }) => idCarte(carte));
+  }, [
+    animerNouvellesCartes,
+    cartesCanvas,
+    dureeReorganisation,
+    largeurCarte,
+    largeurEcran,
+    valeursAnimation,
+  ]);
+
   if (nbCartes === 0) return null;
 
   return (
-    <View
-      testID="main-joueur"
-      style={{
-        position: "absolute",
-        bottom: -hauteurCarte * 0.15,
-        left: 0,
-        right: 0,
-        height: disposition.hauteurConteneur,
-        overflow: "visible",
-      }}
-    >
-      {cartes.map((carte, index) => {
-        const carteDisposition = disposition.cartes[index];
-        const x = carteDisposition.x;
-        const angle = carteDisposition.angle;
-        const decalageY = carteDisposition.decalageY;
+    <>
+      <CanvasMainJoueurAtlas
+        atlas={atlas}
+        cartes={cartesCanvas}
+        valeursAnimation={valeursAnimation}
+        largeurCarte={largeurCarte}
+        hauteurCarte={hauteurCarte}
+        largeurEcran={largeurEcran}
+        hauteurEcran={hauteurEcran}
+      />
+      <View
+        testID="main-joueur"
+        style={{
+          position: "absolute",
+          bottom: -hauteurCarte * 0.15,
+          left: 0,
+          right: 0,
+          height: disposition.hauteurConteneur,
+          overflow: "visible",
+          zIndex: 60,
+        }}
+        pointerEvents="box-none"
+      >
+        {cartes.map((carte, index) => {
+          const carteDisposition = disposition.cartes[index];
+          const x = carteDisposition.x;
+          const angle = carteDisposition.angle;
+          const decalageY = carteDisposition.decalageY;
+          const jouable = estJouable(carte, cartesJouables);
+          const carteEstMasquee = estMasquee(carte, cartesMasquees);
+          const carteEstEnPose = estEnPose(carte, cartesEnPose);
 
-        const jouable = estJouable(carte, cartesJouables);
-        const grisee = interactionActive && !jouable;
-        const carteEstMasquee = estMasquee(carte, cartesMasquees);
-        const carteEstEnPose = estEnPose(carte, cartesEnPose);
-        const echelle = 1;
+          // Position proportionnelle du centre de la carte sur l'écran.
+          const xProp = (x + largeurCarte / 2) / largeurEcran;
+          // Le conteneur a bottom: -hauteurCarte * 0.15, la carte a bottom: decalageY dans le conteneur.
+          const yProp =
+            1 - (decalageY + hauteurCarte / 2 - hauteurCarte * 0.15) / hauteurEcran;
 
-        // Position proportionnelle du centre de la carte sur l'écran
-        const xProp = (x + largeurCarte / 2) / largeurEcran;
-        // Le conteneur a bottom: -hauteurCarte * 0.15, la carte a bottom: decalageY dans le conteneur
-        const yProp =
-          1 - (decalageY + hauteurCarte / 2 - hauteurCarte * 0.15) / hauteurEcran;
-
-        return (
-          <CarteEventailAnimee
-            key={`${carte.couleur}-${carte.rang}`}
-            carte={carte}
-            x={x}
-            decalageY={decalageY}
-            angle={angle}
-            largeurCarte={largeurCarte}
-            hauteurCarte={hauteurCarte}
-            largeurEcran={largeurEcran}
-            hauteurEcran={hauteurEcran}
-            hauteurConteneur={disposition.hauteurConteneur}
-            jouable={jouable}
-            grisee={grisee}
-            estMasquee={carteEstMasquee}
-            estEnPose={carteEstEnPose}
-            interactionActive={interactionActive}
-            animerEntree={animerNouvellesCartes}
-            atlas={atlas}
-            xProp={xProp}
-            yProp={yProp}
-            echelle={echelle}
-            zIndex={index}
-            dureeReorganisation={dureeReorganisation}
-            onCarteJouee={onCarteJouee}
-          />
-        );
-      })}
-    </View>
+          return (
+            <ZoneCarteEventail
+              key={`${carte.couleur}-${carte.rang}`}
+              carte={carte}
+              x={x}
+              decalageY={decalageY}
+              angle={angle}
+              largeurCarte={largeurCarte}
+              hauteurCarte={hauteurCarte}
+              largeurEcran={largeurEcran}
+              hauteurEcran={hauteurEcran}
+              jouable={jouable}
+              estMasquee={carteEstMasquee}
+              estEnPose={carteEstEnPose}
+              interactionActive={interactionActive}
+              xProp={xProp}
+              yProp={yProp}
+              zIndex={index}
+              onCarteJouee={onCarteJouee}
+            />
+          );
+        })}
+      </View>
+    </>
   );
 }

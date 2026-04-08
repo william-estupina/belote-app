@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 
 import { ANIMATIONS } from "../../constants/layout";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
-import { CarteDosAtlas, CarteFaceAtlas } from "./Carte";
+import { CanvasCartesAtlas } from "./CanvasCartesAtlas";
 import { calculerDispositionReserveCentrale } from "./reserve-centrale-disposition";
 
 interface PropsReserveCentrale {
@@ -107,10 +107,21 @@ export function ReserveCentrale({
                 },
               ]}
             >
-              <CarteDosAtlas
+              <CanvasCartesAtlas
                 atlas={atlas}
                 largeur={largeurCarte}
                 hauteur={hauteurCarte}
+                cartes={[
+                  {
+                    id: `dos-${index}`,
+                    type: "dos",
+                    x: 0,
+                    y: 0,
+                    largeur: largeurCarte,
+                    hauteur: hauteurCarte,
+                  },
+                ]}
+                testID="carte-dos-atlas"
               />
             </View>
           ))}
@@ -132,11 +143,22 @@ export function ReserveCentrale({
           ]}
         >
           <View style={styles.faceCarteRetournee}>
-            <CarteFaceAtlas
+            <CanvasCartesAtlas
               atlas={atlas}
-              carte={carteRetournee}
               largeur={largeurCarte}
               hauteur={hauteurCarte}
+              cartes={[
+                {
+                  id: `${carteRetournee.couleur}-${carteRetournee.rang}`,
+                  type: "recto",
+                  carte: carteRetournee,
+                  x: 0,
+                  y: 0,
+                  largeur: largeurCarte,
+                  hauteur: hauteurCarte,
+                },
+              ]}
+              testID="carte-face"
             />
           </View>
         </View>

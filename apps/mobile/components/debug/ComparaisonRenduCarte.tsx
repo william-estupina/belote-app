@@ -12,7 +12,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { COULEURS, ESPACEMENTS, TYPOGRAPHIE } from "../../constants/theme";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
-import { CarteFaceAtlas } from "../game/Carte";
+import { CanvasCartesAtlas } from "../game/CanvasCartesAtlas";
 
 interface PropsComparaisonRenduCarte {
   atlas: AtlasCartes;
@@ -107,12 +107,23 @@ export function ComparaisonRenduCarte({
 
       <View style={styles.rangee}>
         <View style={styles.colonne}>
-          <Text style={styles.libelle}>Main joueur (CarteFaceAtlas)</Text>
-          <CarteFaceAtlas
+          <Text style={styles.libelle}>Main joueur (CanvasCartesAtlas)</Text>
+          <CanvasCartesAtlas
             atlas={atlas}
-            carte={carteGauche}
             largeur={largeurCarte}
             hauteur={hauteurCarte}
+            cartes={[
+              {
+                id: `${carteGauche.couleur}-${carteGauche.rang}`,
+                type: "recto",
+                carte: carteGauche,
+                x: 0,
+                y: 0,
+                largeur: largeurCarte,
+                hauteur: hauteurCarte,
+              },
+            ]}
+            testID="debug-carte-main"
           />
         </View>
 
@@ -160,11 +171,22 @@ export function ComparaisonRenduCarte({
               ]}
               pointerEvents="none"
             >
-              <CarteFaceAtlas
+              <CanvasCartesAtlas
                 atlas={atlas}
-                carte={carteGauche}
                 largeur={largeurCarte}
                 hauteur={hauteurCarte}
+                cartes={[
+                  {
+                    id: `${carteGauche.couleur}-${carteGauche.rang}`,
+                    type: "recto",
+                    carte: carteGauche,
+                    x: 0,
+                    y: 0,
+                    largeur: largeurCarte,
+                    hauteur: hauteurCarte,
+                  },
+                ]}
+                testID="debug-carte-main"
               />
             </View>
 

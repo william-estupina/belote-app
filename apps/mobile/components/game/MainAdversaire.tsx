@@ -3,7 +3,7 @@ import { View } from "react-native";
 
 import { ADVERSAIRE, RATIO_ASPECT_CARTE } from "../../constants/layout";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
-import { CarteDosAtlas } from "./Carte";
+import { CanvasCartesAtlas } from "./CanvasCartesAtlas";
 
 interface PropsMainAdversaire {
   nbCartes: number;
@@ -106,7 +106,21 @@ function EventailHorizontal({
               zIndex: index,
             }}
           >
-            <CarteDosAtlas atlas={atlas} largeur={largeurCarte} hauteur={hauteurCarte} />
+            <CanvasCartesAtlas
+              atlas={atlas}
+              largeur={largeurCarte}
+              hauteur={hauteurCarte}
+              cartes={[
+                {
+                  id: `dos-nord-${index}`,
+                  type: "dos",
+                  x: 0,
+                  y: 0,
+                  largeur: largeurCarte,
+                  hauteur: hauteurCarte,
+                },
+              ]}
+            />
           </View>
         );
       })}
@@ -189,7 +203,21 @@ function EventailVertical({
               zIndex: index,
             }}
           >
-            <CarteDosAtlas atlas={atlas} largeur={largeurCarte} hauteur={hauteurCarte} />
+            <CanvasCartesAtlas
+              atlas={atlas}
+              largeur={largeurCarte}
+              hauteur={hauteurCarte}
+              cartes={[
+                {
+                  id: `dos-${cote}-${index}`,
+                  type: "dos",
+                  x: 0,
+                  y: 0,
+                  largeur: largeurCarte,
+                  hauteur: hauteurCarte,
+                },
+              ]}
+            />
           </View>
         );
       })}

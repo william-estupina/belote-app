@@ -34,13 +34,14 @@ jest.mock("react-native-reanimated", () => {
   };
 });
 
-jest.mock("../components/game/Carte", () => {
+jest.mock("../components/game/CanvasCartesAtlas", () => {
   const React = require("react") as typeof import("react");
   const { View } = require("react-native") as typeof import("react-native");
 
   return {
-    CarteDosAtlas: () => <View testID="carte-dos-atlas" />,
-    CarteFaceAtlas: () => <View testID="carte-face-atlas" />,
+    CanvasCartesAtlas: ({ testID }: { testID?: string }) => (
+      <View testID={testID ?? "canvas-cartes-atlas"} />
+    ),
   };
 });
 

@@ -6,12 +6,12 @@ import { MainJoueur } from "../components/game/MainJoueur";
 import { calculerDispositionMainJoueur } from "../components/game/mainJoueurDisposition";
 import { RATIO_ASPECT_CARTE, RATIO_LARGEUR_CARTE } from "../constants/layout";
 
-const mockMontagesCarte: string[] = [];
-const mockDemontagesCarte: string[] = [];
 const mockWithTiming = jest.fn(
   (valeur: number, config?: { duration?: number; easing?: unknown }) => valeur,
 );
-const mockPropsCartesAtlas: Array<{ id: string; grisee?: boolean }> = [];
+const mockPropsCanvasMain: Array<{
+  cartes: Array<{ id: string; grisee?: boolean; visible?: boolean }>;
+}> = [];
 
 jest.mock("react-native-reanimated", () => {
   const React = require("react") as typeof import("react");
@@ -26,6 +26,7 @@ jest.mock("react-native-reanimated", () => {
       cubic: jest.fn(),
       inOut: jest.fn(() => jest.fn()),
     },
+    makeMutable: <T,>(valeur: T) => ({ value: valeur }),
     useSharedValue: (valeur: number) => ({ value: valeur }),
     useAnimatedStyle: (calculStyle: () => unknown) => calculStyle(),
     withTiming: (valeur: number, config?: { duration?: number; easing?: unknown }) =>
@@ -33,22 +34,24 @@ jest.mock("react-native-reanimated", () => {
   };
 });
 
-jest.mock("../components/game/Carte", () => ({
-  CarteFaceAtlas: ({ carte, grisee }: { carte: Carte; grisee?: boolean }) => {
+jest.mock("../components/game/CanvasMainJoueurAtlas", () => ({
+  CanvasMainJoueurAtlas: ({
+    cartes,
+  }: {
+    cartes: Array<{ carte: Carte; grisee?: boolean; visible?: boolean }>;
+  }) => {
     const React = require("react") as typeof import("react");
     const { View } = require("react-native") as typeof import("react-native");
-    const id = `${carte.couleur}-${carte.rang}`;
 
-    mockPropsCartesAtlas.push({ id, grisee });
+    mockPropsCanvasMain.push({
+      cartes: cartes.map(({ carte, grisee, visible }) => ({
+        id: `${carte.couleur}-${carte.rang}`,
+        grisee,
+        visible,
+      })),
+    });
 
-    React.useEffect(() => {
-      mockMontagesCarte.push(id);
-      return () => {
-        mockDemontagesCarte.push(id);
-      };
-    }, [id]);
-
-    return <View testID={`carte-${id}`} />;
+    return <View testID="canvas-main-joueur-atlas" />;
   },
 }));
 
@@ -69,13 +72,28 @@ const MOCK_ATLAS = {
 
 describe("MainJoueur", () => {
   beforeEach(() => {
-    mockMontagesCarte.length = 0;
-    mockDemontagesCarte.length = 0;
-    mockPropsCartesAtlas.length = 0;
+    mockPropsCanvasMain.length = 0;
     mockWithTiming.mockClear();
   });
 
-  it("ne remonte pas les cartes restantes quand le tour humain se desactive", () => {
+  it("rend le visuel de la main sud dans un canvas atlas dedie", () => {
+    render(
+      <MainJoueur
+        cartes={CARTES}
+        largeurEcran={1400}
+        hauteurEcran={1000}
+        cartesJouables={CARTES}
+        interactionActive
+        atlas={MOCK_ATLAS}
+        onCarteJouee={() => {}}
+      />,
+    );
+
+    expect(screen.getByTestId("canvas-main-joueur-atlas")).toBeTruthy();
+    expect(screen.queryByTestId("carte-pique-as")).toBeNull();
+  });
+
+  it("ne remonte pas le canvas de main quand le tour humain se desactive", () => {
     const { rerender } = render(
       <MainJoueur
         cartes={CARTES}
@@ -88,8 +106,7 @@ describe("MainJoueur", () => {
       />,
     );
 
-    mockMontagesCarte.length = 0;
-    mockDemontagesCarte.length = 0;
+    mockPropsCanvasMain.length = 0;
 
     rerender(
       <MainJoueur
@@ -103,8 +120,8 @@ describe("MainJoueur", () => {
       />,
     );
 
-    expect(mockDemontagesCarte).toEqual([]);
-    expect(mockMontagesCarte).toEqual([]);
+    expect(screen.getByTestId("canvas-main-joueur-atlas")).toBeTruthy();
+    expect(mockPropsCanvasMain).toHaveLength(1);
   });
 
   it("n anime pas une seconde entree pour les nouvelles cartes pendant la distribution", () => {
@@ -146,11 +163,11 @@ describe("MainJoueur", () => {
       />,
     );
 
-    expect(mockPropsCartesAtlas).toEqual(
+    expect(mockPropsCanvasMain.at(-1)?.cartes).toEqual(
       expect.arrayContaining([
-        { id: "pique-as", grisee: false },
-        { id: "coeur-roi", grisee: true },
-        { id: "trefle-dame", grisee: true },
+        { id: "pique-as", grisee: false, visible: true },
+        { id: "coeur-roi", grisee: true, visible: true },
+        { id: "trefle-dame", grisee: true, visible: true },
       ]),
     );
   });

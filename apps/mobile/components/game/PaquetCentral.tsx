@@ -7,7 +7,7 @@ import {
   RATIO_LARGEUR_CARTE,
 } from "../../constants/layout";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
-import { CarteDosAtlas } from "./Carte";
+import { CanvasCartesAtlas } from "./CanvasCartesAtlas";
 
 interface PropsPaquetCentral {
   cartesRestantes: number;
@@ -58,7 +58,21 @@ export const PaquetCentral = memo(function PaquetCentral({
             },
           ]}
         >
-          <CarteDosAtlas atlas={atlas} largeur={largeurCarte} hauteur={hauteurCarte} />
+          <CanvasCartesAtlas
+            atlas={atlas}
+            largeur={largeurCarte}
+            hauteur={hauteurCarte}
+            cartes={[
+              {
+                id: `dos-paquet-${i}`,
+                type: "dos",
+                x: 0,
+                y: 0,
+                largeur: largeurCarte,
+                hauteur: hauteurCarte,
+              },
+            ]}
+          />
         </View>
       ))}
     </View>

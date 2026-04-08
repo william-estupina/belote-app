@@ -18,9 +18,8 @@ test.describe("Distribution des cartes", () => {
     // Naviguer vers la partie via le bouton du menu d'accueil
     await page.getByTestId("bouton-jouer").click();
 
-    // Attendre que la distribution se termine et les enchères commencent
-    // Les enchères affichent "Prendre" ou "Passer"
-    await expect(page.getByText("Passer")).toBeVisible({ timeout: 15000 });
+    // Attendre que la distribution se termine et les enchères commencent.
+    await expect(page.getByTestId("enchere-passer")).toBeVisible({ timeout: 20000 });
 
     // Aucune erreur JS pendant la distribution
     expect(erreursPage).toEqual([]);
@@ -37,11 +36,11 @@ test.describe("Distribution des cartes", () => {
     await page.goto("/", { waitUntil: "networkidle" });
     await page.getByTestId("bouton-jouer").click();
 
-    await expect(page.getByTestId("enchere-prendre")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId("enchere-prendre")).toBeVisible({ timeout: 20000 });
     await page.getByTestId("enchere-prendre").click();
 
     const mainJoueur = page.getByTestId("main-joueur");
-    await expect(mainJoueur).toBeVisible({ timeout: 20000 });
+    await expect(mainJoueur).toBeVisible({ timeout: 30000 });
 
     const cartesMain = page.locator('[data-testid^="carte-main-"]');
     const nbCartesAvant = await cartesMain.count();

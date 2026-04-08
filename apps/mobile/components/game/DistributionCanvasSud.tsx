@@ -6,7 +6,7 @@ import { RATIO_ASPECT_CARTE, RATIO_LARGEUR_CARTE } from "../../constants/layout"
 import { interpolerBezierQuadratique } from "../../hooks/distributionAtlas";
 import type { CarteAtlas } from "../../hooks/useAnimationsDistribution";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
-import { CarteFaceAtlas } from "./Carte";
+import { CanvasCartesAtlas } from "./CanvasCartesAtlas";
 
 const STRIDE = 10;
 
@@ -100,11 +100,22 @@ function CarteSudAnimee({
 
   return (
     <Animated.View style={style} pointerEvents="none">
-      <CarteFaceAtlas
+      <CanvasCartesAtlas
         atlas={atlas}
-        carte={carteAtlas.carte}
         largeur={largeurCarte}
         hauteur={hauteurCarte}
+        cartes={[
+          {
+            id: `${carteAtlas.carte.couleur}-${carteAtlas.carte.rang}`,
+            type: "recto",
+            carte: carteAtlas.carte,
+            x: 0,
+            y: 0,
+            largeur: largeurCarte,
+            hauteur: hauteurCarte,
+          },
+        ]}
+        testID="carte-face-atlas"
       />
     </Animated.View>
   );
