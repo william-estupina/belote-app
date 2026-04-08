@@ -70,6 +70,8 @@ interface OptionsLancerDistribution {
   /** Appelé après l'animation de tri par couleur (ou immédiatement si pas de tri) */
   onTriSudTermine?: () => void;
   cartesVisibles?: Carte[];
+  /** Désactive l'animation de tri des cartes sud (tri reporté après retournement) */
+  desactiverTri?: boolean;
 }
 
 interface DelaiAnimationCarte {
@@ -896,8 +898,9 @@ export function useAnimationsDistribution(
       // Animation de tri par couleur : après les 5 premières cartes, et après les 8 cartes
       const ORDRE_COULEURS_TRI: Couleur[] = ["pique", "coeur", "carreau", "trefle"];
       const doitTrier =
-        (cartesExistantesSud.length === 0 && cartesSud.length === 5) ||
-        cartesSud.length === 8;
+        !options?.desactiverTri &&
+        ((cartesExistantesSud.length === 0 && cartesSud.length === 5) ||
+          cartesSud.length === 8);
       let dureeTri = 0;
 
       if (doitTrier) {

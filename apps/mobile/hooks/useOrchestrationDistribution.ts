@@ -16,12 +16,6 @@ import type { EtatJeu } from "./useControleurJeu";
 
 const INDEX_HUMAIN = 0;
 const NB_CARTES_JEU_BELOTE = 32;
-const ORDRE_COULEURS_TRI_DISTRIBUTION: Couleur[] = [
-  "pique",
-  "coeur",
-  "carreau",
-  "trefle",
-];
 
 function estPositionAdverse(
   position: PositionJoueur,
@@ -63,6 +57,13 @@ function creerMainsRecordDepuisContexte(
     est: contexte.mains[3],
   };
 }
+
+const ORDRE_COULEURS_TRI_DISTRIBUTION: Couleur[] = [
+  "pique",
+  "coeur",
+  "carreau",
+  "trefle",
+];
 
 function trierMainParCouleur(main: ReadonlyArray<Carte>): Carte[] {
   return [...main].sort(
@@ -178,7 +179,6 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
       const ctx = snap.context;
       const carteRetournee = ctx.carteRetournee;
       const dimensionsCourantes = dimensionsEcranRef.current;
-      const mainTriee = trierMainParCouleur(ctx.mains[INDEX_HUMAIN]);
 
       const finaliserEntreeEncheres = () => {
         if (estDemonte.current) return;
@@ -186,7 +186,7 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
         setEtatJeu((prev) => ({
           ...prev,
           ...construireEtatDepuisContexte(ctx, etat, 12),
-          mainJoueur: mainTriee,
+          mainJoueur: trierMainParCouleur(ctx.mains[INDEX_HUMAIN]),
         }));
         programmerRelanceBot();
       };
@@ -195,7 +195,7 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
 
       setEtatJeu((prev) => ({
         ...prev,
-        mainJoueur: mainTriee,
+        mainJoueur: [...ctx.mains[INDEX_HUMAIN]],
         phaseUI: "distribution",
         phaseEncheres: null,
         carteRetournee: null,
@@ -265,18 +265,11 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
 
       let cartesRecues = 0;
       let cartesSudEnvoyees = 0;
-      let tousCartesRecues = false;
-      let triSudTermine = false;
-
-      const verifierEtLancerPhase3 = () => {
-        if (tousCartesRecues && triSudTermine) {
-          lancerPhase3(contexte);
-        }
-      };
 
       animDistribution.lancerDistribution(mainsRecord, {
         indexDonneur: contexte.indexDonneur,
         cartesVisibles: mainsRecord.sud,
+        desactiverTri: true,
         onPaquetDepart: (position, cartes) => {
           if (estDemonte.current) return;
           if (position === "sud") {
@@ -306,14 +299,8 @@ export function useOrchestrationDistribution(refs: RefsPartagees, deps: Deps) {
 
           cartesRecues += cartes.length;
           if (cartesRecues >= totalCartesAttendues) {
-            tousCartesRecues = true;
-            verifierEtLancerPhase3();
+            lancerPhase3(contexte);
           }
-        },
-        onTriSudTermine: () => {
-          if (estDemonte.current) return;
-          triSudTermine = true;
-          verifierEtLancerPhase3();
         },
       });
     },
