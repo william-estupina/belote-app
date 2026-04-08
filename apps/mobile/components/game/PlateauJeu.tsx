@@ -96,6 +96,53 @@ export default function PlateauJeu() {
     largeur,
   ]);
 
+  // Mise à jour des piles de plis dans le canvas unifié
+  useEffect(() => {
+    if (largeur === 0) return;
+    bufferUnifie.mettreAJourPiles(
+      etatJeu.plisEquipe1,
+      etatJeu.plisEquipe2,
+      largeur,
+      hauteur,
+    );
+  }, [etatJeu.plisEquipe1, etatJeu.plisEquipe2, largeur, hauteur, bufferUnifie]);
+
+  // Mise à jour de la réserve dans le canvas unifié
+  const afficherReserveCentrale =
+    etatJeu.phaseUI === "distribution" ||
+    etatJeu.phaseUI === "revelationCarte" ||
+    etatJeu.phaseUI === "encheres" ||
+    etatJeu.phaseUI === "redistribution";
+  const carteRetourneeReserve =
+    etatJeu.phaseUI === "revelationCarte" || etatJeu.phaseUI === "encheres"
+      ? etatJeu.carteRetournee
+      : null;
+  // Pendant revelationCarte, la carte retournée est invisible dans la réserve (animée par CarteRevelation)
+  const carteRetourneeReservePourCanvas =
+    etatJeu.phaseUI === "encheres" ? etatJeu.carteRetournee : null;
+
+  useEffect(() => {
+    if (largeur === 0) return;
+    bufferUnifie.mettreAJourReserve(
+      afficherReserveCentrale,
+      carteRetourneeReservePourCanvas,
+      largeur,
+      hauteur,
+    );
+  }, [
+    afficherReserveCentrale,
+    carteRetourneeReservePourCanvas,
+    largeur,
+    hauteur,
+    bufferUnifie,
+  ]);
+
+  // Mise à jour des adversaires dans le canvas unifié
+  useEffect(() => {
+    if (largeur === 0 || distributionEnCours) return;
+    bufferUnifie.mettreAJourAdversaires(etatJeu.nbCartesAdversaires, largeur, hauteur);
+  }, [etatJeu.nbCartesAdversaires, largeur, hauteur, distributionEnCours, bufferUnifie]);
+
   const surLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
     setDimensions({ largeur: width, hauteur: height });
@@ -104,21 +151,12 @@ export default function PlateauJeu() {
     etatJeu.phaseUI,
     distributionEnCours ?? false,
   );
-  const afficherReserveCentrale =
-    etatJeu.phaseUI === "distribution" ||
-    etatJeu.phaseUI === "revelationCarte" ||
-    etatJeu.phaseUI === "encheres" ||
-    etatJeu.phaseUI === "redistribution";
   const cartesPaquetVisibles =
     etatJeu.phaseUI === "encheres"
       ? 12
       : etatJeu.phaseUI === "redistribution"
         ? Math.max(etatJeu.cartesRestantesPaquet, 1)
         : etatJeu.cartesRestantesPaquet;
-  const carteRetourneeReserve =
-    etatJeu.phaseUI === "revelationCarte" || etatJeu.phaseUI === "encheres"
-      ? etatJeu.carteRetournee
-      : null;
   const opaciteCarteRetourneeReserve = etatJeu.phaseUI === "revelationCarte" ? 0 : 1;
 
   // Dernière action d'enchère par joueur (pour les badges sur les avatars)
