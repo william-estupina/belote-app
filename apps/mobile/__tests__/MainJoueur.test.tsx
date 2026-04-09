@@ -9,10 +9,6 @@ import { RATIO_ASPECT_CARTE, RATIO_LARGEUR_CARTE } from "../constants/layout";
 const mockWithTiming = jest.fn(
   (valeur: number, config?: { duration?: number; easing?: unknown }) => valeur,
 );
-const mockPropsCanvasMain: Array<{
-  cartes: Array<{ id: string; grisee?: boolean; visible?: boolean }>;
-}> = [];
-
 jest.mock("react-native-reanimated", () => {
   const React = require("react") as typeof import("react");
   const { View } = require("react-native") as typeof import("react-native");
@@ -35,21 +31,9 @@ jest.mock("react-native-reanimated", () => {
 });
 
 jest.mock("../components/game/CanvasMainJoueurAtlas", () => ({
-  CanvasMainJoueurAtlas: ({
-    cartes,
-  }: {
-    cartes: Array<{ carte: Carte; grisee?: boolean; visible?: boolean }>;
-  }) => {
+  CanvasMainJoueurAtlas: () => {
     const React = require("react") as typeof import("react");
     const { View } = require("react-native") as typeof import("react-native");
-
-    mockPropsCanvasMain.push({
-      cartes: cartes.map(({ carte, grisee, visible }) => ({
-        id: `${carte.couleur}-${carte.rang}`,
-        grisee,
-        visible,
-      })),
-    });
 
     return <View testID="canvas-main-joueur-atlas" />;
   },
@@ -82,11 +66,10 @@ const MOCK_VALEURS_ANIMATION = creerMockValeursAnimation();
 
 describe("MainJoueur", () => {
   beforeEach(() => {
-    mockPropsCanvasMain.length = 0;
     mockWithTiming.mockClear();
   });
 
-  it("rend le visuel de la main sud dans un canvas atlas dedie", () => {
+  it("rend les zones de hit de la main sud (rendu visuel delegue au canvas unifie)", () => {
     render(
       <MainJoueur
         cartes={CARTES}
@@ -100,11 +83,11 @@ describe("MainJoueur", () => {
       />,
     );
 
-    expect(screen.getByTestId("canvas-main-joueur-atlas")).toBeTruthy();
-    expect(screen.queryByTestId("carte-pique-as")).toBeNull();
+    expect(screen.getByTestId("main-joueur")).toBeTruthy();
+    expect(screen.getByTestId("carte-main-pique-as")).toBeTruthy();
   });
 
-  it("ne remonte pas le canvas de main quand le tour humain se desactive", () => {
+  it("conserve les zones de hit quand le tour humain se desactive", () => {
     const { rerender } = render(
       <MainJoueur
         cartes={CARTES}
@@ -117,8 +100,6 @@ describe("MainJoueur", () => {
         onCarteJouee={() => {}}
       />,
     );
-
-    mockPropsCanvasMain.length = 0;
 
     rerender(
       <MainJoueur
@@ -133,8 +114,8 @@ describe("MainJoueur", () => {
       />,
     );
 
-    expect(screen.getByTestId("canvas-main-joueur-atlas")).toBeTruthy();
-    expect(mockPropsCanvasMain).toHaveLength(1);
+    expect(screen.getByTestId("main-joueur")).toBeTruthy();
+    expect(screen.getByTestId("carte-main-pique-as")).toBeTruthy();
   });
 
   it("n anime pas une seconde entree pour les nouvelles cartes pendant la distribution", () => {
@@ -164,7 +145,7 @@ describe("MainJoueur", () => {
     expect(mockWithTiming).toHaveBeenCalledTimes(9);
   });
 
-  it("grise les cartes non jouables quand c est le tour humain", () => {
+  it("desactive les cartes non jouables quand c est le tour humain", () => {
     render(
       <MainJoueur
         cartes={CARTES}
@@ -178,12 +159,14 @@ describe("MainJoueur", () => {
       />,
     );
 
-    expect(mockPropsCanvasMain.at(-1)?.cartes).toEqual(
-      expect.arrayContaining([
-        { id: "pique-as", grisee: false, visible: true },
-        { id: "coeur-roi", grisee: true, visible: true },
-        { id: "trefle-dame", grisee: true, visible: true },
-      ]),
+    expect(screen.getByTestId("carte-main-pique-as").props.accessibilityState).toEqual({
+      disabled: false,
+    });
+    expect(screen.getByTestId("carte-main-coeur-roi").props.accessibilityState).toEqual({
+      disabled: true,
+    });
+    expect(screen.getByTestId("carte-main-trefle-dame").props.accessibilityState).toEqual(
+      { disabled: true },
     );
   });
 

@@ -241,7 +241,7 @@ export default function PlateauJeu() {
             />
           </View>
 
-          {/* Piles de plis remportés */}
+          {/* Piles de plis remportés (emplacements vides uniquement, rendu dans canvas unifié) */}
           {etatJeu.phaseUI !== "inactif" && (
             <>
               <PilePlis
@@ -249,14 +249,12 @@ export default function PlateauJeu() {
                 nbPlis={etatJeu.plisEquipe1}
                 largeurEcran={largeur}
                 hauteurEcran={hauteur}
-                atlas={atlas}
               />
               <PilePlis
                 equipe="equipe2"
                 nbPlis={etatJeu.plisEquipe2}
                 largeurEcran={largeur}
                 hauteurEcran={hauteur}
-                atlas={atlas}
               />
             </>
           )}
@@ -314,7 +312,7 @@ export default function PlateauJeu() {
             />
           )}
 
-          {/* Carte retournée visible pendant les enchères */}
+          {/* Carte retournée visible pendant les enchères (rendu dans canvas unifié) */}
           <ReserveCentrale
             afficherPaquet={afficherReserveCentrale}
             cartesPaquetVisibles={cartesPaquetVisibles}
@@ -322,7 +320,6 @@ export default function PlateauJeu() {
             opaciteCarteRetournee={opaciteCarteRetourneeReserve}
             largeurEcran={largeur}
             hauteurEcran={hauteur}
-            atlas={atlas}
           />
 
           {/* Animation révélation de la carte retournée */}

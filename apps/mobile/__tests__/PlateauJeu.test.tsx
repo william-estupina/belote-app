@@ -86,6 +86,41 @@ jest.mock("../hooks/useControleurJeu", () => ({
   useControleurJeu: () => mockControleur,
 }));
 
+jest.mock("../hooks/useBufferCanvasUnifie", () => ({
+  useBufferCanvasUnifie: () => ({
+    donneesWorklet: { value: [] },
+    progressions: [],
+    sprites: [],
+    colors: [],
+    valeursMain: {
+      x: Array.from({ length: 8 }, () => ({ value: 0 })),
+      decalageY: Array.from({ length: 8 }, () => ({ value: 0 })),
+      angle: Array.from({ length: 8 }, () => ({ value: 0 })),
+      echelle: Array.from({ length: 8 }, () => ({ value: 1 })),
+    },
+    flip: null,
+    mettreAJourPiles: jest.fn(),
+    mettreAJourReserve: jest.fn(),
+    mettreAJourAdversaires: jest.fn(),
+    mettreAJourMainJoueurSprites: jest.fn(),
+    parquerSlot: jest.fn(),
+    ecrireSlotStatique: jest.fn(),
+    mettreAJourSprite: jest.fn(),
+    allouerSlotAnimation: jest.fn(),
+    libererSlotAnimation: jest.fn(),
+    ecrireSlotAnime: jest.fn(),
+  }),
+}));
+
+jest.mock("../components/game/CanvasCartesUnifie", () => ({
+  CanvasCartesUnifie: () => {
+    const React = require("react") as typeof import("react");
+    const { View } = require("react-native") as typeof import("react-native");
+
+    return <View testID="canvas-cartes-unifie" />;
+  },
+}));
+
 jest.mock("../components/game/AvatarJoueur", () => ({
   AvatarJoueur: () => {
     const React = require("react") as typeof import("react");
