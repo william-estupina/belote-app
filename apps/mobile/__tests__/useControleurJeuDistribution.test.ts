@@ -84,16 +84,39 @@ jest.mock("../hooks/useAnimationsDistribution", () => ({
   useAnimationsDistribution: () => ({
     lancerDistribution: mockLancerDistribution,
     terminerDistribution: mockTerminerDistribution,
-    cartesAtlasAdversaires: [],
     cartesAtlasSud: [],
-    progressionsAdv: mockProgressionsAdv,
-    donneesWorkletAdv: { value: [] },
-    nbCartesActivesAdv: { value: 0 },
     progressionsSud: mockProgressionsSud,
     donneesWorkletSud: { value: [] },
     nbCartesActivesSud: { value: 0 },
     zIndexesSud: mockZIndexesSud,
     enCours: false,
+  }),
+}));
+
+const mockProgressionsBuffer = Array.from({ length: 44 }, () => ({ value: 0 }));
+jest.mock("../hooks/useBufferCanvasUnifie", () => ({
+  useBufferCanvasUnifie: () => ({
+    donneesWorklet: { value: [] },
+    progressions: mockProgressionsBuffer,
+    sprites: Array.from({ length: 44 }, () => ({ x: 0, y: 0, width: 1, height: 1 })),
+    colors: Array.from({ length: 44 }, () => 1),
+    valeursMain: {
+      x: Array.from({ length: 8 }, () => ({ value: 0 })),
+      decalageY: Array.from({ length: 8 }, () => ({ value: 0 })),
+      angle: Array.from({ length: 8 }, () => ({ value: 0 })),
+      echelle: Array.from({ length: 8 }, () => ({ value: 1 })),
+    },
+    flip: null,
+    mettreAJourPiles: jest.fn(),
+    mettreAJourReserve: jest.fn(),
+    mettreAJourAdversaires: jest.fn(),
+    mettreAJourMainJoueurSprites: jest.fn(),
+    parquerSlot: jest.fn(),
+    ecrireSlotStatique: jest.fn(),
+    mettreAJourSprite: jest.fn(),
+    allouerSlotAnimation: jest.fn(),
+    libererSlotAnimation: jest.fn(),
+    ecrireSlotAnime: jest.fn(),
   }),
 }));
 

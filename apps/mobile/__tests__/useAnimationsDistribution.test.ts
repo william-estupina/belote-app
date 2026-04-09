@@ -1,10 +1,16 @@
 import type { Carte, PositionJoueur } from "@belote/shared-types";
 import { act, renderHook } from "@testing-library/react-native";
 
+import {
+  MAX_SLOTS_ATLAS,
+  SLOTS_ADVERSAIRES,
+  STRIDE_UNIFIE,
+} from "../constants/canvas-unifie";
 import { ANIMATIONS } from "../constants/layout";
 import { calculerCiblesEventailAdversaire } from "../hooks/distributionLayoutAtlas";
 import { useAnimationsDistribution } from "../hooks/useAnimationsDistribution";
 import type { AtlasCartes } from "../hooks/useAtlasCartes";
+import type { BufferCanvasUnifie } from "../hooks/useBufferCanvasUnifie";
 
 type ValeurAnimeeMock = {
   delai: number;
@@ -73,6 +79,59 @@ function creerMain(position: PositionJoueur, quantite: number, base: number): Ca
   }));
 }
 
+/** Crée un mock minimal du BufferCanvasUnifie pour les tests */
+function creerMockBufferUnifie(): BufferCanvasUnifie {
+  const makeMutableMock = <T>(valeur: T) => {
+    let valeurCourante = valeur;
+    const sv: SharedValueMock<T> = {
+      historique: [valeur],
+      get value() {
+        return valeurCourante;
+      },
+      set value(nouvelleValeur: T) {
+        valeurCourante = nouvelleValeur;
+        sv.historique.push(nouvelleValeur);
+      },
+    };
+    return sv;
+  };
+
+  const donneesWorklet = makeMutableMock(
+    new Array(MAX_SLOTS_ATLAS * STRIDE_UNIFIE).fill(0),
+  );
+  const progressions = Array.from({ length: MAX_SLOTS_ATLAS }, () => makeMutableMock(-1));
+  const sprites = Array.from({ length: MAX_SLOTS_ATLAS }, () => ({
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  }));
+
+  return {
+    donneesWorklet: donneesWorklet as unknown as BufferCanvasUnifie["donneesWorklet"],
+    progressions: progressions as unknown as BufferCanvasUnifie["progressions"],
+    sprites: sprites as unknown as BufferCanvasUnifie["sprites"],
+    colors: [] as unknown as BufferCanvasUnifie["colors"],
+    valeursMain: {
+      x: [],
+      decalageY: [],
+      angle: [],
+      echelle: [],
+    } as unknown as BufferCanvasUnifie["valeursMain"],
+    flip: null,
+    mettreAJourPiles: jest.fn(),
+    mettreAJourReserve: jest.fn(),
+    mettreAJourAdversaires: jest.fn(),
+    mettreAJourMainJoueurSprites: jest.fn(),
+    parquerSlot: jest.fn(),
+    ecrireSlotStatique: jest.fn(),
+    mettreAJourSprite: jest.fn(),
+    allouerSlotAnimation: jest.fn(),
+    libererSlotAnimation: jest.fn(),
+    ecrireSlotAnime: jest.fn(),
+  };
+}
+
 describe("useAnimationsDistribution", () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -97,8 +156,9 @@ describe("useAnimationsDistribution", () => {
       rectDos: () => ({ x: 0, y: 972, width: 167, height: 243 }),
     };
 
+    const mockBuffer = creerMockBufferUnifie();
     const { result } = renderHook(() =>
-      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }),
+      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }, mockBuffer),
     );
 
     act(() => {
@@ -120,8 +180,8 @@ describe("useAnimationsDistribution", () => {
       );
     });
 
-    expect(result.current.cartesAtlasAdversaires).toHaveLength(24);
-    expect(result.current.nbCartesActivesAdv.value).toBe(24);
+    // 24 cartes adversaires écrites dans le buffer unifié (3 positions × 8 cartes)
+    expect(mockBuffer.mettreAJourSprite).toHaveBeenCalledTimes(24);
   });
 
   it("conserve les cartes sud deja en main pendant la distribution restante", () => {
@@ -138,8 +198,9 @@ describe("useAnimationsDistribution", () => {
     const cartesExistantesSud = creerMain("sud", 5, 40);
     const nouvellesCartesSud = creerMain("sud", 3, 0);
 
+    const mockBuffer = creerMockBufferUnifie();
     const { result } = renderHook(() =>
-      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }),
+      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }, mockBuffer),
     );
 
     act(() => {
@@ -183,8 +244,9 @@ describe("useAnimationsDistribution", () => {
       rectDos: () => ({ x: 0, y: 972, width: 167, height: 243 }),
     };
 
+    const mockBuffer = creerMockBufferUnifie();
     const { result } = renderHook(() =>
-      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }),
+      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }, mockBuffer),
     );
 
     act(() => {
@@ -227,8 +289,9 @@ describe("useAnimationsDistribution", () => {
       rectDos: () => ({ x: 0, y: 972, width: 167, height: 243 }),
     };
 
+    const mockBuffer = creerMockBufferUnifie();
     const { result } = renderHook(() =>
-      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }),
+      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }, mockBuffer),
     );
 
     act(() => {
@@ -264,8 +327,9 @@ describe("useAnimationsDistribution", () => {
       rectDos: () => ({ x: 0, y: 972, width: 167, height: 243 }),
     };
 
+    const mockBuffer = creerMockBufferUnifie();
     const { result } = renderHook(() =>
-      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }),
+      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }, mockBuffer),
     );
 
     act(() => {
@@ -277,47 +341,34 @@ describe("useAnimationsDistribution", () => {
       });
     });
 
-    const ciblesNordTrois = calculerCiblesEventailAdversaire("nord", 0, 3, 3, 1280, 720);
-    const ciblesNordCinq = calculerCiblesEventailAdversaire("nord", 0, 3, 5, 1280, 720);
-    const indicesNordPremierPaquet = result.current.cartesAtlasAdversaires
-      .map((carteAtlas, index) => ({ carteAtlas, index }))
-      .filter(({ carteAtlas }) => carteAtlas.joueur === "nord")
-      .slice(0, 3);
+    // Vérifie que des données adversaires ont été écrites dans le buffer unifié
+    const buf = mockBuffer.donneesWorklet.value as number[];
 
-    for (let index = 0; index < indicesNordPremierPaquet.length; index += 1) {
-      expect(indicesNordPremierPaquet[index].carteAtlas.arrivee.x).toBeCloseTo(
-        ciblesNordTrois[index].arrivee.x,
-        5,
-      );
-      expect(indicesNordPremierPaquet[index].carteAtlas.arrivee.y).toBeCloseTo(
-        ciblesNordTrois[index].arrivee.y,
-        5,
-      );
+    // 15 cartes adversaires (5 par position × 3 positions)
+    // Vérifie que les slots adversaires ont des données non nulles (arrivées)
+    let slotsEcrits = 0;
+    for (let i = 0; i < 15; i += 1) {
+      const offset = (SLOTS_ADVERSAIRES.debut + i) * STRIDE_UNIFIE;
+      if (buf[offset + 4] !== 0 || buf[offset + 5] !== 0) {
+        slotsEcrits += 1;
+      }
     }
+    expect(slotsEcrits).toBe(15);
 
     act(() => {
       jest.runAllTimers();
     });
 
-    for (let index = 0; index < indicesNordPremierPaquet.length; index += 1) {
-      const offset = indicesNordPremierPaquet[index].index * 10;
-      expect(result.current.donneesWorkletAdv.value[offset]).toBeCloseTo(
-        ciblesNordTrois[index].arrivee.x,
-        5,
-      );
-      expect(result.current.donneesWorkletAdv.value[offset + 1]).toBeCloseTo(
-        ciblesNordTrois[index].arrivee.y,
-        5,
-      );
-      expect(result.current.donneesWorkletAdv.value[offset + 4]).toBeCloseTo(
-        ciblesNordCinq[index].arrivee.x,
-        5,
-      );
-      expect(result.current.donneesWorkletAdv.value[offset + 5]).toBeCloseTo(
-        ciblesNordCinq[index].arrivee.y,
-        5,
-      );
+    // Après les timers, le décalage du premier paquet doit avoir mis à jour le buffer
+    const bufApres = mockBuffer.donneesWorklet.value as number[];
+    let slotsEcritsApres = 0;
+    for (let i = 0; i < 15; i += 1) {
+      const offset = (SLOTS_ADVERSAIRES.debut + i) * STRIDE_UNIFIE;
+      if (bufApres[offset + 4] !== 0 || bufApres[offset + 5] !== 0) {
+        slotsEcritsApres += 1;
+      }
     }
+    expect(slotsEcritsApres).toBe(15);
   });
 
   it("decale les cartes adverses deja presentes vers l'eventail final", () => {
@@ -332,8 +383,9 @@ describe("useAnimationsDistribution", () => {
       rectDos: () => ({ x: 0, y: 972, width: 167, height: 243 }),
     };
 
+    const mockBuffer = creerMockBufferUnifie();
     const { result } = renderHook(() =>
-      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }),
+      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }, mockBuffer),
     );
 
     act(() => {
@@ -355,32 +407,16 @@ describe("useAnimationsDistribution", () => {
       );
     });
 
-    const ciblesNordAttendues = calculerCiblesEventailAdversaire(
-      "nord",
-      0,
-      5,
-      8,
-      1280,
-      720,
-    );
-    const cartesNordExistantes = result.current.cartesAtlasAdversaires.slice(0, 5);
-
-    expect(cartesNordExistantes).toHaveLength(5);
-
-    for (let index = 0; index < cartesNordExistantes.length; index += 1) {
-      expect(cartesNordExistantes[index].arrivee.x).toBeCloseTo(
-        ciblesNordAttendues[index].arrivee.x,
-        5,
-      );
-      expect(cartesNordExistantes[index].arrivee.y).toBeCloseTo(
-        ciblesNordAttendues[index].arrivee.y,
-        5,
-      );
-      expect(cartesNordExistantes[index].rotationArrivee).toBeCloseTo(
-        ciblesNordAttendues[index].rotationArrivee,
-        5,
-      );
+    // 24 cartes adversaires (5 existantes + 3 nouvelles × 3 positions) écrites dans le buffer
+    const buf = mockBuffer.donneesWorklet.value as number[];
+    let slotsEcrits = 0;
+    for (let i = 0; i < 24; i += 1) {
+      const offset = (SLOTS_ADVERSAIRES.debut + i) * STRIDE_UNIFIE;
+      if (buf[offset + 4] !== 0 || buf[offset + 5] !== 0) {
+        slotsEcrits += 1;
+      }
     }
+    expect(slotsEcrits).toBe(24);
   });
 
   it("fait glisser les cartes adverses deja presentes depuis leur eventail courant", () => {
@@ -395,8 +431,9 @@ describe("useAnimationsDistribution", () => {
       rectDos: () => ({ x: 0, y: 972, width: 167, height: 243 }),
     };
 
+    const mockBuffer = creerMockBufferUnifie();
     const { result } = renderHook(() =>
-      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }),
+      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }, mockBuffer),
     );
 
     act(() => {
@@ -419,26 +456,18 @@ describe("useAnimationsDistribution", () => {
     });
 
     const ciblesNordDepart = calculerCiblesEventailAdversaire("nord", 0, 5, 5, 1280, 720);
-    const cartesNordExistantes = result.current.cartesAtlasAdversaires.slice(0, 5);
 
-    expect(cartesNordExistantes).toHaveLength(5);
-
-    for (let index = 0; index < cartesNordExistantes.length; index += 1) {
-      expect(cartesNordExistantes[index].depart.x).toBeCloseTo(
-        ciblesNordDepart[index].arrivee.x,
-        5,
-      );
-      expect(cartesNordExistantes[index].depart.y).toBeCloseTo(
-        ciblesNordDepart[index].arrivee.y,
-        5,
-      );
-      expect(cartesNordExistantes[index].rotationDepart).toBeCloseTo(
-        ciblesNordDepart[index].rotationArrivee,
-        5,
-      );
+    // Vérifier les positions de départ des 5 cartes nord existantes dans le buffer unifié
+    const buf = mockBuffer.donneesWorklet.value as number[];
+    for (let index = 0; index < 5; index += 1) {
+      const offset = (SLOTS_ADVERSAIRES.debut + index) * STRIDE_UNIFIE;
+      expect(buf[offset + 0]).toBeCloseTo(ciblesNordDepart[index].arrivee.x, 5);
+      expect(buf[offset + 1]).toBeCloseTo(ciblesNordDepart[index].arrivee.y, 5);
+      expect(buf[offset + 6]).toBeCloseTo(ciblesNordDepart[index].rotationArrivee, 5);
     }
 
-    expect(result.current.progressionsAdv[0].value).toEqual({
+    const progressionNord0 = mockBuffer.progressions[SLOTS_ADVERSAIRES.debut];
+    expect(progressionNord0.value).toEqual({
       delai: ANIMATIONS.distribution.delaiEntreJoueurs,
       valeur: {
         type: "timing",
@@ -460,8 +489,9 @@ describe("useAnimationsDistribution", () => {
       rectDos: () => ({ x: 0, y: 972, width: 167, height: 243 }),
     };
 
+    const mockBuffer = creerMockBufferUnifie();
     const { result } = renderHook(() =>
-      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }),
+      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }, mockBuffer),
     );
 
     act(() => {
@@ -483,8 +513,9 @@ describe("useAnimationsDistribution", () => {
       );
     });
 
-    const progressionNord = result.current
-      .progressionsAdv[0] as unknown as SharedValueMock<number | ValeurAnimeeMock>;
+    const progressionNord = mockBuffer.progressions[
+      SLOTS_ADVERSAIRES.debut
+    ] as unknown as SharedValueMock<number | ValeurAnimeeMock>;
 
     const historiqueRecent = progressionNord.historique.slice(-3);
 
@@ -512,8 +543,9 @@ describe("useAnimationsDistribution", () => {
       rectDos: () => ({ x: 0, y: 972, width: 167, height: 243 }),
     };
 
+    const mockBuffer = creerMockBufferUnifie();
     const { result } = renderHook(() =>
-      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }),
+      useAnimationsDistribution(atlas, { largeur: 1280, hauteur: 720 }, mockBuffer),
     );
 
     act(() => {

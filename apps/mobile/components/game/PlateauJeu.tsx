@@ -10,7 +10,6 @@ import {
 } from "../../constants/layout";
 import { COULEURS } from "../../constants/theme";
 import { construireDerniereActionParJoueur } from "../../hooks/derniere-action-enchere";
-import { useBufferCanvasUnifie } from "../../hooks/useBufferCanvasUnifie";
 import { useControleurJeu } from "../../hooks/useControleurJeu";
 import { doitAfficherDernierPli } from "../../hooks/visibiliteDernierPli";
 import { doitAfficherUIEncheres } from "../../hooks/visibiliteEncheres";
@@ -48,10 +47,7 @@ export default function PlateauJeu() {
     surAnimationTerminee,
     surCarteJeuPreteAffichage,
     atlas,
-    cartesAtlasAdversaires,
-    progressionsAdv,
-    donneesWorkletAdv,
-    nbCartesActivesAdv,
+    bufferUnifie,
     cartesAtlasSud,
     progressionsSud,
     donneesWorkletSud,
@@ -72,9 +68,6 @@ export default function PlateauJeu() {
     largeurEcran: largeur,
     hauteurEcran: hauteur,
   });
-
-  // Buffer du canvas unifié
-  const bufferUnifie = useBufferCanvasUnifie(atlas);
 
   const largeurCarte = Math.round(largeur * RATIO_LARGEUR_CARTE);
   const hauteurCarteVal = Math.round(largeurCarte * RATIO_ASPECT_CARTE);
@@ -365,11 +358,6 @@ export default function PlateauJeu() {
             onAnimationTerminee={surAnimationTerminee}
             onCarteJeuPreteAffichage={surCarteJeuPreteAffichage}
             atlas={atlas}
-            nbCartesAdversaires={etatJeu.nbCartesAdversaires}
-            cartesAtlasAdversaires={cartesAtlasAdversaires}
-            progressionsAdv={progressionsAdv}
-            donneesWorkletAdv={donneesWorkletAdv}
-            nbCartesActivesAdv={nbCartesActivesAdv}
             cartesAtlasSud={cartesAtlasSud}
             progressionsSud={progressionsSud}
             donneesWorkletSud={donneesWorkletSud}

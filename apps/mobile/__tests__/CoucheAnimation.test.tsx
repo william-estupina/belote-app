@@ -12,15 +12,6 @@ jest.mock("../components/game/CarteAnimee", () => {
   };
 });
 
-jest.mock("../components/game/CanvasAdversaires", () => {
-  const React = require("react") as typeof import("react");
-  const { View } = require("react-native") as typeof import("react-native");
-
-  return {
-    CanvasAdversaires: () => <View testID="canvas-adversaires" />,
-  };
-});
-
 jest.mock("../components/game/DistributionCanvasSud", () => {
   const React = require("react") as typeof import("react");
   const { View } = require("react-native") as typeof import("react-native");
@@ -47,43 +38,14 @@ describe("CoucheAnimation", () => {
       largeurEcran: 1200,
       hauteurEcran: 800,
       onAnimationTerminee: () => {},
-      nbCartesAdversaires: { nord: 0, est: 0, ouest: 0 },
-      cartesAtlasAdversaires: [],
-      progressionsAdv: [],
-      donneesWorkletAdv: { value: [] },
-      nbCartesActivesAdv: { value: 0 },
+      onCarteJeuPreteAffichage: () => {},
+      atlas: { image: null, largeurCellule: 0, hauteurCellule: 0 },
     }) as unknown as ComponentProps<typeof CoucheAnimation>;
 
   it("affiche les cartes en vol sur la couche d'animation", () => {
     const { getByTestId } = render(<CoucheAnimation {...creerProps()} />);
 
     expect(getByTestId("carte-animee")).toBeTruthy();
-  });
-
-  it("ne monte pas le canvas adversaires quand aucune carte statique n'est visible", () => {
-    const { queryByTestId } = render(<CoucheAnimation {...creerProps()} />);
-
-    expect(queryByTestId("canvas-adversaires")).toBeNull();
-  });
-
-  it("garde le canvas adversaires quand la distribution est terminee", () => {
-    const props = creerProps();
-    props.nbCartesAdversaires = { nord: 5, est: 0, ouest: 0 };
-    props.distributionEnCours = false;
-
-    const { getByTestId } = render(<CoucheAnimation {...props} />);
-
-    expect(getByTestId("canvas-adversaires")).toBeTruthy();
-  });
-
-  it("monte le canvas adversaires pendant la distribution", () => {
-    const props = creerProps();
-    props.nbCartesAdversaires = { nord: 5, est: 0, ouest: 0 };
-    props.distributionEnCours = true;
-
-    const { getByTestId } = render(<CoucheAnimation {...props} />);
-
-    expect(getByTestId("canvas-adversaires")).toBeTruthy();
   });
 
   it("garde une scene atlas principale quand le mode reste cinematique hors distributionEnCours", () => {
@@ -109,6 +71,7 @@ describe("CoucheAnimation", () => {
       value: new Array(10).fill(0),
     } as typeof props.donneesWorkletSud;
     props.nbCartesActivesSud = { value: 1 } as typeof props.nbCartesActivesSud;
+    props.zIndexesSud = [{ value: 0 }] as typeof props.zIndexesSud;
 
     const { getByTestId } = render(<CoucheAnimation {...props} />);
 

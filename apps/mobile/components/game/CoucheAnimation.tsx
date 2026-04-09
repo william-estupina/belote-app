@@ -5,7 +5,6 @@ import type { SharedValue } from "react-native-reanimated";
 import type { CarteAtlas } from "../../hooks/useAnimationsDistribution";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
 import type { ModeRenduCartes } from "../../hooks/useControleurJeu";
-import { CanvasAdversaires } from "./CanvasAdversaires";
 import { CarteAnimee, type PositionCarte } from "./CarteAnimee";
 import { DistributionCanvasSud } from "./DistributionCanvasSud";
 
@@ -32,12 +31,6 @@ interface PropsCoucheAnimation {
   onAnimationTerminee: (id: string) => void;
   onCarteJeuPreteAffichage: (id: string) => void;
   atlas: AtlasCartes;
-  // Pool adversaires (CanvasAdversaires — permanent)
-  nbCartesAdversaires: { nord: number; est: number; ouest: number };
-  cartesAtlasAdversaires: CarteAtlas[];
-  progressionsAdv: SharedValue<number>[];
-  donneesWorkletAdv: SharedValue<number[]>;
-  nbCartesActivesAdv: SharedValue<number>;
   // Pool sud (DistributionCanvasSud — éphémère)
   cartesAtlasSud?: CarteAtlas[];
   progressionsSud?: SharedValue<number>[];
@@ -55,11 +48,6 @@ export function CoucheAnimation({
   onAnimationTerminee,
   onCarteJeuPreteAffichage,
   atlas,
-  nbCartesAdversaires,
-  cartesAtlasAdversaires,
-  progressionsAdv,
-  donneesWorkletAdv,
-  nbCartesActivesAdv,
   cartesAtlasSud,
   progressionsSud,
   donneesWorkletSud,
@@ -76,11 +64,6 @@ export function CoucheAnimation({
     donneesWorkletSud &&
     nbCartesActivesSud &&
     zIndexesSud;
-  const afficherCanvasAdversaires =
-    (distributionEnCours ?? false) ||
-    nbCartesAdversaires.nord > 0 ||
-    nbCartesAdversaires.est > 0 ||
-    nbCartesAdversaires.ouest > 0;
 
   return (
     <View
@@ -95,21 +78,6 @@ export function CoucheAnimation({
       pointerEvents="none"
       testID={afficherSceneAtlas ? "couche-animation-scene-atlas" : undefined}
     >
-      {/* Canvas adversaires permanent (zIndex bas) */}
-      {afficherCanvasAdversaires && (
-        <CanvasAdversaires
-          atlas={atlas}
-          largeurEcran={largeurEcran}
-          hauteurEcran={hauteurEcran}
-          nbCartesAdversaires={nbCartesAdversaires}
-          cartesAtlasAdversaires={cartesAtlasAdversaires}
-          progressions={progressionsAdv}
-          donneesWorklet={donneesWorkletAdv}
-          nbCartesActives={nbCartesActivesAdv}
-          distributionEnCours={distributionEnCours ?? false}
-        />
-      )}
-
       {/* Canvas sud éphémère — uniquement pendant la distribution (zIndex haut) */}
       {aDistributionSud && (
         <DistributionCanvasSud

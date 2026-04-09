@@ -30,6 +30,7 @@ import {
 } from "./useAnimations";
 import { useAnimationsDistribution } from "./useAnimationsDistribution";
 import { useAtlasCartes } from "./useAtlasCartes";
+import { useBufferCanvasUnifie } from "./useBufferCanvasUnifie";
 import { useDelaiBot } from "./useDelaiBot";
 import { useOrchestrationDistribution } from "./useOrchestrationDistribution";
 import { estMemeCarte } from "./utils-cartes";
@@ -208,10 +209,15 @@ export function useControleurJeu({
     hauteurEcran,
   });
   const atlas = useAtlasCartes();
-  const animDistribution = useAnimationsDistribution(atlas, {
-    largeur: largeurEcran,
-    hauteur: hauteurEcran,
-  });
+  const bufferUnifie = useBufferCanvasUnifie(atlas);
+  const animDistribution = useAnimationsDistribution(
+    atlas,
+    {
+      largeur: largeurEcran,
+      hauteur: hauteurEcran,
+    },
+    bufferUnifie,
+  );
   const { attendreDelaiBot, annulerDelai } = useDelaiBot();
 
   // Drapeaux pour éviter les boucles et courses
@@ -769,10 +775,7 @@ export function useControleurJeu({
     surCarteJeuPreteAffichage: animations.surCarteJeuPreteAffichage,
     // Distribution Atlas
     atlas,
-    cartesAtlasAdversaires: animDistribution.cartesAtlasAdversaires,
-    progressionsAdv: animDistribution.progressionsAdv,
-    donneesWorkletAdv: animDistribution.donneesWorkletAdv,
-    nbCartesActivesAdv: animDistribution.nbCartesActivesAdv,
+    bufferUnifie,
     cartesAtlasSud: animDistribution.cartesAtlasSud,
     progressionsSud: animDistribution.progressionsSud,
     donneesWorkletSud: animDistribution.donneesWorkletSud,

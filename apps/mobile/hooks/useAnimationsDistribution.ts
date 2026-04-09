@@ -14,6 +14,7 @@ import {
   calculerDispositionMainJoueur,
   calculerPointAncrageCarteMainJoueurNormalisee,
 } from "../components/game/mainJoueurDisposition";
+import { SLOTS_ADVERSAIRES, STRIDE_UNIFIE } from "../constants/canvas-unifie";
 import { ANIMATIONS, RATIO_ASPECT_CARTE, RATIO_LARGEUR_CARTE } from "../constants/layout";
 import {
   calculerPointArc,
@@ -31,6 +32,7 @@ import {
 } from "./distributionLayoutAtlas";
 import { construireGlissementCarteDepuisEtatCourant } from "./glissementCartes";
 import type { AtlasCartes } from "./useAtlasCartes";
+import type { BufferCanvasUnifie } from "./useBufferCanvasUnifie";
 import { creerCarteFactice } from "./utils-cartes";
 
 // --- Types ---
@@ -95,12 +97,7 @@ export interface ResultatAnimationsDistribution {
   ) => void;
   /** Signale la fin de la distribution (retire le canvas). */
   terminerDistribution: () => void;
-  cartesAtlasAdversaires: CarteAtlas[];
   cartesAtlasSud: CarteAtlas[];
-  /** Pool adversaires — SharedValues pour CanvasAdversaires */
-  progressionsAdv: SharedValue<number>[];
-  donneesWorkletAdv: SharedValue<number[]>;
-  nbCartesActivesAdv: SharedValue<number>;
   /** Pool sud — SharedValues pour DistributionCanvasSud */
   progressionsSud: SharedValue<number>[];
   donneesWorkletSud: SharedValue<number[]>;
@@ -121,6 +118,26 @@ function creerBufferWorklet(taille: number, donnees: number[]): number[] {
   }
 
   return buffer;
+}
+
+/**
+ * Écrit les données adversaires (STRIDE=10) dans le buffer unifié (STRIDE=14)
+ * aux offsets des slots adversaires (début à SLOTS_ADVERSAIRES.debut).
+ */
+function ecrireAdvDansBufferUnifie(
+  bufferActuel: number[],
+  donneesPlatAdv: number[],
+  nbCartesAdv: number,
+): number[] {
+  const resultat = [...bufferActuel];
+  for (let i = 0; i < nbCartesAdv; i += 1) {
+    const srcOffset = i * STRIDE;
+    const destOffset = (SLOTS_ADVERSAIRES.debut + i) * STRIDE_UNIFIE;
+    for (let j = 0; j < STRIDE; j += 1) {
+      resultat[destOffset + j] = donneesPlatAdv[srcOffset + j];
+    }
+  }
+  return resultat;
 }
 
 function reinitialiserProgressions(
@@ -159,27 +176,27 @@ function extrairePaquetsSud(paquets: PaquetCallbackDistribution[]): {
 /**
  * Hook d'orchestration de la distribution via Skia Atlas.
  * Utilise withDelay natif Reanimated pour orchestrer sur le UI thread.
- * Gère deux pools de SharedValues séparés : adversaires et sud.
+ * Les adversaires écrivent directement dans le buffer unifié (slots 4-27).
+ * Le pool sud reste local (sera migré dans une étape ultérieure).
  */
 export function useAnimationsDistribution(
   atlas: AtlasCartes,
   dimensionsEcran: { largeur: number; hauteur: number },
+  bufferUnifie: BufferCanvasUnifie,
 ): ResultatAnimationsDistribution {
-  const [cartesAtlasAdversaires, setCartesAtlasAdversaires] = useState<CarteAtlas[]>([]);
   const [cartesAtlasSud, setCartesAtlasSud] = useState<CarteAtlas[]>([]);
   const [enCours, setEnCours] = useState(false);
 
-  // Pool adversaires
-  const progressionsAdvRef = useRef<SharedValue<number>[]>(
-    Array.from({ length: MAX_CARTES_ADV }, () => makeMutable(0)),
-  );
+  // Les adversaires utilisent le buffer unifié directement.
+  // On crée un slice des progressions pour garder des indices locaux (0-23).
+  const progressionsAdvRef = useRef<SharedValue<number>[]>([]);
+  if (progressionsAdvRef.current.length === 0 && bufferUnifie.progressions.length > 0) {
+    progressionsAdvRef.current = bufferUnifie.progressions.slice(
+      SLOTS_ADVERSAIRES.debut,
+      SLOTS_ADVERSAIRES.debut + MAX_CARTES_ADV,
+    );
+  }
   const progressionsAdv = progressionsAdvRef.current;
-  const donneesWorkletAdvRef = useRef<SharedValue<number[]>>(
-    makeMutable(new Array(MAX_CARTES_ADV * STRIDE).fill(0)),
-  );
-  const donneesWorkletAdv = donneesWorkletAdvRef.current;
-  const nbCartesActivesAdvRef = useRef<SharedValue<number>>(makeMutable(0));
-  const nbCartesActivesAdv = nbCartesActivesAdvRef.current;
 
   // Pool sud
   const progressionsSudRef = useRef<SharedValue<number>[]>(
@@ -631,16 +648,23 @@ export function useAnimationsDistribution(
       }
 
       // Mettre à jour l'état React
-      setCartesAtlasAdversaires(cartesAdv);
       setCartesAtlasSud(cartesSud);
       setEnCours(true);
 
-      // Mettre à jour les données worklet — pool adversaires
-      donneesWorkletAdv.value = creerBufferWorklet(
-        MAX_CARTES_ADV * STRIDE,
+      // Mettre à jour les sprites adversaires dans le buffer unifié
+      for (let i = 0; i < cartesAdv.length; i += 1) {
+        bufferUnifie.mettreAJourSprite(
+          SLOTS_ADVERSAIRES.debut + i,
+          cartesAdv[i].rectSource,
+        );
+      }
+
+      // Mettre à jour les données worklet — adversaires dans le buffer unifié
+      bufferUnifie.donneesWorklet.value = ecrireAdvDansBufferUnifie(
+        bufferUnifie.donneesWorklet.value,
         donneesPlatAdv,
+        cartesAdv.length,
       );
-      nbCartesActivesAdv.value = cartesAdv.length;
 
       // Mettre à jour les données worklet — pool sud
       donneesWorkletSud.value = creerBufferWorklet(
@@ -852,7 +876,7 @@ export function useAnimationsDistribution(
         }
 
         const timeoutDecalage = setTimeout(() => {
-          const donneesCourantes = donneesWorkletAdv.value;
+          const donneesCourantes = bufferUnifie.donneesWorklet.value;
           const nouvellesDonnees = [...donneesCourantes];
           for (
             let i = premierPaquet.indexPremiereCartePool;
@@ -860,7 +884,7 @@ export function useAnimationsDistribution(
             i++
           ) {
             const sdOffset = (i - premierPaquet.indexPremiereCartePool) * STRIDE;
-            const poolOffset = i * STRIDE;
+            const poolOffset = (SLOTS_ADVERSAIRES.debut + i) * STRIDE_UNIFIE;
             for (let j = 0; j < STRIDE; j++) {
               nouvellesDonnees[poolOffset + j] = shiftDonnees[sdOffset + j];
             }
@@ -869,7 +893,7 @@ export function useAnimationsDistribution(
           const fin = premierPaquet.indexDerniereCartePool;
           const duree = distribution.dureeCarte;
           runOnUI(() => {
-            donneesWorkletAdv.value = nouvellesDonnees;
+            bufferUnifie.donneesWorklet.value = nouvellesDonnees;
             for (let i = debut; i <= fin; i++) {
               progressionsAdv[i].value = 0;
               progressionsAdv[i].value = withTiming(1, {
@@ -1038,8 +1062,7 @@ export function useAnimationsDistribution(
       dimensionsEcran,
       viderTimeouts,
       progressionsAdv,
-      donneesWorkletAdv,
-      nbCartesActivesAdv,
+      bufferUnifie,
       progressionsSud,
       donneesWorkletSud,
       nbCartesActivesSud,
@@ -1068,11 +1091,7 @@ export function useAnimationsDistribution(
   return {
     lancerDistribution,
     terminerDistribution,
-    cartesAtlasAdversaires,
     cartesAtlasSud,
-    progressionsAdv,
-    donneesWorkletAdv,
-    nbCartesActivesAdv,
     progressionsSud,
     donneesWorkletSud,
     nbCartesActivesSud,

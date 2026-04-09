@@ -62,32 +62,7 @@ let mockControleur = {
     rectSource: jest.fn(() => ({ x: 0, y: 0, width: 1, height: 1 })),
     rectDos: jest.fn(() => ({ x: 0, y: 0, width: 1, height: 1 })),
   },
-  cartesAtlasAdversaires: [],
-  progressionsAdv: mockProgressionsAdv,
-  donneesWorkletAdv: { value: [] },
-  nbCartesActivesAdv: { value: 0 },
-  cartesAtlasSud: [],
-  progressionsSud: mockProgressionsSud,
-  donneesWorkletSud: { value: [] },
-  nbCartesActivesSud: { value: 0 },
-  distributionEnCours: false,
-  modeRenduCartes: "jeu-interactif" as ModeRenduCartesMock,
-  jouerCarte: jest.fn(),
-  prendre: jest.fn(),
-  annoncer: jest.fn(),
-  passer: jest.fn(),
-  continuerApresScore: jest.fn(),
-  recommencer: jest.fn(),
-  onRevelationTerminee: jest.fn(),
-  onRetourCarteRetourneeTerminee: jest.fn(),
-};
-
-jest.mock("../hooks/useControleurJeu", () => ({
-  useControleurJeu: () => mockControleur,
-}));
-
-jest.mock("../hooks/useBufferCanvasUnifie", () => ({
-  useBufferCanvasUnifie: () => ({
+  bufferUnifie: {
     donneesWorklet: { value: [] },
     progressions: [],
     sprites: [],
@@ -109,7 +84,25 @@ jest.mock("../hooks/useBufferCanvasUnifie", () => ({
     allouerSlotAnimation: jest.fn(),
     libererSlotAnimation: jest.fn(),
     ecrireSlotAnime: jest.fn(),
-  }),
+  },
+  cartesAtlasSud: [],
+  progressionsSud: mockProgressionsSud,
+  donneesWorkletSud: { value: [] },
+  nbCartesActivesSud: { value: 0 },
+  distributionEnCours: false,
+  modeRenduCartes: "jeu-interactif" as ModeRenduCartesMock,
+  jouerCarte: jest.fn(),
+  prendre: jest.fn(),
+  annoncer: jest.fn(),
+  passer: jest.fn(),
+  continuerApresScore: jest.fn(),
+  recommencer: jest.fn(),
+  onRevelationTerminee: jest.fn(),
+  onRetourCarteRetourneeTerminee: jest.fn(),
+};
+
+jest.mock("../hooks/useControleurJeu", () => ({
+  useControleurJeu: () => mockControleur,
 }));
 
 jest.mock("../components/game/CanvasCartesUnifie", () => ({
