@@ -14,11 +14,19 @@ import type { DepartAnimationJeuCarte } from "../../hooks/useAnimations";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
 import type { ValeursAnimationMainJoueur } from "../../hooks/useBufferCanvasUnifie";
 import { estMemeCarte } from "../../hooks/utils-cartes";
-import type { CarteMainJoueurAtlas } from "./CanvasMainJoueurAtlas";
 import {
   calculerDispositionMainJoueur,
   type ModeDispositionMainJoueur,
 } from "./mainJoueurDisposition";
+
+interface CarteMainJoueurAtlas {
+  carte: Carte;
+  x: number;
+  decalageY: number;
+  angle: number;
+  grisee: boolean;
+  visible: boolean;
+}
 
 interface PropsMainJoueur {
   cartes: Carte[];

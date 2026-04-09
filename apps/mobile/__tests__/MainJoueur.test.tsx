@@ -30,15 +30,6 @@ jest.mock("react-native-reanimated", () => {
   };
 });
 
-jest.mock("../components/game/CanvasMainJoueurAtlas", () => ({
-  CanvasMainJoueurAtlas: () => {
-    const React = require("react") as typeof import("react");
-    const { View } = require("react-native") as typeof import("react-native");
-
-    return <View testID="canvas-main-joueur-atlas" />;
-  },
-}));
-
 const CARTES: Carte[] = [
   { couleur: "pique", rang: "as" },
   { couleur: "coeur", rang: "roi" },

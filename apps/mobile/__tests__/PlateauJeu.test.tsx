@@ -192,15 +192,6 @@ jest.mock("../components/game/MainJoueur", () => ({
   },
 }));
 
-jest.mock("../components/game/MainAdversaire", () => ({
-  MainAdversaire: ({ position }: { position: string }) => {
-    const React = require("react") as typeof import("react");
-    const { View } = require("react-native") as typeof import("react-native");
-
-    return <View testID={`main-adversaire-${position}`} />;
-  },
-}));
-
 jest.mock("../components/game/PanneauEncheres", () => ({
   PanneauEncheres: () => {
     const React = require("react") as typeof import("react");
