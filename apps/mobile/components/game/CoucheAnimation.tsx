@@ -5,7 +5,6 @@ import type { SharedValue } from "react-native-reanimated";
 import type { CarteAtlas } from "../../hooks/useAnimationsDistribution";
 import type { AtlasCartes } from "../../hooks/useAtlasCartes";
 import type { ModeRenduCartes } from "../../hooks/useControleurJeu";
-import { CarteAnimee, type PositionCarte } from "./CarteAnimee";
 import { DistributionCanvasSud } from "./DistributionCanvasSud";
 
 export interface CarteEnVol {
@@ -24,12 +23,16 @@ export interface CarteEnVol {
   easing?: "out-cubic" | "inout-cubic" | "out-back-soft";
 }
 
+export interface PositionCarte {
+  x: number;
+  y: number;
+  rotation: number;
+  echelle: number;
+}
+
 interface PropsCoucheAnimation {
-  cartesEnVol: CarteEnVol[];
   largeurEcran: number;
   hauteurEcran: number;
-  onAnimationTerminee: (id: string) => void;
-  onCarteJeuPreteAffichage: (id: string) => void;
   atlas: AtlasCartes;
   // Pool sud (DistributionCanvasSud — éphémère)
   cartesAtlasSud?: CarteAtlas[];
@@ -42,11 +45,8 @@ interface PropsCoucheAnimation {
 }
 
 export function CoucheAnimation({
-  cartesEnVol,
   largeurEcran,
   hauteurEcran,
-  onAnimationTerminee,
-  onCarteJeuPreteAffichage,
   atlas,
   cartesAtlasSud,
   progressionsSud,
@@ -91,29 +91,6 @@ export function CoucheAnimation({
           hauteurEcran={hauteurEcran}
         />
       )}
-
-      {cartesEnVol.map((vol) => (
-        <CarteAnimee
-          key={vol.id}
-          carte={vol.carte}
-          depart={vol.depart}
-          arrivee={vol.arrivee}
-          faceVisible={vol.faceVisible}
-          estEnPause={vol.estEnPause}
-          estVisible={vol.estVisible}
-          delai={vol.delai}
-          duree={vol.duree}
-          segment={vol.segment}
-          atlas={atlas}
-          flipDe={vol.flipDe}
-          flipVers={vol.flipVers}
-          easing={vol.easing}
-          largeurEcran={largeurEcran}
-          hauteurEcran={hauteurEcran}
-          onPretAffichage={() => onCarteJeuPreteAffichage(vol.id)}
-          onTerminee={() => onAnimationTerminee(vol.id)}
-        />
-      ))}
     </View>
   );
 }

@@ -33,6 +33,7 @@ import { useAtlasCartes } from "./useAtlasCartes";
 import { useBufferCanvasUnifie } from "./useBufferCanvasUnifie";
 import { useDelaiBot } from "./useDelaiBot";
 import { useOrchestrationDistribution } from "./useOrchestrationDistribution";
+import { useSyncCartesVersBuffer } from "./useSyncCartesVersBuffer";
 import { estMemeCarte } from "./utils-cartes";
 
 // --- Types exposés ---
@@ -219,6 +220,15 @@ export function useControleurJeu({
     bufferUnifie,
   );
   const { attendreDelaiBot, annulerDelai } = useDelaiBot();
+
+  // Synchronisation cartesEnVol → buffer unifié (slots animation 36-43)
+  useSyncCartesVersBuffer(
+    animations.cartesEnVol,
+    bufferUnifie,
+    atlas,
+    animations.surAnimationTerminee,
+    animations.surCarteJeuPreteAffichage,
+  );
 
   // Drapeaux pour éviter les boucles et courses
   const estOccupe = useRef(false);
@@ -769,10 +779,6 @@ export function useControleurJeu({
     modeRenduCartes: calculerModeRenduCartes(etatJeu.phaseUI),
     cartesMasqueesMainJoueur,
     cartesEnPoseMainJoueur,
-    // Animations
-    cartesEnVol: animations.cartesEnVol,
-    surAnimationTerminee: animations.surAnimationTerminee,
-    surCarteJeuPreteAffichage: animations.surCarteJeuPreteAffichage,
     // Distribution Atlas
     atlas,
     bufferUnifie,

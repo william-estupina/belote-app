@@ -43,9 +43,6 @@ export default function PlateauJeu() {
     modeRenduCartes,
     cartesMasqueesMainJoueur,
     cartesEnPoseMainJoueur,
-    cartesEnVol,
-    surAnimationTerminee,
-    surCarteJeuPreteAffichage,
     atlas,
     bufferUnifie,
     cartesAtlasSud,
@@ -349,14 +346,10 @@ export default function PlateauJeu() {
             />
           )}
 
-          {/* Paquet central empilé (visible pendant la distribution) */}
-          {/* Couche d'animation (cartes en vol) */}
+          {/* Couche d'animation (distribution sud éphémère) */}
           <CoucheAnimation
-            cartesEnVol={cartesEnVol}
             largeurEcran={largeur}
             hauteurEcran={hauteur}
-            onAnimationTerminee={surAnimationTerminee}
-            onCarteJeuPreteAffichage={surCarteJeuPreteAffichage}
             atlas={atlas}
             cartesAtlasSud={cartesAtlasSud}
             progressionsSud={progressionsSud}
